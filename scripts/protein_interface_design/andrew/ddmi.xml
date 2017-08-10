@@ -1,0 +1,89 @@
+<ROSETTASCRIPTS>
+Keywords: protein interface design, single sided design
+
+The dock-design-minimize-interface protocol rewritten in RosettaScripts
+for bringing a scaffold to a target in a low-resolution step, and then
+iteratively packing and minimizing as the repulsive component is ramped
+upwards and coordinate constraints are ramped downwards.
+
+This isn't a particularly good protocol.
+
+The original protocol was used to define the "spider roll" interface:
+Jha et al. JMB 2010
+
+        <SCOREFXNS>
+	<ScoreFunction name="talaris2014_rep0p1" weights="talaris2014">
+	  <Reweight scoretype="fa_rep" weight="0.1"/>
+	  <Reweight scoretype="coordinate_constraint" weight="2.0"/>
+	</ScoreFunction>
+	<ScoreFunction name="talaris2014_rep0p2" weights="talaris2014">
+	  <Reweight scoretype="fa_rep" weight="0.2"/>
+	  <Reweight scoretype="coordinate_constraint" weight="0.5"/>
+	</ScoreFunction>
+	<ScoreFunction name="talaris2014_rep0p3" weights="talaris2014">
+	  <Reweight scoretype="fa_rep" weight="0.3"/>
+	  <Reweight scoretype="coordinate_constraint" weight="0.25"/>
+	</ScoreFunction>
+	<ScoreFunction name="talaris2014_rep0p4" weights="talaris2014">
+	  <Reweight scoretype="fa_rep" weight="0.4"/>
+	  <Reweight scoretype="coordinate_constraint" weight="0.125"/>
+	</ScoreFunction>
+	<ScoreFunction name="talaris2014_rep0p5" weights="talaris2014">
+	  <Reweight scoretype="fa_rep" weight="0.5"/>
+	</ScoreFunction>
+        </SCOREFXNS>
+        <TASKOPERATIONS>
+                <RestrictToInterfaceVector name="rti_taskop" jump="1" />
+                <IncludeCurrent name="keep_curr"/>
+                <ExtraRotamers name="ex1" chi="1" />
+                <ExtraRotamers name="ex2" chi="2" />
+                <ExtraChiCutoff name="exchi1" extrachi_cutoff="1" />
+		<OperateOnResidueSubset name="disable_chainA_design">
+			<Chain chains="A"/>
+			<RestrictToRepackingRLT/>
+		</OperateOnResidueSubset>
+        </TASKOPERATIONS>
+        <FILTERS>
+                Ddg name=ddgfilter jump=4 scorefxn=talaris2013 threshold=-10.0
+                Sasa name=sasafilter jump=4 threshold=800
+                InterfaceBindingEnergyDensityFilter name=bindingenergydensity sasa_filter=sasafilter ddG_filter=ddgfilter threshold=-0.01
+                BuriedUnsatHbonds name=buns_filter jump_number=4 cutoff=12
+        </FILTERS>
+        <MOVERS>
+	        <Docking name="dock_lo_res" score_low="score_docking_low" fullatom="0" jumps="1" optimize_fold_tree="1"/>
+
+		<AddConstraintsToCurrentConformationMover name="coord_constr" CA_only="1" bb_only="1" coord_dev="0.5" cst_weight="1"/>
+		
+                <PackRotamersMover name="pack_rot1" scorefxn="talaris2014_rep0p1" task_operations="rti_taskop,keep_curr,ex1,ex2,exchi1,disable_chainA_design"/>
+                <MinMover name="min1" scorefxn="talaris2014_rep0p1" bb="0" chi="1" jump="1"/>
+                <PackRotamersMover name="pack_rot2" scorefxn="talaris2014_rep0p2" task_operations="rti_taskop,keep_curr,ex1,ex2,exchi1,disable_chainA_design"/>
+                <MinMover name="min2" scorefxn="talaris2014_rep0p2" bb="0" chi="1" jump="1"/>
+                <PackRotamersMover name="pack_rot3" scorefxn="talaris2014_rep0p3" task_operations="rti_taskop,keep_curr,ex1,ex2,exchi1,disable_chainA_design"/>
+                <MinMover name="min3" scorefxn="talaris2014_rep0p3" bb="0" chi="1" jump="1"/>
+                <PackRotamersMover name="pack_rot4" scorefxn="talaris2014_rep0p4" task_operations="rti_taskop,keep_curr,ex1,ex2,exchi1,disable_chainA_design"/>
+                <MinMover name="min4" scorefxn="talaris2014_rep0p4" bb="0" chi="1" jump="1"/>
+                <PackRotamersMover name="pack_rot5" scorefxn="talaris2014_rep0p5" task_operations="rti_taskop,keep_curr,ex1,ex2,exchi1,disable_chainA_design"/>
+                <MinMover name="min5" scorefxn="talaris2014_rep0p5" bb="0" chi="1" jump="1"/>
+                <PackRotamersMover name="pack_rot6" scorefxn="talaris2014" task_operations="rti_taskop,keep_curr,ex1,ex2,exchi1,disable_chainA_design"/>
+                <MinMover name="min6" scorefxn="talaris2014" bb="0" chi="1" jump="1"/>
+
+        </MOVERS>
+        <APPLY_TO_POSE>
+        </APPLY_TO_POSE>
+        <PROTOCOLS>
+		<Add mover_name="dock_lo_res"/>
+		<Add mover_name="coord_constr"/>
+		<Add mover_name="pack_rot1"/>
+		<Add mover_name="min1"/>
+		<Add mover_name="pack_rot2"/>
+		<Add mover_name="min2"/>
+		<Add mover_name="pack_rot3"/>
+		<Add mover_name="min3"/>
+		<Add mover_name="pack_rot4"/>
+		<Add mover_name="min4"/>
+		<Add mover_name="pack_rot5"/>
+		<Add mover_name="min5"/>
+		<Add mover_name="pack_rot6"/>
+		<Add mover_name="min6"/>
+        </PROTOCOLS>
+</ROSETTASCRIPTS>
