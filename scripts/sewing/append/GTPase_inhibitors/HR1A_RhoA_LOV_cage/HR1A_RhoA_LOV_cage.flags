@@ -1,0 +1,25 @@
+-use_input_sc
+-nstruct 100000
+-parser:protocol /nas02/home/f/r/frankdt/scr/GTPase_inhibitors/inputs/HR1A_RhoA_LOV_cage/HR1A_RhoA_LOV_cage.xml
+-parser:view
+-ignore_unrecognized_res
+-overwrite
+-mh:match:aa1 false
+-mh:match:aa2 false
+
+-mh:score:use_ss1 true
+-mh:score:use_ss2 true
+
+-mh:path:motifs /nas02/home/f/r/frankdt/input_files/motifs/xsmax_bb_ss_AILV_resl0.8_msc0.3.rpm.bin.gz
+-mh:path:scores_BB_BB /nas02/home/f/r/frankdt/input_files/motifs/xsmax_bb_ss_AILV_resl0.8_msc0.3/xsmax_bb_ss_AILV_resl0.8_msc0.3/xsmax_bb_ss_AILV_resl0.8_msc0.3
+
+-mh:gen_reverse_motifs_on_load false     # I think the inverse motifs are already in the datafiles
+
+-mh::dump::max_rms 0.4
+
+-s /nas02/home/f/r/frankdt/scr/GTPase_inhibitors/inputs/HR1A_RhoA_LOV_cage/HR1A_RhoA_LOV_cage_start_node.pdb
+-pdb_comments true
+-output_pose_energies_table false
+-output_pose_cache_data false
+-preserve_crystinfo true
+-mute all

@@ -1,0 +1,23 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+	</SCOREFXNS>
+	<FILTERS>
+	</FILTERS>
+	<MOVERS>
+		<AppendAssemblyMover name="aam" model_file_name="/nas02/home/f/r/frankdt/scr/GTPase_inhibitors/inputs/universal/smotifs_H_5_40_L_1_6_H_5_40.segments"  partner_pdb = "/nas02/home/f/r/frankdt/scr/GTPase_inhibitors/inputs/Kalirin_zLock_2/Kalirin_zLock_2_partner.pdb" hashed="false" minimum_cycles = "10000" maximum_cycles = "11000" output_partner = "false" >
+			<AssemblyScorers>
+				<MotifScorer weight = "1" />
+				<InterModelMotifScorer weight = "10" />
+				<TerminusMotifScorer weight = "1" terminus = "N" partner_residue = "319" optimum_distance = "8" maximum_unpenalized_variance = "1" />
+				<TerminusMotifScorer weight = "1" terminus = "C" partner_residue = "321" optimum_distance = "8" maximum_unpenalized_variance = "1" />
+			</AssemblyScorers>
+			<AssemblyRequirements>
+				<ClashRequirement clash_radius = "4" />	
+				<SizeInSegmentsRequirement maximum_size = "25"/>
+			</AssemblyRequirements>
+		</AppendAssemblyMover> 
+	</MOVERS>
+	<PROTOCOLS>
+		<Add mover_name="aam" />
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

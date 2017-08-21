@@ -1,0 +1,1 @@
+This script instructs SEWING to append helices onto the C-terminus of the PKN HR1A helical hairpin, which binds RhoA, while the N-terminus of that hairpin is fused to the asLOV2 J-alpha helix. The Mover tag itself sets up a 10,000 cycle run and specifies adding only to the C terminus. 

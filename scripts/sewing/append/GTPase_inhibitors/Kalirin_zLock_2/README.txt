@@ -1,0 +1,1 @@
+This script sets up a SEWING run to position the termini of kalirin as close as possible to the termini of zLock_2 in order to create a single protein via loop closure; the target termini are positioned so that when bound in the dark state they occlude kalirin's RhoA binding site, and the termini of kalirin are extended towards them via the TerminusMotifScore scorers.

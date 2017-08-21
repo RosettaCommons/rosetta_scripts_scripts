@@ -1,0 +1,22 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+	</SCOREFXNS>
+	<FILTERS>
+	</FILTERS>
+	<MOVERS>
+		<AppendAssemblyMover name="aam" model_file_name="/nas02/home/f/r/frankdt/scr/GTPase_inhibitors/inputs/universal/smotifs_H_5_40_L_1_6_H_5_40.segments"  partner_pdb = "/nas02/home/f/r/frankdt/scr/GTPase_inhibitors/inputs/HR1A_RhoA_LOV_cage/HR1A_RhoA_LOV_cage_partner.pdb " hashed="false" minimum_cycles = "10000" maximum_cycles = "11000" modifiable_terminus = "C" >
+			<AssemblyScorers>
+				<MotifScorer weight = "1" />
+				<InterModelMotifScorer weight = "10" />
+			</AssemblyScorers>
+			<AssemblyRequirements>
+				<ClashRequirement clash_radius = "4" />	
+				<DsspSpecificLengthRequirement dssp_code ="H" minimum_length = "14"/>
+				<SizeInSegmentsRequirement maximum_size = "5"/>
+			</AssemblyRequirements>
+		</AppendAssemblyMover> 
+	</MOVERS>
+	<PROTOCOLS>
+		<Add mover_name="aam" />
+	</PROTOCOLS>
+</ROSETTASCRIPTS>
