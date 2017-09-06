@@ -6,7 +6,7 @@ import os as opsys
 import subprocess
 
 
-def validate_file( rosetta_executable, filename ) :
+def test_script_file( rosetta_executable, filename ) :
     assert( filename[-4:] == ".xml" )
     parts = filename.rpartition( "/" )
     dirname = parts[0]
@@ -18,12 +18,14 @@ def validate_file( rosetta_executable, filename ) :
     command = rosetta_executable + " -parser:protocol " + parts[2]
     if flags_exist : command = command + " @ " + flags_fname
 
+    print( "--".join( command.split() ) )
+
     child = subprocess.Popen( command.split(), stdout=subprocess.PIPE )
     streamdata = child.communicate()[0]
     return child.returncode
               
 
-class ValidationManager :
+class RSScriptTestManager :
     def __init__( self ) :
         self.file_for_job = {}
         self.all_files_validated = True
@@ -54,15 +56,18 @@ if __name__ == "__main__" :
         p.str( "compiler" ).default("gcc")
         p.str( "os" ).default("linux")
 
-    rosetta_executable = rosetta + "/bin/just_parse_a_script.default." + os + compiler + "release"
+    rosetta_executable = rosetta + "/bin/validate_rosetta_script.default." + os + compiler + "release"
+    if len( rosetta_executable ) != 0 and rosetta_executable[0] != "/" :
+        rosetta_executable = opsys.getcwd() + "/" + rosetta_executable
+
     if not opsys.path.isfile( rosetta_executable ) :
         print( "Error: executable '" + rosetta_executable + "' not found." )
         sys.exit(1)
 
-    vm = ValidationManager()
+    tm = RSScriptTestManager()
     fm = ForkManager( ncpu )
-    fm.error_callback = vm.handle_failed_file_validation
-    fm.success_callback = vm.handle_successful_file_validation
+    fm.error_callback = tm.handle_failed_file_validation
+    fm.success_callback = tm.handle_successful_file_validation
 
     from scripts_to_validate import *
 
@@ -70,15 +75,15 @@ if __name__ == "__main__" :
         pid = fm.mfork()
         if pid == 0 :
             # print( "Validating", fname )
-            return_code = validate_file( rosetta_executable, fname )
+            return_code = test_script_file( rosetta_executable, fname )
             sys.exit( return_code )
         else :
-            vm.file_for_job[pid] = fname
+            tm.file_for_job[pid] = fname
 
     fm.wait_for_remaining_jobs()
-    if vm.all_files_validated :
+    if tm.all_files_validated :
         sys.exit(0)
     else :
-        for fname in vm.files_that_failed :
+        for fname in tm.files_that_failed :
             print( "File '" + fname + "' could not be validated against the XSD" )
             sys.exit(1)

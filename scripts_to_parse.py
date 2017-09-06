@@ -5,5 +5,7 @@
 # complete parsing.
 
 scripts_to_be_parsed = [
-   "scripts/pilot/example/an_example_for_testing_purposes/example_valid_and_parsable.xml",
+    "scripts/pilot/example/an_example_for_testing_purposes/example_valid.xml",
+    "scripts/public/sewing/refinement/HEM_refinement.xml"
 ]
+
