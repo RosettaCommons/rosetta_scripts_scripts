@@ -46,7 +46,7 @@ for script in all_found_files :
         scripts_not_listed[ script ] = author
         
 json.dump(
-    { "result" : all_good, "scripts_not_found" : scripts_not_found, "scripts_not_listed" : scripts_not_listed },
+    { "success" : all_good, "scripts_not_found" : scripts_not_found, "scripts_not_listed" : scripts_not_listed },
     open( "verify_all_scripts_accounted_for_result.json", 'w' ),
     sort_keys = True )
 
