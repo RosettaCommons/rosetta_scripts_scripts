@@ -1,8 +1,12 @@
+from __future__ import print_function
+
 from argparse import ArgumentParser
 from fork_manager import *
 import os as opsys
 import subprocess
 import json
+import imp
+
 
 def test_script_file_commands( rosetta_executable, filename ) :
     assert( filename[-4:] == ".xml" )
@@ -47,31 +51,6 @@ def rosetta_executable_abspath( path_to_rosetta_main, executable_name, args ) :
 
     return rosetta_executable
 
-# class RSScriptTestManager :
-#     def __init__( self, json_outfilename ) :
-#         self.file_for_job = {}
-#         self.all_files_validated = True
-#         self.files_that_failed = []
-#         self.json_outfilename = "default.json"
-#     def handle_successful_file_validation( self, fm, pid ) :
-#         if pid not in self.file_for_job :
-#             print( "Critical error. Could not find file assigned to process", pid )
-#             for pid in self.file_for_job :
-#                 print( "Process ", pid, "responsible for", self.file_for_job[pid] )
-#             sys.exit(1)
-#         else :
-#             del self.file_for_job[pid]
-#     def handle_failed_file_validation( self, fm, pid ) :
-#         if pid not in self.file_for_job :
-#             print( "Critical error. Could not find file assigned to process", pid )
-#             for pid in self.file_for_job :
-#                 print( "Process ", pid, "responsible for", self.file_for_job[pid] )
-#             sys.exit(1)
-#         else :
-#             self.files_that_failed.append( self.file_for_job[ pid ] )
-#             self.all_files_validated = False
-#             del self.file_for_job[ pid ]
-
 def main( input_args ) :
     '''
     Test all of the XML files listed in the python file "rosetta_scripts_scripts/scripts_to_validate.py"
@@ -80,61 +59,30 @@ def main( input_args ) :
     by the user. This script can be run in parallel using the -j/--jobs flag.
     '''
 
-    #with blargs.Parser(locals()) as p :
-    #    p.int( "ncpu" ).shorthand("j")
-    #    p.str( "rosetta" ).required().described_as( "Required argument: path to Rosetta/main/" )
-    #    p.str( "compiler" ).default("gcc")
-    #    p.str( "os" ).default("linux")
-    #    p.
-
     parser = ArgumentParser( description=main.__doc__ )
 
     parser.add_argument( "-j", "--jobs", default=1, type=int,
         help="Number of processors to use when running tests" )
     parser.add_argument( "-r", "--rosetta", required=True,
         help="Required argument: path to Rosetta/main" )
-    parser.add_argument( "--output-file", default="validation_results.json" )
-    # parser.add_argument( "-q", "--quiet", help="supress output messages", action='store_true' )
-    # parser.add_argument( "-s", "--silent", help="supress all output", action='store_true' )
+    parser.add_argument( "--output_file", default="validation_results.json" )
+    parser.add_argument( "--working_dir", default=".", help="directory to which temporary results are written" )
+    parser.add_argument( "-q", "--quiet", help="supress output messages", action='store_true' )
+    parser.add_argument( "-Q", "--silent", help="supress all output", action='store_true' )
     add_rosetta_executable_arguments( parser )
 
     args = parser.parse_args( input_args[1:] )
-
     rosetta_executable = rosetta_executable_abspath( args.rosetta, "validate_rosetta_script", args )
-
-    # tm = RSScriptTestManager()
-    # fm = ForkManager( ncpu )
-    # fm.error_callback = tm.handle_failed_file_validation
-    # fm.success_callback = tm.handle_successful_file_validation
 
     from scripts_to_validate import scripts_to_be_validated
 
     work = { fname.replace( "/", "." ) : test_script_file_commands( rosetta_executable, fname ) for fname in scripts_to_be_validated }
 
-    workfname = "validation_work.json"
+    parallel = imp.load_source('parallel', args.rosetta + '/tests/benchmark/util/parallel.py')
+    runner = parallel.Runner( args.jobs, args.quiet, args.silent )
+    results = runner.run_commands_lines( 'validation', commands_lines = work, working_dir = args.working_dir, delete_intermediate_files = True )
+    json.dump( results, open( args.output_file, 'w' ), sort_keys = True, indent = 2 )
 
-    json.dump( work, file( workfname, 'w' ), sort_keys=True, indent=2 )
-    sub_command = []
-    sub_command.append( args.rosetta + "/tests/benchmark/util/parallel.py" )
-    sub_command.append( "--jobs" )
-    sub_command.append( str( args.jobs ))
-    sub_command.append( "--prefix" )
-    sub_command.append( args.output_file )
-    # if args.silent :
-    #     sub_command.append( "-Q" )
-    # elif args.quiet :
-    #     sub_command.append( "-q" )
-    sub_command.append( workfname )
-
-    child = subprocess.Popen( sub_command, stdout=subprocess.PIPE )
-    streamdata = child.communicate()[0]
-    if ( child.returncode != 0 ) :
-        print( streamdata )
-    else :
-        os.remove( workfname )
-
-    sys.exit( child.returncode )
 
 if __name__ == "__main__" :
     main( sys.argv )
-

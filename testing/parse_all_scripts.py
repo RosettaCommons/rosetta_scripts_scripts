@@ -1,9 +1,12 @@
+from __future__ import print_function
+
 from argparse import ArgumentParser
 from fork_manager import *
 import os as opsys
 import subprocess
-import validate_all_scripts as vas
 import json
+import imp
+import validate_all_scripts as vas
 
 def main( input_args ) :
     '''
@@ -14,13 +17,6 @@ def main( input_args ) :
     by the user. This script can be run in parallel using the -j/--jobs flag.
     '''
 
-    #with blargs.Parser(locals()) as p :
-    #    p.int( "ncpu" ).shorthand("j")
-    #    p.str( "rosetta" ).required().described_as( "Required argument: path to Rosetta/main/" )
-    #    p.str( "compiler" ).default("gcc")
-    #    p.str( "os" ).default("linux")
-    #    p.
-
     parser = ArgumentParser( description=main.__doc__ )
 
     parser.add_argument( "-j", "--jobs", default=1, type=int,
@@ -28,8 +24,9 @@ def main( input_args ) :
     parser.add_argument( "-r", "--rosetta", required=True,
         help="Required argument: path to Rosetta/main" )
     parser.add_argument( "--output-file", default="parsing_results.json" )
-    # parser.add_argument( "-q", "--quiet", help="supress output messages", action='store_true' )
-    # parser.add_argument( "-s", "--silent", help="supress all output", action='store_true' )
+    parser.add_argument( "--working_dir", default=".", help="directory to which temporary results are written" )
+    parser.add_argument( "-q", "--quiet", help="supress output messages", action='store_true' )
+    parser.add_argument( "-Q", "--silent", help="supress all output", action='store_true' )
     vas.add_rosetta_executable_arguments( parser )
 
     args = parser.parse_args( input_args[1:] )
@@ -40,30 +37,10 @@ def main( input_args ) :
 
     work = { fname.replace("/",".") : vas.test_script_file_commands( rosetta_executable, fname ) for fname in scripts_to_be_parsed }
 
-
-    workfname = "parsing_work.json"
-
-    json.dump( work, file( workfname, 'w' ), sort_keys=True, indent=2 )
-    sub_command = []
-    sub_command.append( args.rosetta + "/tests/benchmark/util/parallel.py" )
-    sub_command.append( "--jobs" )
-    sub_command.append( str( args.jobs ))
-    sub_command.append( "--prefix" )
-    sub_command.append( args.output_file )
-    # if args.silent :
-    #     sub_command.append( "-Q" )
-    # elif args.quiet :
-    #     sub_command.append( "-q" )
-    sub_command.append( workfname )
-
-    child = subprocess.Popen( sub_command, stdout=subprocess.PIPE )
-    streamdata = child.communicate()[0]
-    if ( child.returncode != 0 ) :
-        print( streamdata )
-    else :
-        os.remove( workfname )
-
-    sys.exit( child.returncode )
+    parallel = imp.load_source('parallel', args.rosetta + '/tests/benchmark/util/parallel.py')
+    runner = parallel.Runner( args.jobs, args.quiet, args.silent )
+    results = runner.run_commands_lines( 'parsing', commands_lines = work, working_dir = args.working_dir, delete_intermediate_files = True )
+    json.dump( results, open( args.output_file, 'w' ), sort_keys = True, indent = 2 )
 
 if __name__ == "__main__" :
     main( sys.argv )
