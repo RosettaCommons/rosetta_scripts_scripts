@@ -40,7 +40,10 @@ def main( input_args ) :
 
     work = { fname.replace("/",".") : vas.test_script_file_commands( rosetta_executable, fname ) for fname in scripts_to_be_parsed }
 
-    json.dump( work, file( "parsing_work.json", 'w' ), sort_keys=True, indent=2 )
+
+    workfname = "parsing_work.json"
+
+    json.dump( work, file( workfname, 'w' ), sort_keys=True, indent=2 )
     sub_command = []
     sub_command.append( args.rosetta + "/tests/benchmark/util/parallel.py" )
     sub_command.append( "--jobs" )
@@ -51,17 +54,16 @@ def main( input_args ) :
     #     sub_command.append( "-Q" )
     # elif args.quiet :
     #     sub_command.append( "-q" )
-    sub_command.append( "parsing_work.json" )
+    sub_command.append( workfname )
 
     child = subprocess.Popen( sub_command, stdout=subprocess.PIPE )
     streamdata = child.communicate()[0]
     if ( child.returncode != 0 ) :
         print( streamdata )
+    else :
+        os.remove( workfname )
 
-    print( child.returncode )
     sys.exit( child.returncode )
-
-
 
 if __name__ == "__main__" :
     main( sys.argv )
