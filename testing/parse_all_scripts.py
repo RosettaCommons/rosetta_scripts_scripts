@@ -44,4 +44,4 @@ if __name__ == "__main__" :
     else :
         for fname in tm.files_that_failed :
             print( "File '" + fname + "' could either not be validated against the XSD or could not be parsed" )
-            sys.exit(1)
+        sys.exit(1)
