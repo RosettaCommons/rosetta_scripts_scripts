@@ -12,5 +12,14 @@
 # This script defines a large list that will be imported by other scripts
 
 scripts_not_tested = [
-   "scripts/pilot/example/an_example_for_testing_purposes/example_invalid.xml",
+    "scripts/pilot/example/an_example_for_testing_purposes/example_invalid.xml",
+    "scripts/public/sewing/append/GTPase_inhibitors/HR1A_RhoA_LOV_cage/HR1A_RhoA_LOV_cage.xml",
+    "scripts/public/sewing/append/GTPase_inhibitors/HR1B_Rac1_LOV_cage/HR1B_Rac1_LOV_cage.xml",
+    "scripts/public/sewing/append/GTPase_inhibitors/Kalirin_zLock_2/Kalirin_zLock_2.xml",
+    "scripts/public/sewing/refinement/HEM_refinement.xml",
+    "scripts/public/sewing/legacy_sewing/ca_assembly.xml",
+    "scripts/public/sewing/append/HEM_append.xml",
+    "scripts/public/sewing/append/zn_append_script.xml",
+    "scripts/public/sewing/ligand_contacts/zn_tetra_script.xml",
+    "scripts/public/sewing/ligand_contacts/zn_sewing_script.xml",
 ]

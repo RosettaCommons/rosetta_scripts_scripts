@@ -6,5 +6,6 @@
 
 scripts_to_be_validated = [
     "scripts/pilot/example/an_example_for_testing_purposes/example_valid.xml",
-    "scripts/public/sewing/refinement/zn_refinement.xml"
+    "scripts/public/sewing/refinement/zn_refinement.xml",
+
 ]
