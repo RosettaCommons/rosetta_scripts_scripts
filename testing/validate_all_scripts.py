@@ -109,7 +109,7 @@ def main( input_args ) :
 
     from scripts_to_validate import scripts_to_be_validated
 
-    work = { fname : test_script_file_commands( rosetta_executable, fname ) for fname in scripts_to_be_validated }
+    work = { fname.replace( "/", "." ) : test_script_file_commands( rosetta_executable, fname ) for fname in scripts_to_be_validated }
 
     json.dump( work, file( "validation_work.json", 'w' ), sort_keys=True, indent=2 )
     sub_command = []
