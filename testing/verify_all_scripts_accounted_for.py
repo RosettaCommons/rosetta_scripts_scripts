@@ -77,9 +77,9 @@ def main(command_line_args):
     args = parser.parse_args()
 
     all_listed_scripts = set( scripts_to_validate.scripts_to_be_validated + scripts_to_parse.scripts_to_be_parsed + untested_scripts.scripts_not_tested )
-    all_found_files = { os.path.join( x[0], y ) for x in os.walk( "scripts" ) for y in x[2] if y.endswith('.xml') }
+    all_found_files = { os.path.join( x[0], y )[len('./../'):] for x in os.walk('./../scripts/') for y in x[2] if y.endswith('.xml') }
 
-    #for x in all_found_files :
+    # for x in all_found_files :
     #    print( "Found: " + x )
 
     scripts_not_found = []
@@ -94,7 +94,7 @@ def main(command_line_args):
     for script in all_found_files :
         if script not in all_listed_scripts :
             all_good = False
-            blame_lines = execute('Running Git blame to get author information', 'git blame', return_='output').split('\n')
+            blame_lines = execute('Running Git blame to get author information', 'git blame '+script, return_='output').split('\n')
 
             last_line = blame_lines[-2]
 
