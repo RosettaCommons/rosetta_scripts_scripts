@@ -71,10 +71,8 @@ def main( input_args ):
 
     parser = ArgumentParser( description=main.__doc__ )
 
-    parser.add_argument( "-j", "--jobs", default=1, type=int,
-        help="Number of processors to use when running tests" )
-    parser.add_argument( "-r", "--rosetta", required=True,
-        help="Required argument: path to Rosetta/main" )
+    parser.add_argument( "-j", "--jobs", default=1, type=int, help="Number of processors to use when running tests" )
+    parser.add_argument( "-r", "--rosetta", default=None, help="Path to Rosetta/main, default is ./../../" )
     parser.add_argument( "--output-file", default="validation_results.json" )
     parser.add_argument( "--working-dir", default=".", help="directory to which temporary results are written" )
     parser.add_argument( "-q", "--quiet", help="supress output messages", action='store_true' )
@@ -82,14 +80,20 @@ def main( input_args ):
     parser.add_argument( "--keep-intermediate-files", default=False, help="delete intermediate test files", action='store_true' )
     add_rosetta_executable_arguments( parser )
 
-    args = parser.parse_args( input_args[1:] )
-    rosetta_executable = rosetta_executable_abspath( args.rosetta, "validate_rosetta_script", args )
+    args = parser.parse_args()
+
+    rosetta = opsys.path.abspath('./../..') if args.rosetta is None else args.rosetta
+    parallel_source = rosetta + '/tests/benchmark/util/parallel.py'
+    if not opsys.path.isfile(parallel_source): print('Could not guess Rosetta/main location (was trying {}), exiting...'.format(rosetta) ); sys.exit(1)
+    if args.rosetta is None: print( 'Found Rosetta/main at {}, going to use it...'.format(rosetta) )
+
+    rosetta_executable = rosetta_executable_abspath(rosetta, "validate_rosetta_script", args )
 
     scripts_to_validate = imp.load_source('scripts_to_validate', './../scripts_to_validate.py')
 
     work = { fname.replace( "/", "." ) : test_script_file_commands( rosetta_executable, fname ) for fname in scripts_to_validate.scripts_to_be_validated }
 
-    parallel = imp.load_source('parallel', args.rosetta + '/tests/benchmark/util/parallel.py')
+    parallel = imp.load_source('parallel', parallel_source)
     runner = parallel.Runner( args.jobs, args.quiet, args.silent )
     parallel_results = runner.run_commands_lines( 'validation', commands_lines = work, working_dir = args.working_dir, delete_intermediate_files = not args.keep_intermediate_files )
 

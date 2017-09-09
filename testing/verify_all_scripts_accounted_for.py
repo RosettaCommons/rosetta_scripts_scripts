@@ -19,6 +19,8 @@
 # 1. all scripts listed in the three files above are found in the source directory, and
 # 2. all the xml files that are found have been listed in at least one of the above scripts
 
+from __future__ import print_function
+
 import os, sys, imp, json, subprocess
 
 from argparse import ArgumentParser
@@ -105,11 +107,14 @@ def main(command_line_args):
 
     results = {
         'state' : 'passed' if all_good else 'failed',
-        'log'   : 'scripts_not_found:\n{not_found}\n\nscripts_not_listed:\n{not_listed}\n'.format(not_found = '\n'.join(scripts_not_found), not_listed='\n'.join(scripts_not_listed)),
+        'log'   : 'scripts_not_found:\n{not_found}\nscripts_not_listed:\n{not_listed}'.format(not_found = '\n'.join(scripts_not_found), not_listed='\n'.join(scripts_not_listed)),
         'tests' : {},
     }
 
     with open( args.output_file, 'w' ) as f: json.dump(results, f, sort_keys=True, indent=2)
+
+    print(results['log'])
+    print('Result:', results['state'])
 
 
 if __name__ == "__main__" :
