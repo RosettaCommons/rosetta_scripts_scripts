@@ -21,5 +21,5 @@ scripts_not_tested = [
     "scripts/public/sewing/append/HEM_append.xml",
     "scripts/public/sewing/append/zn_append_script.xml",
     "scripts/public/sewing/ligand_contacts/zn_tetra_script.xml",
-#    "scripts/public/sewing/ligand_contacts/zn_sewing_script.xml",
+    "scripts/public/sewing/ligand_contacts/zn_sewing_script.xml",
 ]
