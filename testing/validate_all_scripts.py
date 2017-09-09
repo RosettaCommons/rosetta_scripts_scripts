@@ -61,7 +61,7 @@ def rosetta_executable_abspath( path_to_rosetta_main, executable_name, args ) :
 
     return rosetta_executable
 
-def main( input_args ) :
+def main( input_args ):
     '''
     Test all of the XML files listed in the python file "rosetta_scripts_scripts/scripts_to_validate.py"
     for whether they are valid according to Rosetta's internally-generated XML Schema Definition (XSD).
@@ -75,23 +75,39 @@ def main( input_args ) :
         help="Number of processors to use when running tests" )
     parser.add_argument( "-r", "--rosetta", required=True,
         help="Required argument: path to Rosetta/main" )
-    parser.add_argument( "--output_file", default="validation_results.json" )
-    parser.add_argument( "--working_dir", default=".", help="directory to which temporary results are written" )
+    parser.add_argument( "--output-file", default="validation_results.json" )
+    parser.add_argument( "--working-dir", default=".", help="directory to which temporary results are written" )
     parser.add_argument( "-q", "--quiet", help="supress output messages", action='store_true' )
     parser.add_argument( "-Q", "--silent", help="supress all output", action='store_true' )
+    parser.add_argument( "--keep-intermediate-files", default=False, help="delete intermediate test files", action='store_true' )
     add_rosetta_executable_arguments( parser )
 
     args = parser.parse_args( input_args[1:] )
     rosetta_executable = rosetta_executable_abspath( args.rosetta, "validate_rosetta_script", args )
 
-    from scripts_to_validate import scripts_to_be_validated
+    scripts_to_validate = imp.load_source('scripts_to_validate', './../scripts_to_validate.py')
 
-    work = { fname.replace( "/", "." ) : test_script_file_commands( rosetta_executable, fname ) for fname in scripts_to_be_validated }
+    work = { fname.replace( "/", "." ) : test_script_file_commands( rosetta_executable, fname ) for fname in scripts_to_validate.scripts_to_be_validated }
 
     parallel = imp.load_source('parallel', args.rosetta + '/tests/benchmark/util/parallel.py')
     runner = parallel.Runner( args.jobs, args.quiet, args.silent )
-    results = runner.run_commands_lines( 'validation', commands_lines = work, working_dir = args.working_dir, delete_intermediate_files = True )
-    json.dump( results, open( args.output_file, 'w' ), sort_keys = True, indent = 2 )
+    parallel_results = runner.run_commands_lines( 'validation', commands_lines = work, working_dir = args.working_dir, delete_intermediate_files = not args.keep_intermediate_files )
+
+    results = {}
+    state = 'passed'
+    for test in parallel_results:
+        key = test[:-len('.xml')] if test.endswith('.xml') else test
+        key = key[len('scripts.'):]
+
+        results[key] = dict( state = 'failed' if parallel_results[test]['result'] else 'passed',
+                             log = parallel_results[test]['output'],
+        )
+
+        if parallel_results[test]['result']: state = 'failed'
+
+    results = dict(tests=results, state=state, log='')
+
+    with open( args.output_file, 'w' ) as f: json.dump(results, f, sort_keys = True, indent = 2 )
 
 
 if __name__ == "__main__" :

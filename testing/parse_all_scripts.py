@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# :noTabs=true:
-
-# (c) Copyright Rosetta Commons Member Institutions.
-# (c) This file is part of the Rosetta software suite and is made available under license.
-# (c) The Rosetta software is developed by the contributing members of the Rosetta Commons.
-# (c) For more information, see http://www.rosettacommons.org. Questions about this can be
-# (c) addressed to University of Washington CoMotion, email: license@uw.edu.
-
-
 from __future__ import print_function
 
 from argparse import ArgumentParser
@@ -31,7 +20,7 @@ def main( input_args ) :
 
     parser.add_argument( "-j", "--jobs", default=1, type=int,
         help="Number of processors to use when running tests" )
-    parser.add_argument( "-r", "--rosetta", default=None, help="Required argument: path to Rosetta/main" )
+    parser.add_argument( "-r", "--rosetta", default=None, help="Path to Rosetta/main, default is ./../../" )
     parser.add_argument( "--output-file", default="parsing_results.json" )
     parser.add_argument( "--working-dir", default=".", help="directory to which temporary results are written" )
     parser.add_argument( "-q", "--quiet", help="supress output messages", action='store_true' )
@@ -39,7 +28,7 @@ def main( input_args ) :
     parser.add_argument( "--keep-intermediate-files", default=False, help="delete intermediate test files", action='store_true' )
     vas.add_rosetta_executable_arguments( parser )
 
-    args = parser.parse_args( input_args[1:] )
+    args = parser.parse_args()
 
     rosetta = opsys.path.abspath('./../..') if args.rosetta is None else args.rosetta
 
@@ -62,7 +51,6 @@ def main( input_args ) :
     runner = parallel.Runner( args.jobs, args.quiet, args.silent)
     parallel_results = runner.run_commands_lines( 'parsing', commands_lines = work, working_dir = args.working_dir, delete_intermediate_files = not args.keep_intermediate_files)
 
-
     results = {}
     state = 'passed'
     for test in parallel_results:
@@ -75,7 +63,7 @@ def main( input_args ) :
 
         if parallel_results[test]['result']: state = 'failed'
 
-    results = dict(tests=results, state=state)
+    results = dict(tests=results, state=state, log='')
 
     with open( args.output_file, 'w' ) as f: json.dump(results, f, sort_keys = True, indent = 2 )
 

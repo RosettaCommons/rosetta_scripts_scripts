@@ -19,44 +19,98 @@
 # 1. all scripts listed in the three files above are found in the source directory, and
 # 2. all the xml files that are found have been listed in at least one of the above scripts
 
-import os, sys, subprocess
+import os, sys, imp, json, subprocess
 
-from untested_scripts import *
-from scripts_to_validate import *
-from scripts_to_parse import *
+from argparse import ArgumentParser
 
-import json
+import validate_all_scripts
+scripts_to_parse    = imp.load_source('scripts_to_parse',    './../scripts_to_parse.py')
+scripts_to_validate = imp.load_source('scripts_to_validate', './../scripts_to_validate.py')
+untested_scripts    = imp.load_source('untested_scripts',    './../untested_scripts.py')
 
-all_listed_scripts = set( scripts_to_be_validated + scripts_to_be_parsed + scripts_not_tested )
-all_found_files = set( filter( lambda x : len(x) >= 4 and x[-4:] == ".xml", [ os.path.join( x[0], y ) for x in os.walk( "scripts" ) for y in x[2] ] ))
 
-#for x in all_found_files :
-#    print( "Found: " + x )
+def execute(message, command_line, return_='status', until_successes=False, terminate_on_failure=True, silent=False, silence_output=False):
+    if not silent: print(message);  print(command_line); sys.stdout.flush();
+    while True:
 
-scripts_not_found = []
-scripts_not_listed = {}
+        p = subprocess.Popen(command_line, bufsize=0, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, errors = p.communicate()
 
-all_good = True
-for script in all_listed_scripts :
-    if script not in all_found_files :
-        all_good = False
-        scripts_not_found.append( script )
+        output = output + errors
 
-for script in all_found_files :
-    if script not in all_listed_scripts :
-        all_good = False
-        blame_command = ( "git blame " + script ).split()
-        child = subprocess.Popen( blame_command, stdout=subprocess.PIPE )
-        blame_out, blame_err = child.communicate()
-        blame_lines = blame_out.split("\n")
-        last_line = blame_lines[-2]
+        output = output.decode(encoding="utf-8", errors="replace")
 
-        author = last_line[ (last_line.find("(")+1) : last_line.find( ")") ].split("20")[0] # Y3K Bug here!
-        #print( last_line )
-        #print( author )
-        scripts_not_listed[ script ] = author
+        exit_code = p.returncode
 
-json.dump(
-    { "success" : all_good, "scripts_not_found" : scripts_not_found, "scripts_not_listed" : scripts_not_listed },
-    open( "verify_all_scripts_accounted_for_result.json", 'w' ),
-    sort_keys = True )
+        if exit_code  or  not (silent or silence_output): print(output); sys.stdout.flush();
+
+        if exit_code and until_successes: pass  # Thats right - redability COUNT!
+        else: break
+
+        print( "Error while executing {}: {}\n".format(message, output) )
+        print("Sleeping 60s... then I will retry...")
+        sys.stdout.flush();
+        time.sleep(60)
+
+    if return_ == 'tuple': return(exit_code, output)
+
+    if exit_code and terminate_on_failure:
+        print("\nEncounter error while executing: " + command_line)
+        if return_==True: return True
+        else: print("\nEncounter error while executing: " + command_line + '\n' + output); sys.exit(1)
+
+    if return_ == 'output': return output
+    else: return False
+
+
+
+def main(command_line_args):
+
+    parser = ArgumentParser( description=main.__doc__ )
+
+    parser.add_argument( "-r", "--rosetta", default=None, help="Path to Rosetta/main, default is ./../../" )
+    parser.add_argument( "--output-file", default="verify_all_scripts_accounted_for_result.json" )
+    parser.add_argument( "--working-dir", default=".", help="directory to which temporary results are written" )  # we do not use this option here but we need it so this script have the same minimal set of options as other scripts
+    parser.add_argument( "--keep-intermediate-files", default=False, help="delete intermediate test files", action='store_true' ) # we do not use this option here but we need it so this script have the same minimal set of options as other scripts
+    validate_all_scripts.add_rosetta_executable_arguments(parser)
+
+    args = parser.parse_args()
+
+    all_listed_scripts = set( scripts_to_validate.scripts_to_be_validated + scripts_to_parse.scripts_to_be_parsed + untested_scripts.scripts_not_tested )
+    all_found_files = { os.path.join( x[0], y ) for x in os.walk( "scripts" ) for y in x[2] if y.endswith('.xml') }
+
+    #for x in all_found_files :
+    #    print( "Found: " + x )
+
+    scripts_not_found = []
+    scripts_not_listed = {}
+
+    all_good = True
+    for script in all_listed_scripts :
+        if script not in all_found_files :
+            all_good = False
+            scripts_not_found.append( script )
+
+    for script in all_found_files :
+        if script not in all_listed_scripts :
+            all_good = False
+            blame_lines = execute('Running Git blame to get author information', 'git blame', return_='output').split('\n')
+
+            last_line = blame_lines[-2]
+
+            author = last_line[ (last_line.find("(")+1) : last_line.find( ")") ].split("20")[0] # Y3K Bug here!
+            #print( last_line )
+            #print( author )
+            scripts_not_listed[ script ] = author
+
+    results = {
+        'state' : 'passed' if all_good else 'failed',
+        'log'   : 'scripts_not_found:\n{not_found}\n\nscripts_not_listed:\n{not_listed}\n'.format(not_found = '\n'.join(scripts_not_found), not_listed='\n'.join(scripts_not_listed)),
+        'tests' : {},
+    }
+
+    with open( args.output_file, 'w' ) as f: json.dump(results, f, sort_keys=True, indent=2)
+
+
+if __name__ == "__main__" :
+    main( sys.argv )
