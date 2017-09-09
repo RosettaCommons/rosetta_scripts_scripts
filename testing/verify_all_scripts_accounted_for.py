@@ -108,7 +108,7 @@ def main(command_line_args):
             scripts_not_listed[ script ] = author
 
             log = tests.get(script, dict(log='') )['log']
-            tests[script] = dict(state = 'failed', log = log + 'Script file was found on disk but it is not listed!\Author: {}\nGit blame output: {}\n'.format(author, last_line))
+            tests[script] = dict(state = 'failed', log = log + 'Script file was found on disk but it is not listed!\nAuthor: {}\nGit blame output: {}\n'.format(author, last_line))
 
 
     results = {
