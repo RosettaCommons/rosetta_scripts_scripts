@@ -1,5 +1,5 @@
 # List all .xml files in all subdirectories of the scripts/ directory that should not
-# be tested either in the validation- or parse-my-tag tests here. 
+# be tested either in the validation- or parse-my-tag tests here.
 # There are three classes of XML files that belong in this list.
 # 1. Files that should just not be tested because they are out of date with the XSD
 # and cannot readily be made up to date using the rewriter (perhaps one of the
@@ -21,5 +21,5 @@ scripts_not_tested = [
     "scripts/public/sewing/append/HEM_append.xml",
     "scripts/public/sewing/append/zn_append_script.xml",
     "scripts/public/sewing/ligand_contacts/zn_tetra_script.xml",
-    "scripts/public/sewing/ligand_contacts/zn_sewing_script.xml",
+#    "scripts/public/sewing/ligand_contacts/zn_sewing_script.xml",
 ]

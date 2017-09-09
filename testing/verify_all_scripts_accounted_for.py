@@ -86,17 +86,19 @@ def main(command_line_args):
 
     scripts_not_found = []
     scripts_not_listed = {}
+    tests = {}
 
     all_good = True
     for script in all_listed_scripts :
         if script not in all_found_files :
             all_good = False
             scripts_not_found.append( script )
+            tests[script] = dict(state='failed', log='Script was not found!\n')
 
     for script in all_found_files :
         if script not in all_listed_scripts :
             all_good = False
-            blame_lines = execute('Running Git blame to get author information', 'git blame '+script, return_='output').split('\n')
+            blame_lines = execute('Running Git blame to get author information', 'git blame ./../{}'.format(script), return_='output').split('\n')
 
             last_line = blame_lines[-2]
 
@@ -105,16 +107,21 @@ def main(command_line_args):
             #print( author )
             scripts_not_listed[ script ] = author
 
+            log = tests.get(script, dict(log='') )['log']
+            tests[script] = dict(state = 'failed', log = log + 'Script file was found on disk but it is not listed!\Author: {}\nGit blame output: {}\n'.format(author, last_line))
+
+
     results = {
         'state' : 'passed' if all_good else 'failed',
         'log'   : 'scripts_not_found:\n{not_found}\nscripts_not_listed:\n{not_listed}'.format(not_found = '\n'.join(scripts_not_found), not_listed='\n'.join(scripts_not_listed)),
-        'tests' : {},
+        'tests' : tests,
     }
 
     with open( args.output_file, 'w' ) as f: json.dump(results, f, sort_keys=True, indent=2)
 
-    print(results['log'])
-    print('Result:', results['state'])
+    if sys.stdout.isatty():
+        print(results['log'])
+        print('Result:', results['state'])
 
 
 if __name__ == "__main__" :
