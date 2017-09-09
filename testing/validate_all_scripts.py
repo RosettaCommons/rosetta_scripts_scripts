@@ -1,11 +1,11 @@
 from __future__ import print_function
 
 from argparse import ArgumentParser
-from fork_manager import *
 import os as opsys
 import subprocess
 import json
 import imp
+import sys
 
 
 def test_script_file_commands( rosetta_executable, filename ) :
