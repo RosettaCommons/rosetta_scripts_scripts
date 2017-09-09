@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# :noTabs=true:
+
+# (c) Copyright Rosetta Commons Member Institutions.
+# (c) This file is part of the Rosetta software suite and is made available under license.
+# (c) The Rosetta software is developed by the contributing members of the Rosetta Commons.
+# (c) For more information, see http://www.rosettacommons.org. Questions about this can be
+# (c) addressed to University of Washington CoMotion, email: license@uw.edu.
+
+
 # This script, when run in the rosetta_scripts_scripts/ base directory, will recursively search
 # through the scripts/ directory for all .xml files that it can find and then compare these against
 # the lists of xmls in the three files in the base directory:
@@ -39,18 +50,13 @@ for script in all_found_files :
         blame_out, blame_err = child.communicate()
         blame_lines = blame_out.split("\n")
         last_line = blame_lines[-2]
-        
+
         author = last_line[ (last_line.find("(")+1) : last_line.find( ")") ].split("20")[0] # Y3K Bug here!
         #print( last_line )
         #print( author )
         scripts_not_listed[ script ] = author
-        
+
 json.dump(
     { "success" : all_good, "scripts_not_found" : scripts_not_found, "scripts_not_listed" : scripts_not_listed },
     open( "verify_all_scripts_accounted_for_result.json", 'w' ),
     sort_keys = True )
-
-
-
-
-

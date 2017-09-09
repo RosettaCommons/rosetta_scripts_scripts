@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# :noTabs=true:
+
+# (c) Copyright Rosetta Commons Member Institutions.
+# (c) This file is part of the Rosetta software suite and is made available under license.
+# (c) The Rosetta software is developed by the contributing members of the Rosetta Commons.
+# (c) For more information, see http://www.rosettacommons.org. Questions about this can be
+# (c) addressed to University of Washington CoMotion, email: license@uw.edu.
+
 from __future__ import print_function
 
 from argparse import ArgumentParser
@@ -13,7 +23,7 @@ def test_script_file_commands( rosetta_executable, filename ) :
     parts = filename.rpartition( "/" )
     dirname = parts[0]
     commands = []
-    commands.append( "cd %s; " % dirname )
+    commands.append( "cd ./../%s && " % dirname )
 
     flags_fname = parts[0] + "/" + parts[2][:-4] + ".flags"
     flags_exist = opsys.path.isfile( flags_fname )
@@ -36,7 +46,7 @@ def add_rosetta_executable_arguments( parser ) :
         help="Use the debug version instead of the release version?" )
 
 def rosetta_executable_abspath( path_to_rosetta_main, executable_name, args ) :
-    rosetta_executable = path_to_rosetta_main + "source/bin/" + \
+    rosetta_executable = path_to_rosetta_main + "/source/bin/" + \
         executable_name + "." + \
         args.extras + "." + \
         args.os + args.compiler + ( "debug" if args.debug else "release" )
