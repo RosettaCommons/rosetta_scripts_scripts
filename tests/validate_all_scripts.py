@@ -25,13 +25,15 @@ def test_script_file_commands( rosetta_executable, filename ) :
     commands = []
     commands.append( "cd ./../%s && " % dirname )
 
-    flags_fname = parts[0] + "/" + parts[2][:-4] + ".flags"
+    flags_fname = "../" + parts[0] + "/" + parts[2][:-4] + ".flags"
+    #print( "possible flags name? ", flags_fname, opsys.path.isfile( flags_fname ) )
     flags_exist = opsys.path.isfile( flags_fname )
 
     rosetta_command = rosetta_executable + " -parser:protocol " + parts[2]
-    if flags_exist : rosetta_command = rosetta_command + " @ " + flags_fname
+    if flags_exist : rosetta_command = rosetta_command + " @ " + parts[2][:-4] + ".flags"
 
     commands.append( rosetta_command )
+    #print( "--".join( commands ) )
     return "".join( commands )
 
 
