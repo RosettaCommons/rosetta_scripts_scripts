@@ -1,5 +1,5 @@
 # List all .xml files in all subdirectories of the scripts/ directory that should not
-# be tested either in the validation- or parse-my-tag tests here. 
+# be tested either in the validation- or parse-my-tag tests here.
 # There are three classes of XML files that belong in this list.
 # 1. Files that should just not be tested because they are out of date with the XSD
 # and cannot readily be made up to date using the rewriter (perhaps one of the
