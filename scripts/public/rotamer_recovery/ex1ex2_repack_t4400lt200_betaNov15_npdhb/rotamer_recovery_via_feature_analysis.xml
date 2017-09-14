@@ -1,0 +1,51 @@
+<ROSETTASCRIPTS>
+
+This script runs the pack-rotamers mover on all residues using the multi-cool annealer
+and extra-chi samples at chi1 and chi2 using a variation of the beta15 (now ref15) score
+function that replaced the standard pairwise-decomposable energy method with a new
+non-pairwise-decomposable formulation. It then writes the conformations of the repacked
+structures out to a relational database for subsequent analysis with the R scripts that
+live in the RosettaFeatures repository. (Available with R's
+install.packages("RosettaFeatures") command).
+
+Keywords: features, hydrogen bonding, rotamer recovery
+
+
+	<SCOREFXNS>
+		<ScoreFunction name="beta_nov15_npdhbond" weights="beta_nov15_npdhbond.wts"/>
+	</SCOREFXNS>		
+	<TASKOPERATIONS>
+		<ExtraRotamersGeneric name="ex1ex2" ex1="true" ex2="true"/>
+		<RestrictToRepacking name="rtr"/>
+		<EnableMultiCoolAnnealer name="mca"/>
+	</TASKOPERATIONS>
+	<MOVERS>
+		<PackRotamersMover name="repack" scorefxn="beta_nov15_npdhbond" task_operations="rtr,ex1ex2,mca"/>
+		<ReportToDB name="features_reporter" database_name="features_IntegrationTest.db3">
+			<ScoreTypeFeatures/>
+			<StructureScoresFeatures scorefxn="beta_nov15_npdhbond"/>
+			<PoseCommentsFeatures/>
+			<PoseConformationFeatures/>
+			<RadiusOfGyrationFeatures/>
+			feature name=AtomAtomPairFeatures
+			<ResidueTypesFeatures/>
+			<ResidueFeatures/>
+			<ResidueScoresFeatures scorefxn="beta_nov15_npdhbond"/>
+			PairFeatures
+			<PdbDataFeatures/>
+			<ResidueBurialFeatures/>
+			<ResidueSecondaryStructureFeatures/>
+			feature name=ProteinBackboneAtomAtomPairFeatures
+			<ProteinBackboneTorsionAngleFeatures/>
+			<ProteinResidueConformationFeatures/>
+ 			<HBondFeatures scorefxn="beta_nov15_npdhbond"/>
+			<HBondParameterFeatures scorefxn="beta_nov15_npdhbond"/>
+			<SaltBridgeFeatures/>
+		</ReportToDB>
+	</MOVERS>
+	<PROTOCOLS>
+		<Add mover_name="repack"/>
+		<Add mover_name="features_reporter"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>
+
