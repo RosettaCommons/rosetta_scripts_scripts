@@ -1,0 +1,56 @@
+<ROSETTASCRIPTS>
+
+This script extracts information about the residues at the interface between a two-chain structure.
+It uses a pair of residue selectors to select chain 1 and chain 2 and then to find the residues
+at the interface between them. Then it extracts features -- in particular hydrogen bond features
+-- for just the residues at the interface, placing those features into a SQLite database for
+further analysis.
+
+Keywords: feature analysis, hydrogen bonds, protein interfaces
+
+
+
+	<SCOREFXNS>
+		ScoreFunction name="talaris2014" weights="talaris2014.wts" (Already present in datamap)
+	</SCOREFXNS>		
+	<RESIDUE_SELECTORS>
+		<InterfaceByVector name="interface_residues">
+			<Chain chains="1"/>
+			<Chain chains="2"/>
+		</InterfaceByVector>
+		<Not name="not_interface" selector="interface_residues"/>
+	</RESIDUE_SELECTORS>
+	<TASKOPERATIONS>
+		<OperateOnResidueSubset name="redesign_interface" selector="not_interface">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+	</TASKOPERATIONS>
+	<MOVERS>
+		<ReportToDB name="features_reporter" database_name="features_IntegrationTest.db3" task_operations="redesign_interface">
+			<ScoreTypeFeatures/>
+			<StructureScoresFeatures scorefxn="talaris2014"/>
+			<PoseCommentsFeatures/>
+			<PoseConformationFeatures/>
+			<RadiusOfGyrationFeatures/>
+			feature name=AtomAtomPairFeatures
+			<ResidueTypesFeatures/>
+			<ResidueFeatures/>
+			<ResidueScoresFeatures scorefxn="talaris2014"/>
+			PairFeatures -- These take forever!
+			<PdbDataFeatures/>
+			<ResidueBurialFeatures/>
+			<ResidueSecondaryStructureFeatures/>
+			feature name=ProteinBackboneAtomAtomPairFeatures
+			<ProteinBackboneTorsionAngleFeatures/>
+			<ProteinResidueConformationFeatures/>
+ 			<HBondFeatures scorefxn="talaris2014"/>
+			<HBondParameterFeatures scorefxn="talaris2014"/>
+			<SaltBridgeFeatures/>
+			<InterfaceFeatures scorefxn="talaris2014" />
+		</ReportToDB>
+	</MOVERS>
+	<PROTOCOLS>
+		<Add mover_name="features_reporter"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>
+

@@ -1,0 +1,42 @@
+<ROSETTASCRIPTS>
+This script is used for extracting features from a large set of relaxed natives (not provided)
+using a custom score function that differs from beta_nov16 in the use of the non-pairwise-decomposable
+(NPD) hydrogen bond potential. The ReportToDB mover writes the features to a SQLite database for
+further analysis with the R scrpts in the RosettaFeatures library.
+
+Keywords: feature analysis, hydrogen bonds, 
+
+	<SCOREFXNS>
+		<ScoreFunction name="beta_nov16_npdhb" weights="beta_nov16_npdhb.wts"/>
+	</SCOREFXNS>		
+	<TASKOPERATIONS>
+		<RestrictToRepacking name="rtr"/>
+	</TASKOPERATIONS>
+	<MOVERS>
+		<ReportToDB name="features_reporter" database_name="features_IntegrationTest.db3">
+			<ScoreTypeFeatures/>
+			<StructureScoresFeatures scorefxn="beta_nov16_npdhb"/>
+			<PoseCommentsFeatures/>
+			<PoseConformationFeatures/>
+			<RadiusOfGyrationFeatures/>
+			feature name=AtomAtomPairFeatures
+			<ResidueTypesFeatures/>
+			<ResidueFeatures/>
+			<ResidueScoresFeatures scorefxn="beta_nov16_npdhb"/>
+			PairFeatures
+			<PdbDataFeatures/>
+			<ResidueBurialFeatures/>
+			<ResidueSecondaryStructureFeatures/>
+			feature name=ProteinBackboneAtomAtomPairFeatures
+			<ProteinBackboneTorsionAngleFeatures/>
+			<ProteinResidueConformationFeatures/>
+ 			<HBondFeatures scorefxn="beta_nov16_npdhb"/>
+			<HBondParameterFeatures scorefxn="beta_nov16_npdhb"/>
+			<SaltBridgeFeatures/>
+		</ReportToDB>
+	</MOVERS>
+	<PROTOCOLS>
+		<Add mover_name="features_reporter"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>
+
