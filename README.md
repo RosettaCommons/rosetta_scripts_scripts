@@ -1,0 +1,3 @@
+For more information, goto
+
+https://wiki.rosettacommons.org/index.php/ScriptsRepositoriesFAQ#For_XML_scripts_to_be_added_to_the_rosetta_scripts_scripts_repository
