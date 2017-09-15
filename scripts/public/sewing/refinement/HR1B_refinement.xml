@@ -1,0 +1,87 @@
+<ROSETTASCRIPTS>
+A general post-SEWING structural refinement script.
+  <SCOREFXNS>
+    <ScoreFunction name="ref2015_cart" weights="ref2015_cart">
+    </ScoreFunction>
+    <ScoreFunction name="ref2015" weights="ref2015">
+    </ScoreFunction>
+    <ScoreFunction name="ref2015_soft" weights="ref2015_soft">
+      <Reweight scoretype="res_type_constraint" weight="1.0" />
+    </ScoreFunction>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <SecondaryStructure name="loops" overlap="1" include_terminal_loops="false" ss="L" use_dssp="true" />
+    <Layer name="core" select_core="true" use_sidechain_neighbors="true"/>
+    <Layer name="boundary" select_boundary="true" use_sidechain_neighbors="true"/>
+    <Layer name="surface" select_surface="true" use_sidechain_neighbors="true"/>
+    <Not name="not_loops" selector="loops"/>
+    <Chain name="chA" chains="A"/>
+    <Not name="not_A" selector="chA"/>
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+    <InitializeFromCommandline name="init"/>
+    <RestrictAbsentCanonicalAAS name="nocys" keep_aas="ADEFGHIKLMNPQRSTVWY" />
+    <IncludeCurrent name="current" />
+    Begin layer design operations
+    <OperateOnResidueSubset name="surface_to" selector="surface" >
+      <RestrictAbsentCanonicalAASRLT aas="DEGHKNPQRST"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="boundary_to" selector="boundary" >
+      <RestrictAbsentCanonicalAASRLT aas="ADEFGIKLNPQRSTVWY"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="core_to" selector="core" >
+      <RestrictAbsentCanonicalAASRLT aas="AFILPVWY"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="helix_to" selector="not_loops" >
+      <RestrictAbsentCanonicalAASRLT aas="ADEHIKLNQRSTVWY"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="only_A" selector="not_A" >
+    <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="repack_A" selector="chA" >
+    <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+    <ReadResfile name = "rrf" filename = "/nas02/home/f/r/frankdt/scr/GTPase_inhibitors/outputs/refinement_inputs/HR1B_resfile.res"/>
+  </TASKOPERATIONS>
+  <FILTERS>
+    <SecondaryStructureHasResidue name="require_core" confidence="0" /> Defaults will ensure hydrophobic residues in each helix
+    FragmentLookupFilter name="faulty_fragments" lookup_name="source_fragments_4_mer" store_path="/nas02/home/g/u/guffy/netscr/sewing_with_zinc/input_files/backbone_profiler_database_06032014"  lookup_mode="first" chain="1" threshold="0" confidence="1" />
+    <PackStat name="pstat" threshold="0.60" repeats="1" confidence="0" />
+    <SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0" />
+    <CavityVolume name="cavvol" />
+    <BuriedUnsatHbonds name="bunsat" scorefxn="ref2015" confidence="1" />
+  </FILTERS>
+  <MOVERS>
+    <AddConstraints name="constrain_loop_identities" >
+      <ResidueTypeConstraintGenerator name="loop_csts" residue_selector="loops" favor_native_bonus="1.0" />
+    </AddConstraints>
+    <PackRotamersMover name="prepack" scorefxn="ref2015_soft" task_operations="init,nocys,current,rrf,surface_to,boundary_to,core_to,helix_to,only_A" />
+    <MinMover name="cartesian_min" scorefxn="ref2015_cart" chi="false" bb="false" omega="false" jump="0" cartesian="true" bondangle="true" bondlength="true" tolerance="0.001" max_iter="1000" />
+    <AtomCoordinateCstMover name="constrain_to_cart_fixed"/>
+    <FastDesign name="relax" scorefxn="ref2015" disable_design="false" repeats="2" task_operations="init,nocys,current,rrf,surface_to,boundary_to,core_to,helix_to,only_A" min_type="lbfgs_armijo_nonmonotone" ramp_down_constraints="false" >
+        <MoveMap name = "do_not_move_ja">
+            <Span begin = "1" end = "21" chi = "true" bb = "false"/>
+	    <Jump number="1" setting = "false"/>
+	    <Jump number="2" setting = "false"/>
+	    <Jump number="3" setting = "false"/>
+	    <Chain number = "2" chi = "false" bb = "false" />
+        </MoveMap>
+    </FastDesign>	
+	<DeleteRegionMover name="delete_partner_chains" residue_selector="not_A"/>
+  </MOVERS>
+  <APPLY_TO_POSE>
+  </APPLY_TO_POSE>
+  <PROTOCOLS>
+    <Add mover_name="constrain_loop_identities" />
+    <Add mover_name="prepack" /> This is added so that side chain clashes will be resolved before we try to fix chainbreaks
+    <Add mover_name="cartesian_min" /> This is ONLY being used to fix bad bond lengths/angles at chimerization points (no torsion angle minimization before design)
+    <Add mover_name="relax" /> FastDesign gives better tracer output for design
+    Add mover_name="delete_partner_chains"/>
+    <Add filter_name="bunsat" />
+    <Add filter_name="require_core" />
+    <Add filter_name="pstat" />
+    <Add filter_name="cavvol" />
+    <Add filter_name="sspred" />
+  </PROTOCOLS>
+  <OUTPUT scorefxn="ref2015" />
+</ROSETTASCRIPTS>
