@@ -7,5 +7,6 @@
 scripts_to_be_parsed = [
     "scripts/pilot/example/an_example_for_testing_purposes/example_valid.xml",
     "scripts/public/protein_interface_design/single_sided_dock_design_minimize_interface_protodocol/ddmi.xml",
+    "scripts/public/enzymedesign/enzdes_bookchapter_example.xml",
 ]
 
