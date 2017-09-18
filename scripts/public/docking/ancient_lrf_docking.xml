@@ -1,0 +1,39 @@
+<ROSETTASCRIPTS>
+Keywords: docking, publication, analysis
+Author: Steven Lewis
+Email: smlewi@gmail.com
+
+This is a child of the local refine only docking step used after the multistate design protocol in Lewis SM et al, Generation of bispecific IgG antibodies by structure-based design of an
+orthogonal Fab interface. Nat Biotechnol. 2014 Feb;32(2):191-8. doi: 10.1038/nbt.2797. Epub 2014 Jan 26.
+
+You should not use this script as written (in particular the scorefunctions are ancient) but it is useful for thinking about doing local-refine-only docking with analysis.
+
+  <SCOREFXNS>
+    <ScoreFunction name="s12_prime" weights="score12prime"/>
+  </SCOREFXNS>
+  <TASKOPERATIONS>
+    <RestrictToInterfaceVector name="vectorTask" chain1_num="1" chain2_num="2" CB_dist_cutoff="10.0" nearby_atom_cutoff="5.5" vector_angle_cutoff="65.0" vector_dist_cutoff="8.0"/>
+    <RestrictChainToRepacking name="repack1" chain="1"/>
+    <RestrictChainToRepacking name="repack2" chain="2"/>
+    <RestrictToRepacking name="repackonly"/>
+    <InitializeFromCommandline name="cmdTask"/>
+    <IncludeCurrent name="currentTask"/>
+  </TASKOPERATIONS>
+  <FILTERS>
+    <Rmsd name="rms" threshold="50.0" confidence="1"/>
+  </FILTERS>
+  <MOVERS>
+    <Prepack name="prepack" scorefxn="s12_prime" jump_number="1" min_bb="0" task_operations="vectorTask,repackonly,cmdTask,currentTask"/>
+    <DockingProtocol name="dockprotocol" docking_local_refine="1" docking_score_high="s12_prime" ignore_default_docking_task="1" task_operations="vectorTask,repack1,repack2,cmdTask,currentTask"/>
+    <TaskAwareMinMover name="minmover" scorefxn="s12_prime" chi="1" bb="1" jump="1" task_operations="vectorTask,cmdTask,currentTask"/>
+    <InterfaceAnalyzerMover name="fullanalyze" scorefxn="score12" packstat="1" pack_input="0" jump="1" tracer="0" use_jobname="1" resfile="0" />
+  </MOVERS>
+  <APPLY_TO_POSE>
+  </APPLY_TO_POSE>
+  <PROTOCOLS>
+    <Add mover_name="prepack"/>
+    <Add mover_name="dockprotocol" filter_name="rms"/>
+    <Add mover_name="minmover" filter_name="rms"/>
+    <Add mover_name="fullanalyze"/>
+  </PROTOCOLS>
+</ROSETTASCRIPTS>

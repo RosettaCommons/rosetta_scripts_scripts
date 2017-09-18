@@ -1,0 +1,61 @@
+<ROSETTASCRIPTS>
+	Keywords: docking, analysis
+	Author: Steven Lewis provided; someone else wrote it
+	Email: smlewi@gmail.com
+
+	This is a child of the local refine only docking step used after the multistate design protocol in Lewis SM et al, Generation of bispecific IgG antibodies by structure-based design of an
+	orthogonal Fab interface. Nat Biotechnol. 2014 Feb;32(2):191-8. doi: 10.1038/nbt.2797. Epub 2014 Jan 26.
+
+	This version was used at an interface between two dimers, if I am picking apart what the chain and jump selections are using.  The code will prepack interfaces, set up constraints based on the interface, print what the interface was, perform local-refine-only docking while constrained, and then analyze the interface unconstrained.
+
+	Notice the hardcoded, custom, slightly old scorefunctions.
+
+	<SCOREFXNS>
+		<ScoreFunction name="talaris14" weights="talaris2014_cst"/>
+		<ScoreFunction name="talaris14_halfatr" weights="talaris2014">
+			<Reweight scoretype="fa_atr" weight="0.5"/>
+		</ScoreFunction>
+	</SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <Chain name="chA" chains="A"/>
+    <Chain name="REDACT" chains="B,C"/>
+    <InterfaceByVector name="iface_sel" grp1_selector="chA" grp2_selector="REDACT"/>
+
+  </RESIDUE_SELECTORS>
+	<TASKOPERATIONS>
+		<RestrictToInterfaceVector name="vectorTask" chain1_num="1,2" chain2_num="3,4" CB_dist_cutoff="10.0" nearby_atom_cutoff="5.5" vector_angle_cutoff="65.0" vector_dist_cutoff="8.0"/>
+		<RestrictToRepacking name="repackonly"/>
+		<InitializeFromCommandline name="cmdTask"/>
+		<IncludeCurrent name="currentTask"/>
+		<OperateOnResidueSubset name="iface_sel_TO" selector="iface_sel">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+	</TASKOPERATIONS>
+	<FILTERS>
+		<Rmsd name="rms" threshold="15.0" confidence="1"/>
+	</FILTERS>
+	<MOVERS>
+		<Prepack name="prepack2" scorefxn="talaris14" jump_number="2" min_bb="0" task_operations="vectorTask,repackonly,cmdTask,currentTask"/>
+		<Prepack name="prepack3" scorefxn="talaris14" jump_number="3" min_bb="0" task_operations="vectorTask,repackonly,cmdTask,currentTask"/>
+		<DockingProtocol name="dockprotocol" docking_local_refine="1" docking_score_high="talaris14" partners="TR_AB" ignore_default_docking_task="1" task_operations="vectorTask,repackonly,cmdTask,currentTask"/>
+		<TaskAwareMinMover name="minmover" scorefxn="talaris14" chi="1" bb="1" jump="1" task_operations="vectorTask,cmdTask,currentTask"/>
+		<InterfaceAnalyzerMover name="fullanalyze" scorefxn="talaris14_halfatr" packstat="0" pack_input="0" pack_separated="true" interface_sc="false" fixedchains="AB" tracer="0" resfile="0" />
+		<AddConstraintsToCurrentConformationMover name="constrainer" use_distance_cst="true" bound_width="5.0" coord_dev="3.0" residue_selector="iface_sel" />
+		<ClearConstraintsMover name="cst_remover" />
+		<StoreCompoundTaskMover name="print_pymol" mode="packable" invert="true" verbose="true" >
+			<OR task_operations="iface_sel_TO"/>
+		</StoreCompoundTaskMover>
+	</MOVERS>
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+	<PROTOCOLS>
+		<Add mover_name="prepack2"/>
+		<Add mover_name="prepack3"/>
+		<Add mover_name="constrainer"/>
+		<Add mover_name="print_pymol"/>
+		<Add mover_name="dockprotocol" filter_name="rms"/>
+		<Add mover_name="minmover" filter_name="rms"/>
+		<Add mover_name="cst_remover"/>
+		<Add mover_name="fullanalyze"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

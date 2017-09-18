@@ -1,0 +1,25 @@
+<ROSETTASCRIPTS>
+	Keywords: input creation
+	Author: Steven Lewis
+	Email: smlewi@gmail.com
+
+	This will extend a helix by 10 residues. (This kind of thing is useful for setting up inputs to other Rosetta modeling).
+
+	<SCOREFXNS>
+	</SCOREFXNS>
+	<RESIDUE_SELECTORS>
+	</RESIDUE_SELECTORS>
+	<TASKOPERATIONS>
+	</TASKOPERATIONS>
+	<FILTERS>
+	</FILTERS>
+	<MOVERS>
+		<ExtendChain name="extender1" motif="10HA" chain="1"/>
+	</MOVERS>
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+	<PROTOCOLS>
+		<Add mover="extender1"/>
+	</PROTOCOLS>
+	<OUTPUT />
+</ROSETTASCRIPTS>
