@@ -1,0 +1,28 @@
+<ROSETTASCRIPTS>
+	Keywords: analysis, interface analysis, docking
+	Author: Steven Lewis
+	Email: smlewi@gmail.com
+
+	This will delete a chain (D) from a Pose and then run InterfaceAnalyzer on the remainderof the protein (analyzing chain A against the remainder).  Useful for considering binding of an antibody (asymmetric dimer) to a symmetric homodimer, where you are interested in interactions with only one epitope chain at a time.
+
+	<SCOREFXNS>
+	</SCOREFXNS>
+	<RESIDUE_SELECTORS>
+		<Chain name="chainD" chains="D"/>
+	</RESIDUE_SELECTORS>
+	<TASKOPERATIONS>
+	</TASKOPERATIONS>
+	<FILTERS>
+	</FILTERS>
+	<MOVERS>
+		<DeleteRegionMover name="deleteD" residue_selector="chainD" rechain="false"/>
+		<InterfaceAnalyzerMover name="IA" packstat="false" interface_sc="false" pack_input="false" pack_separated="true" ligandchain="A"/>
+	</MOVERS>
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+	<PROTOCOLS>
+		<Add mover="deleteD"/>
+		<Add mover="IA"/>
+	</PROTOCOLS>
+	<OUTPUT />
+</ROSETTASCRIPTS>

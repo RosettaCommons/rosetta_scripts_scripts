@@ -1,0 +1,107 @@
+<ROSETTASCRIPTS>
+
+	Keywords: analysis
+	Author: Steven Lewis, but I'm pretty sure Indigo King wrote this one
+	Email: smlewi@gmail.com
+
+This script does very customized filtering for a particular problem.  (What the problem was is a problem of its own - combination of I don't particularly remember, and it was a confidential project anyway).
+
+	<SCOREFXNS>
+		<ScoreFunction name="sfxn" weights="beta_nov15.wts" symmetric="0"/>
+		<ScoreFunction name="backbone" weights="empty.wts">
+			<Reweight scoretype="rama" weight="1"/>
+			<Reweight scoretype="omega" weight="1"/>
+			<Reweight scoretype="peptide_bond" weight="1"/>
+			<Reweight scoretype="chainbreak" weight="20"/>
+		</ScoreFunction>
+		<ScoreFunction name="hpatch" weights="empty.wts">
+		  <Reweight scoretype="hpatch" weight="1"/>
+		</ScoreFunction>
+	</SCOREFXNS>
+
+	<RESIDUE_SELECTORS>
+		<Index name="sel_loop" resnums="123-5" />
+		<Not name="not_loop" selector="sel_loop"/>
+
+		<ResidueName name="charged" residue_name3="ASP,GLU,LYS,ARG"/>
+		<Not name="not_charged" selector="charged"/>
+
+		<Or name="not_loop_or_not_charged" selectors="not_loop,not_charged"/>
+
+		<Neighborhood name="loop_and_nbrs" selector="sel_loop" distance="10"/>
+		<Not name="not_loop_and_nbrs" selector="loop_and_nbrs"/>
+		<Or name="not_loop_and_nbrs_or_not_charged" selectors="not_loop_and_nbrs,not_charged"/>
+
+		<Neighborhood name="nbrs" selector="sel_loop" distance="10" include_focus_in_subset="0" />
+		<Not name="not_nbrs" selector="nbrs"/>
+		<Or name="not_nbrs_or_not_charged" selectors="not_nbrs,not_charged"/>
+
+	</RESIDUE_SELECTORS>
+
+	<TASKOPERATIONS>
+
+    <LimitAromaChi2 name="arochi2"/>
+    <IncludeCurrent name="inclcur"/>
+    <ExtraRotamersGeneric name="exrot" ex1="1" ex2="1" extrachi_cutoff="0"/>
+		<RestrictToRepacking name="nodesign"/>
+
+		<OperateOnResidueSubset name="restr_not_loop" selector="not_loop" >
+			<RestrictToRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<OperateOnResidueSubset name="prev_not_loop" selector="not_loop" >
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<OperateOnResidueSubset name="prev_not_loop_and_nbrs" selector="not_loop_and_nbrs" >
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<OperateOnResidueSubset name="prev_not_loop_and_nbrs_or_not_charged" selector="not_loop_and_nbrs_or_not_charged" >
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<OperateOnResidueSubset name="prev_not_nbrs_or_not_charged" selector="not_nbrs_or_not_charged" >
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+
+		<RestrictAbsentCanonicalAAS name="no_hphobe" resnum="0" keep_aas="ADEGKNQRST"/>
+	</TASKOPERATIONS>
+
+	<FILTERS>
+	  <ScoreType name="total_score" scorefxn="sfxn" score_type="total_score" threshold="0" confidence="0"/>
+	  <ScoreType name="hpatch_score" scorefxn="hpatch" score_type="hpatch" threshold="0" confidence="0"/>
+	  <TaskAwareScoreType name="loop_backbone_score" task_operations="prev_not_loop" scorefxn="backbone" score_type="total_score" threshold="0" confidence="0"/>
+	  <TaskAwareScoreType name="loop_elec_score" task_operations="prev_not_loop_and_nbrs_or_not_charged" scorefxn="sfxn" score_type="fa_elec" threshold="0" confidence="0"/>
+	  <TaskAwareScoreType name="loop_nbr_elec_score" task_operations="prev_not_nbrs_or_not_charged" scorefxn="sfxn" score_type="fa_elec" threshold="0" confidence="0"/>
+	  <ExposedHydrophobics name="sasa_hphobe" confidence="0"/>
+	  <BuriedUnsatHbonds name="unsat_hbonds" scorefxn="sfxn" task_operations="prev_not_loop_and_nbrs" confidence="0"/>
+	  <SSPrediction name="sspred" confidence="0" cmd="%%psipred%%" use_probability="true" mismatch_probability="true" use_svm="false"/>
+	  <LoopAnalyzerFilter name="LAM" use_tracer="true">
+	    <Loop start="123" stop="1" cut="125" rebuild="1"/>
+	  </LoopAnalyzerFilter>
+
+	</FILTERS>
+
+	<MOVERS>
+	  <InterfaceAnalyzerMover name="IAM" scorefxn="sfxn" packstat="true" pack_input="false" pack_separated="true" tracer="false" use_jobname="true" resfile="false" ligandchain="C" />
+	  <PackRotamersMover name="pack" task_operations="nodesign" />
+	</MOVERS>
+
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+
+	<PROTOCOLS>
+	  <Add mover="pack"/>
+	  <Add filter="total_score"/>
+	  <Add filter="hpatch_score"/>
+	  <Add filter="loop_backbone_score"/>
+	  <Add filter="loop_nbr_elec_score"/>
+	  <Add filter="loop_elec_score"/>
+	  <Add filter="LAM"/>
+	  <Add filter="sasa_hphobe"/>
+	  <Add filter="unsat_hbonds"/>
+	  <Add filter="sspred"/>
+	  <Add mover="IAM"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

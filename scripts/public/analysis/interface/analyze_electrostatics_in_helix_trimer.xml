@@ -1,0 +1,52 @@
+<ROSETTASCRIPTS>
+	Keywords: analysis, interface analysis, docking
+	Author: Steven Lewis
+	Email: smlewi@gmail.com
+
+	I think this was to analyze electrostatics in a helical trimer in the interface of a larger trimer.  The DeleteRegionMovers will trim away other parts of the protein, then the RigidBodyMovers will move one helix away from the rest.  Comparing the FilterReportAsPoseExtraScoresMovers pre and post gives the delta energetics, suggesting how much electrostatic energy is in the interface.
+
+	<SCOREFXNS>
+         <ScoreFunction name="sfxn" weights="empty.wts" symmetric="0">
+           <Reweight scoretype="fa_elec" weight="1"/>
+         </ScoreFunction>
+
+	</SCOREFXNS>
+
+	<RESIDUE_SELECTORS>
+	  <Index name="loop_and_preloopA" resnums="1A-2A" />
+	  <Index name="loop_and_preloopB" resnums="1B-2B" />
+	  <Index name="loop_and_preloopC" resnums="1C-2C" />
+
+	</RESIDUE_SELECTORS>
+
+	<TASKOPERATIONS>
+	</TASKOPERATIONS>
+
+	<FILTERS>
+	  <ScoreType name="Chelix_elec" scorefxn="sfxn" score_type="fa_elec" threshold="0" confidence="0"/>
+
+	</FILTERS>
+
+	<MOVERS>
+	  <DeleteRegionMover name="nonhelixkillerA" residue_selector="loop_and_preloopA"/>
+	  <DeleteRegionMover name="nonhelixkillerB" residue_selector="loop_and_preloopB"/>
+	  <DeleteRegionMover name="nonhelixkillerC" residue_selector="loop_and_preloopC"/>
+	  <RigidBodyTransMover name="helix_move" distance="100" />
+	  <FilterReportAsPoseExtraScoresMover name="pre" filter_name="Chelix_elec" report_as="Chelix_elec_complex"/>
+	  <FilterReportAsPoseExtraScoresMover name="post" filter_name="Chelix_elec" report_as="Chelix_elec_separated"/>
+	</MOVERS>
+
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+
+	<PROTOCOLS>
+
+	  <Add mover="nonhelixkillerA"/>
+	  <Add mover="nonhelixkillerB"/>
+	  <Add mover="nonhelixkillerC"/>
+	  <Add mover="pre"/>
+	  <Add mover="helix_move"/>
+	  <Add mover="post"/>
+
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

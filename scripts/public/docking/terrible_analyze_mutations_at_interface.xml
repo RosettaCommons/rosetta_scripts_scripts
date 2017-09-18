@@ -1,0 +1,32 @@
+<ROSETTASCRIPTS>
+	Keywords: docking, analysis
+	Author: unknown
+
+	pseudocode:
+	-mutate a certain residue on the peptide chain (MutateResidue)
+	-relax (Relax)
+	-report interface energy (InterfaceAnalyzer)
+	The effect of this will be to do a fast but only moderate quality calculation of whether or not a particular mutation is tolerated at an interface.
+
+	<SCOREFXNS>
+	</SCOREFXNS>
+	<RESIDUE_SELECTORS>
+	</RESIDUE_SELECTORS>
+	<TASKOPERATIONS>
+	</TASKOPERATIONS>
+	<FILTERS>
+	</FILTERS>
+	<MOVERS>
+		<MutateResidue name="mutator" target="%%MUT_POS%%" new_res="%%MUT_TYPE%%" />
+		<FastRelax name="relaxor"/>
+		<InterfaceAnalyzerMover name="IA" packstat="false" interface_sc="false" pack_input="false" pack_separated="true" ligandchain="A"/>
+	</MOVERS>
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+	<PROTOCOLS>
+		<Add mover="mutator"/>
+		<Add mover="relaxor"/>
+		<Add mover="IA"/>
+	</PROTOCOLS>
+	<OUTPUT />
+</ROSETTASCRIPTS>

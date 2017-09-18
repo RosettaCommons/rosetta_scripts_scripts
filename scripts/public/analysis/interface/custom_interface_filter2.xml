@@ -1,0 +1,84 @@
+<ROSETTASCRIPTS>
+
+	Keywords: docking, analysis
+	Author: Steven Lewis
+	Email: smlewi@gmail.com
+
+This script does very customized filtering for a particular problem.  (What the problem was is a problem of its own - combination of I don't particularly remember, and it was a confidential project anyway).
+
+Script logic:
+
+Part 1: Filter on constraints
+1) load constraint file into Pose
+2) score on constraints
+3) Filter on score
+
+
+1) Fix chain A length if necessary
+2) align based on chain A to the symmetry master, from which the symmfile was created
+3) Delete chain B (as we are recreating B as the symmetry mate of A)
+4) run symmetry!
+5) Desymmetrize!
+6) Delete the XXXX chains (which are now irrelevant; and now A and D (or 1 and 4?)
+7) Calculate fa_rep and filter on that - looking for clashes between YYYY chains
+
+
+
+	<SCOREFXNS>
+		<ScoreFunction name="constraints" weights="empty.wts">
+			<Reweight scoretype="atom_pair_constraint" weight="1"/>
+		</ScoreFunction>
+	</SCOREFXNS>
+	<RESIDUE_SELECTORS>
+		<Index name="XX_chA" resnums="157A-160A"/>
+		<Chain name="chB" chains="B"/>
+		<Chain name="post_desym_XX" chains="3,6"/>
+	</RESIDUE_SELECTORS>
+	<TASKOPERATIONS>
+	</TASKOPERATIONS>
+	<FILTERS>
+		<ScoreType name="pass_broad_csts" scorefxn="constraints" score_type="atom_pair_constraint" confidence="1.0" threshold="1"/>
+
+		<ScoreType name="pass_chain_csts" scorefxn="constraints" score_type="atom_pair_constraint" confidence="1.0" threshold="0"/>
+
+
+		<ResidueCount name="length_filter" max_residue_count="515"/>
+
+		<ScoreType name="all" scorefxn="talaris2014" confidence="1.0" threshold="1"/>
+	</FILTERS>
+	<MOVERS>
+		<ConstraintSetMover name="broad_csts" cst_file="binding.KofN.cst"/>
+		<ConstraintSetMover name="chain_csts" cst_file="both_chains_bound.cst"/>
+		<ClearConstraintsMover name="clear_csts"/>
+
+		<DeleteRegionMover name="fix_lengths" residue_selector="XX_chA"/> start=157A end=160A/>
+		<If name="if_delete" filter_name="length_filter" true_mover_name="null" false_mover_name="fix_lengths"/>
+
+		<AlignChain name="aligner" source_chain="3" target_chain="3" target_name="symm_master.pdb"/>
+		<DeleteRegionMover name="deleteB" residue_selector="chB"/>
+		<SetupForSymmetry name="setupsymm" definition="./IDK.symm"/>
+		<ExtractAsymmetricPose name="desymmetrize" />
+		<DeleteRegionMover name="post_desym_deleteXX" residue_selector="post_desym_XX"/>
+
+	</MOVERS>
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+	<PROTOCOLS>
+
+		<Add mover="broad_csts"/>
+		<Add filter="pass_broad_csts"/>
+		<Add mover="clear_csts"/>
+		<Add mover="chain_csts"/>
+		<Add filter="pass_chain_csts"/>
+		<Add mover="clear_csts"/>
+
+		<Add mover="if_delete"/>
+		<Add mover="aligner"/>
+		<Add mover="deleteB"/>
+		<Add mover="setupsymm"/>
+		<Add mover="desymmetrize"/>
+		<Add mover="post_desym_deleteXX"/>
+		<Add filter="all"/>
+	</PROTOCOLS>
+	<OUTPUT />
+</ROSETTASCRIPTS>

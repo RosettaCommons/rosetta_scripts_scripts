@@ -1,0 +1,27 @@
+<ROSETTASCRIPTS>
+	Keywords: input creation
+	Author: Steven Lewis
+	Email: smlewi@gmail.com
+
+	This will extend a helix by 5 residues and thread a new sequence onto the protein. (This kind of thing is useful for setting up inputs to other Rosetta modeling).
+
+	<SCOREFXNS>
+	</SCOREFXNS>
+	<RESIDUE_SELECTORS>
+	</RESIDUE_SELECTORS>
+	<TASKOPERATIONS>
+	</TASKOPERATIONS>
+	<FILTERS>
+	</FILTERS>
+	<MOVERS>
+		<ExtendChain name="extenderN" motif="5HA" chain="1" prepend="true"/>
+		<SimpleThreadingMover name="threader" start_position="1" thread_sequence="STEVENSNAME" pack_neighbors="1" neighbor_dis="6"  pack_rounds="5"/>
+	</MOVERS>
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+	<PROTOCOLS>
+		<Add mover="extenderN"/>
+		<Add mover="threader"/>
+	</PROTOCOLS>
+	<OUTPUT />
+</ROSETTASCRIPTS>
