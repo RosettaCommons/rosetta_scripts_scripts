@@ -6,7 +6,7 @@
 
 scripts_to_be_validated = [
     "scripts/pilot/example/an_example_for_testing_purposes/example_valid.xml",
-    "scripts/pilot/fold_and_dock_membrane_single_spanning_homodimers/fnd_homo.flags",
+    "scripts/pilot/fold_and_dock_membrane_single_spanning_homodimers/fnd_homo.xml",
     "scripts/public/sewing/refinement/zn_refinement.xml",
     "scripts/public/rotamer_recovery/ex1ex2_repack_t4400lt200_betaNov15_npdhb/rotamer_recovery_via_feature_analysis.xml",
     "scripts/public/feature_analysis/interface_feature_analysis/interface_features.xml",
