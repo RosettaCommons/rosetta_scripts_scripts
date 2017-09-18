@@ -1,0 +1,25 @@
+-parser:protocol ./fnd_homo.xml
+-in:file:fasta ./gpa2.fasta
+-overwrite
+-parser:script_vars energy_function=ref
+-parser:script_vars frags9mers=./frags_pdbtm.200.9mers
+-parser:script_vars frags3mers=./frags_pdbtm.200.3mers
+-parser:script_vars symm_file=./C2.symm
+-in:file:native ./gpa2_embed.pdb
+
+# membrane spans
+-parser:script_vars span_starts=1A,22B
+-parser:script_vars span_ends=21A,42B
+-parser:script_vars span_oris=out2in,out2in
+
+-parser:script_vars s1=1
+-parser:script_vars e1=22
+-parser:script_vars o1=out2in
+-parser:script_vars s2=22
+-parser:script_vars e2=42
+-parser:script_vars o1=out2in
+
+# membrane stuff
+-parser:script_vars membrane_core=10
+-parser:script_vars steepness=4
+-mp:scoring:hbond
