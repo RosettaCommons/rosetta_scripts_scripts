@@ -23,3 +23,4 @@ scripts_not_tested = [
     "scripts/public/sewing/ligand_contacts/zn_tetra_script.xml",
     "scripts/public/sewing/ligand_contacts/zn_sewing_script.xml",
 ]
+#note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world
