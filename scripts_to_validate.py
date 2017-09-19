@@ -12,6 +12,12 @@ scripts_to_be_validated = [
     "scripts/public/feature_analysis/interface_feature_analysis/interface_features.xml",
     "scripts/public/feature_analysis/hbond_features_from_relaxed_decoys_npdhb_potential/hbond_feature_extraction.xml",
     "scripts/public/sewing/refinement/HR1B_refinement.xml",
-    "scripts/public/sewing/refinement/HR1B_refinement_remove_partner.xml"
+    "scripts/public/sewing/refinement/HR1B_refinement_remove_partner.xml",
+    "scripts/public/analysis/interface/custom_interface_filter2.xml",
+    "scripts/public/docking/ancient_lrf_docking.xml",
+    "scripts/public/docking/lrf_docking_with_autointerfacecst.xml",
+    "scripts/public/docking/lrf_docking_with_usersuppliedconstraints.xml",
+    "scripts/public/homology_modeling/hybridize_example.xml",
+    "scripts/public/loop_modeling/loop_grower.xml",
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world

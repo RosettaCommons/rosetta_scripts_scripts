@@ -78,7 +78,7 @@ This script does very customized filtering for a particular problem.  (What the 
 	  <BuriedUnsatHbonds name="unsat_hbonds" scorefxn="sfxn" task_operations="prev_not_loop_and_nbrs" confidence="0"/>
 	  <SSPrediction name="sspred" confidence="0" cmd="%%psipred%%" use_probability="true" mismatch_probability="true" use_svm="false"/>
 	  <LoopAnalyzerFilter name="LAM" use_tracer="true">
-	    <Loop start="123" stop="1" cut="125" rebuild="1"/>
+	    <Loop start="123" stop="130" cut="125" rebuild="1"/>
 	  </LoopAnalyzerFilter>
 
 	</FILTERS>
