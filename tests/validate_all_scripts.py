@@ -19,7 +19,7 @@ import sys
 
 
 def test_script_file_commands( rosetta_executable, filename ) :
-    assert( filename[-4:] == ".xml" )
+    assert filename.endswith('.xml')
     parts = filename.rpartition( "/" )
     dirname = parts[0]
     commands = []
