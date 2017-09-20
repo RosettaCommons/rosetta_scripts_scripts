@@ -41,7 +41,6 @@ A general post-SEWING structural refinement script.
     <OperateOnResidueSubset name="repack_A" selector="chA" >
     <RestrictToRepackingRLT/>
     </OperateOnResidueSubset>
-    <ReadResfile name = "rrf" filename = "/nas02/home/f/r/frankdt/scr/GTPase_inhibitors/outputs/refinement_inputs/HR1B_resfile.res"/>
   </TASKOPERATIONS>
   <FILTERS>
     <SecondaryStructureHasResidue name="require_core" confidence="0" /> Defaults will ensure hydrophobic residues in each helix
@@ -55,10 +54,10 @@ A general post-SEWING structural refinement script.
     <AddConstraints name="constrain_loop_identities" >
       <ResidueTypeConstraintGenerator name="loop_csts" residue_selector="loops" favor_native_bonus="1.0" />
     </AddConstraints>
-    <PackRotamersMover name="prepack" scorefxn="ref2015_soft" task_operations="init,nocys,current,rrf,surface_to,boundary_to,core_to,helix_to,only_A" />
+    <PackRotamersMover name="prepack" scorefxn="ref2015_soft" task_operations="init,nocys,current,surface_to,boundary_to,core_to,helix_to,only_A" />
     <MinMover name="cartesian_min" scorefxn="ref2015_cart" chi="false" bb="false" omega="false" jump="0" cartesian="true" bondangle="true" bondlength="true" tolerance="0.001" max_iter="1000" />
     <AtomCoordinateCstMover name="constrain_to_cart_fixed"/>
-    <FastDesign name="relax" scorefxn="ref2015" disable_design="false" repeats="2" task_operations="init,nocys,current,rrf,surface_to,boundary_to,core_to,helix_to,only_A" min_type="lbfgs_armijo_nonmonotone" ramp_down_constraints="false" >
+    <FastDesign name="relax" scorefxn="ref2015" disable_design="false" repeats="2" task_operations="init,nocys,current,surface_to,boundary_to,core_to,helix_to,only_A" min_type="lbfgs_armijo_nonmonotone" ramp_down_constraints="false" >
         <MoveMap name = "do_not_move_ja">
             <Span begin = "1" end = "21" chi = "true" bb = "false"/>
 	    <Jump number="1" setting = "false"/>

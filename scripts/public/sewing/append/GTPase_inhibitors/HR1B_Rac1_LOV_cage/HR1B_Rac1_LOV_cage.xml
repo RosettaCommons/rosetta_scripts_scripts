@@ -5,7 +5,7 @@ This script sets up a SEWING run to append onto the C terminus of an asLov2 j-al
 	<FILTERS>
 	</FILTERS>
 	<MOVERS>
-		<AppendAssemblyMover name="aam" model_file_name="/nas02/home/f/r/frankdt/scr/GTPase_inhibitors/inputs/universal/smotifs_H_5_40_L_1_6_H_5_40.segments"  partner_pdb = "/nas02/home/f/r/frankdt/scr/GTPase_inhibitors/inputs/HR1B_Rac1_LOV_cage/HR1B_LOV_cage_partner.pdb " hashed="false" minimum_cycles = "10000" maximum_cycles = "11000" modifiable_terminus = "C" required_resnums = "65">
+		<AppendAssemblyMover name="aam" model_file_name="./smotifs_H_5_40_L_1_6_H_5_40.segments"  partner_pdb = "./HR1B_LOV_cage_partner.pdb " hashed="false" minimum_cycles = "10000" maximum_cycles = "11000" modifiable_terminus = "C" required_resnums = "65">
 			<AssemblyScorers>
 				<MotifScorer weight = "1" />
 				<InterModelMotifScorer weight = "10" />
