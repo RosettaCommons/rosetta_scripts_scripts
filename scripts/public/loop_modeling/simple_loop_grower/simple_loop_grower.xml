@@ -1,0 +1,41 @@
+<ROSETTASCRIPTS>
+  Keywords: loop modeling, missing loop,
+  Author: Steven Lewis
+  Email: smlewi@gmail.com
+
+  This XML will build in a loop (LoopLengthChange), prepack, model the loop, and then run LoopAnalyzerMover.  Note the large number of %%scriptvars%% to fill in yourself or with your flags file.
+
+    <SCOREFXNS>
+    </SCOREFXNS>
+
+    <TASKOPERATIONS>
+      <LimitAromaChi2 name="arochi2"/>
+      <IncludeCurrent name="inclcur"/>
+      <ExtraRotamersGeneric name="exrot" ex1="1" ex2="1" extrachi_cutoff="0"/>
+      <RestrictToRepacking name="nodesign"/>
+    </TASKOPERATIONS>
+
+<FILTERS>
+</FILTERS>
+
+  <MOVERS>
+      <LoopLengthChange name="buildloop" loop_start="%%loopstart%%" loop_end="%%loopend%%" delta="%%loopdelta%%"/>
+      <PackRotamersMover name="ppk" task_operations="inclcur,nodesign,exrot"/>
+      <LoopModeler name="loopmodel" fast="0" task_operations="nodesign,inclcur,exrot">
+        <Loop start="%%loopstart%%" stop="%%loop_final_end%%" cut="%%loopcut%%" rebuild="1"/>
+      </LoopModeler>
+      <LoopAnalyzerMover name="LAM">
+        <Loop start="%%loopstart%%" stop="%%loop_final_end%%" cut="%%loopcut%%"/>
+      </LoopAnalyzerMover>
+</MOVERS>
+
+<APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+
+<PROTOCOLS>
+      <Add mover="buildloop"/>
+      <Add mover="ppk"/>
+      <Add mover="loopmodel"/>
+      <Add mover="LAM"/>
+    </PROTOCOLS>
+</ROSETTASCRIPTS>
