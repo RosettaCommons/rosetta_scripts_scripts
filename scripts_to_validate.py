@@ -13,5 +13,4 @@ scripts_to_be_validated = [
     "scripts/public/feature_analysis/hbond_features_from_relaxed_decoys_npdhb_potential/hbond_feature_extraction.xml",
     "scripts/public/sewing/refinement/HR1B_refinement.xml",
     "scripts/public/sewing/refinement/HR1B_refinement_remove_partner.xml"
-
 ]
