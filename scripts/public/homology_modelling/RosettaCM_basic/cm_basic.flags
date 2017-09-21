@@ -1,0 +1,11 @@
+# i/o
+-in:file:fasta 1XVQ.fasta
+-nstruct 1
+-parser:protocol cm_basic.xml
+
+# relax options
+-relax:dualspace
+-relax:jump_move true
+-default_max_cycles 200
+-ignore_unrecognized_res
+-ignore_zero_occupancy false
