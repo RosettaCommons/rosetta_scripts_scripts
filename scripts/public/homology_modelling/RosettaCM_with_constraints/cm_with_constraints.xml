@@ -1,0 +1,43 @@
+<ROSETTASCRIPTS>
+Keywords: homology modelling
+Author: Daniel Farrell
+Email: danpf@uw.edu
+
+This is an extremely basic homology modelling script.  It takes one pre-threaded
+input `2BMX_threaded.pdb` which is the `2BMXA.pdb` has been threaded with the `1XVQ.fasta`
+sequence in accordance to the the `1XVQ_2BMX.grishin` alignment file. It assumes that there
+are some constraints that you would like to satisfy, such as crosslinking results.  In this
+case we use a very simple constraint between two lysines. Note the `keep_pose_constraint`
+flag. Note that the constraint weight is something that you will have to play around 
+with when you run your experiments. This script is run with the command:
+$ROSETTA/source/bin/rosetta_scripts @hybridize.flags
+
+    <TASKOPERATIONS>
+    </TASKOPERATIONS>
+    <SCOREFXNS>
+        <ScoreFunction name="stage1" weights="score3" symmetric="0">
+            <Reweight scoretype="atom_pair_constraint" weight="1"/>
+        </ScoreFunction>
+        <ScoreFunction name="stage2" weights="score4_smooth_cart" symmetric="0">
+            <Reweight scoretype="atom_pair_constraint" weight="1"/>
+        </ScoreFunction>
+        <ScoreFunction name="fullatom" weights="ref2015_cart" symmetric="0">
+            <Reweight scoretype="atom_pair_constraint" weight="1"/>
+        </ScoreFunction>
+    </SCOREFXNS>
+    <FILTERS>
+    </FILTERS>
+    <MOVERS>
+        <Hybridize name="hybridize" stage1_scorefxn="stage1" stage2_scorefxn="stage2" fa_scorefxn="fullatom" batch="1" stage1_increase_cycles="1.0" stage2_increase_cycles="1.0" keep_pose_constraint="1" >
+            <Template pdb="2BMX_threaded.pdb" cst_file="AUTO" weight="1.0" />
+        </Hybridize>
+        <ConstraintSetMover name="add_constraints" add_constraints="true" cst_file="constraints.constraint" />
+    </MOVERS>
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+        <Add mover="add_constraints" />
+        <Add mover="hybridize" />
+    </PROTOCOLS>
+    <OUTPUT scorefxn="fullatom" />
+</ROSETTASCRIPTS>

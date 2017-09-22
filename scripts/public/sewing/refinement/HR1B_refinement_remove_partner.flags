@@ -1,6 +1,4 @@
 -ignore_unrecognized_res
--parser
-  -protocol HR1B_refinement_remove_partner.xml
 -linmem_ig 10
 -limit_aroma_chi2
 
