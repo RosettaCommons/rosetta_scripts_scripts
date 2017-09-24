@@ -1,4 +1,3 @@
--parser:protocol ./fnd_homo.xml
 -in:file:fasta ./gpa2.fasta
 -overwrite
 -parser:script_vars energy_function=ref
