@@ -1,12 +1,12 @@
 <ROSETTASCRIPTS>
-Keywords: homology modelling
+Keywords: homology modeling
 Author: Daniel Farrell
 Email: danpf@uw.edu
 
-This is an extremely basic homology modelling script.  It takes one pre-threaded
+This is an extremely basic homology modeling script.  It takes one pre-threaded
 input `2BMX_threaded.pdb` which is the `2BMXA.pdb` has been threaded with the `1XVQ.fasta`
 sequence in accordance to the the `1XVQ_2BMX.grishin` alignment file.  In this example
-we are utilizing electron density in order to help guide our homology modelling. We 
+we are utilizing electron density in order to help guide our homology modeling. We 
 add `elec_dens_fast` scoretypes to our ScoreFunctions and include our mapfile in the 
 flags. it is run with the command:
 $ROSETTA/source/bin/rosetta_scripts @hybridize.flags
@@ -30,7 +30,7 @@ $ROSETTA/source/bin/rosetta_scripts @hybridize.flags
     <FILTERS>
     </FILTERS>
     <MOVERS>
-        <Hybridize name="hybridize" stage1_scorefxn="stage1" stage2_scorefxn="stage2" fa_scorefxn="fullatom" batch="1" stage1_increase_cycles="1.0" stage2_increase_cycles="1.0"  >
+        <Hybridize name="hybridize" stage1_scorefxn="stage1" stage2_scorefxn="stage2" fa_scorefxn="fullatom" batch="1" stage1_increase_cycles="1.0" stage2_increase_cycles="1.0" realign_domains="0" >
             <Template pdb="2BMX_threaded.pdb" cst_file="AUTO" weight="1.0" />
         </Hybridize>
     </MOVERS>
