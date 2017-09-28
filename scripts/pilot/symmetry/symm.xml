@@ -1,0 +1,23 @@
+<ROSETTASCRIPTS>
+  author steve
+  email sjbertolani@ucdavis.edu
+
+
+  <SCOREFXNS>
+    </SCOREFXNS>
+    <RESIDUE_SELECTORS>
+    </RESIDUE_SELECTORS>
+    <TASKOPERATIONS>
+    </TASKOPERATIONS>
+    <FILTERS>
+    </FILTERS>
+    <MOVERS>
+<DetectSymmetry name=detection subunit_tolerance=.5 />
+    </MOVERS>
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+      <Add mover_name=detection/>
+    </PROTOCOLS>
+    <OUTPUT />
+</ROSETTASCRIPTS>
