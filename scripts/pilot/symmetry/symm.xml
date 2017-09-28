@@ -12,12 +12,12 @@
     <FILTERS>
     </FILTERS>
     <MOVERS>
-<DetectSymmetry name=detection subunit_tolerance=.5 />
+<DetectSymmetry name="detection" subunit_tolerance=".5" />
     </MOVERS>
     <APPLY_TO_POSE>
     </APPLY_TO_POSE>
     <PROTOCOLS>
-      <Add mover_name=detection/>
+      <Add mover_name="detection"/>
     </PROTOCOLS>
     <OUTPUT />
 </ROSETTASCRIPTS>
