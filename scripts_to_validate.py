@@ -20,5 +20,7 @@ scripts_to_be_validated = [
     "scripts/public/docking/lrf_docking_with_autointerfacecst.xml",
     "scripts/public/docking/lrf_docking_with_usersuppliedconstraints.xml",
     "scripts/public/homology_modeling/hybridize_example.xml",
+    "scripts/pilot/mutation_scanning/filterscan_score_all/filterscan-nopssm.xml",
+
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world

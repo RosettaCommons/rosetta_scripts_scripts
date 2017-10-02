@@ -1,0 +1,9 @@
+
+Command line for filterscan-nopssm.xml - performs a scan on the first residue; can be used as a test
+-----------------------------------------------------
+./path_to_rosetta/main/source/bin/rosetta_scripts.default.linuxgccrelease -database ./path_to_database/database/ -in:file:s Clean_pdb.pdb -parser:protocol filterscan-nopssm.xml -parser:script_vars res_to_fix=<list_of_fixed_resi> -parser:script_vars pdb_reference=Clean_pdb.pdb -parser:script_vars res_to_restrict=<list_of_resi_to_restrict> -parser:script_vars cst_full_path=ConstraintFile.cst -parser:script_vars cst_value=0.4 -parser:script_vars scores_path=scores/ -parser:script_vars resfiles_path=resfiles/ @flags_delay -parser:script_vars current_res=1 -overwrite
+
+Command line for filterscan-nopssm.xml - performs a scan on all residues in the set from X to Y
+------------------------------------------------
+for i in {X..Y}; do ./path_to_rosetta/main/source/bin/rosetta_scripts.default.linuxgccrelease -database ./path_to_database/database/ -in:file:s Clean_pdb.pdb -parser:protocol filterscan-nopssm.xml -parser:script_vars res_to_fix=<list_of_fixed_resi> -parser:script_vars pdb_reference=Clean_pdb.pdb -parser:script_vars res_to_restrict=<list_of_resi_to_restrict> -parser:script_vars cst_full_path=ConstraintFile.cst -parser:script_vars cst_value=0.4 -parser:script_vars scores_path=scores/ -parser:script_vars resfiles_path=resfiles/ @flags_delay -parser:script_vars current_res=${i} -overwrite; done
+
