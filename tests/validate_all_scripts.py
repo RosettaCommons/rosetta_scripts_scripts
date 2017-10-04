@@ -80,6 +80,7 @@ def main( input_args ):
     parser.add_argument( "-q", "--quiet", help="supress output messages", action='store_true' )
     parser.add_argument( "-Q", "--silent", help="supress all output", action='store_true' )
     parser.add_argument( "--keep-intermediate-files", default=False, help="delete intermediate test files", action='store_true' )
+    parser.add_argument( "--test_only", default="", help="Test a particular script only, if `option` in full xml-file-name; do test; else skip" )
     add_rosetta_executable_arguments( parser )
 
     args = parser.parse_args()
@@ -94,6 +95,10 @@ def main( input_args ):
     scripts_to_validate = imp.load_source('scripts_to_validate', './../scripts_to_validate.py')
 
     work = { fname.replace( "/", "." ) : test_script_file_commands( rosetta_executable, fname ) for fname in scripts_to_validate.scripts_to_be_validated }
+    if args.test_only:
+        for key, res in work.items():
+            if args.test_only not in key:
+                del work[key]
 
     parallel = imp.load_source('parallel', parallel_source)
     runner = parallel.Runner( args.jobs, args.quiet, args.silent )
