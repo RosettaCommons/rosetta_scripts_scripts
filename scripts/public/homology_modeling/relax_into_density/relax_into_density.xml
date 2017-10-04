@@ -1,0 +1,24 @@
+<ROSETTASCRIPTS>
+Keywords: homology modeling
+Author: Daniel Farrell
+Email: danpf@uw.edu
+
+This is an extremely basic relax into density script. Useful for relaxing close
+homology models/partial threads into density.
+This script is run with the command:
+$ROSETTA/source/bin/rosetta_scripts @relax_into_densty.flags
+    <SCOREFXNS>
+        <ScoreFunction name="dens_sf" weights="beta_cart" symmetric="0">
+            <Reweight scoretype="elec_dens_fast" weight="20.0"/>
+        </ScoreFunction>
+    </SCOREFXNS>
+    <MOVERS>
+        <SetupForDensityScoring name="setup_dens"/>
+        <FastRelax name="fastrelax" scorefxn="dens_sf" cartesian="1" repeats="4"/>
+    </MOVERS>
+    <PROTOCOLS>
+        <Add mover="setup_dens"/>
+        <Add mover="fastrelax"/>
+    </PROTOCOLS>
+    <OUTPUT scorefxn="dens_sf"/>
+</ROSETTASCRIPTS>
