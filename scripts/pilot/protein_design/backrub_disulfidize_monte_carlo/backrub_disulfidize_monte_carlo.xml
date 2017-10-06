@@ -1,0 +1,110 @@
+<ROSETTASCRIPTS>
+Keywords: protein design, enzyme design, stability improvement
+Author: Jason C. Klima
+Email: klimaj@uw.edu
+
+The backrub_disulfidize_monte_carlo protocol places the most statistically/energetically-favorable disulfide bond within the input protein
+by sampling backbone perturbations via randomly selected variable length Backrub protocols followed by the Disulfidize mover
+wrapped in a GenericMonteCarlo mover wherein the dslf_fa13 scoreterm is optimized. The final output is relaxed via FastRelax.
+This protocol finds significantly more disulfide bonds than running the Disulfidize mover alone, since it searches through
+the perturbed backbones of the input protein.
+
+  <SCOREFXNS>
+    <ScoreFunction name="beta" weights="ref2015_cart.wts" >
+    </ScoreFunction>
+  </SCOREFXNS>
+  
+  <RESIDUE_SELECTORS>
+    <Chain name="chA" chains="A"/>
+  </RESIDUE_SELECTORS>
+
+  <TASKOPERATIONS>
+    <InitializeFromCommandline name="init" />
+    <IncludeCurrent name="ic" />
+    <LimitAromaChi2 name="limchi2"/>
+  </TASKOPERATIONS>
+
+  <FILTERS>
+    <TaskAwareScoreType name="dslf_quality_check" scorefxn="beta" score_type="dslf_fa13"  mode="individual" write2pdb="true" threshold="0" confidence="0" />
+    <ScoreType name="dslf_fa13" scorefxn="beta" score_type="dslf_fa13" threshold="1.5" confidence="0" />
+    <ScoreType name="stopper" scorefxn="beta" score_type="dslf_fa13" threshold="-2.5" confidence="1" />
+  </FILTERS>
+  
+  <MOVERS>
+    <Backrub name="backrub" require_mm_bend="0" />
+    <MetropolisHastings name="mh1" scorefxn="beta" temperature="0.63" trials="500" >
+      <Add mover_name="backrub" sampling_weight="1" />
+    </MetropolisHastings>
+    <MetropolisHastings name="mh2" scorefxn="beta" temperature="0.63" trials="1000" >
+      <Add mover_name="backrub" sampling_weight="1" />
+    </MetropolisHastings>
+    <MetropolisHastings name="mh3" scorefxn="beta" temperature="0.63" trials="3000" >
+      <Add mover_name="backrub" sampling_weight="1" />
+    </MetropolisHastings>
+    <MetropolisHastings name="mh4" scorefxn="beta" temperature="0.63" trials="6000" >
+      <Add mover_name="backrub" sampling_weight="1" />
+    </MetropolisHastings>
+    <MetropolisHastings name="mh5" scorefxn="beta" temperature="0.63" trials="9000" >
+      <Add mover_name="backrub" sampling_weight="1" />
+    </MetropolisHastings>
+    <Disulfidize name="disulfidize" scorefxn="beta" min_disulfides="1" max_disulfides="1" min_loop="8" match_rt_limit="2.0" max_disulf_score="1.5" />
+    <ParsedProtocol name="parsed_mh" mode="single_random" >
+      <Add mover_name="mh1" />
+      <Add mover_name="mh2" />
+      <Add mover_name="mh3" />
+      <Add mover_name="mh4" />
+      <Add mover_name="mh5" />
+    </ParsedProtocol>
+    <ParsedProtocol name="parsed_mh_disulfidize" mode="sequence" >
+      <Add mover_name="parsed_mh" />
+      <Add mover_name="disulfidize" />
+    </ParsedProtocol>
+    <GenericMonteCarlo name="gmc"
+                       mover_name="parsed_mh_disulfidize" 
+                       trials="200"
+		       task_operations="init,ic,limchi2"
+                       stopping_condition="stopper"
+                       recover_low="1"
+                       preapply="0"
+                       drift="0"
+                       filter_name="dslf_fa13"
+                       temperature="0.63"
+                       sample_type="low" />
+    <MultiplePoseMover name="multi_fastdes" >
+      <ROSETTASCRIPTS>
+	<SCOREFXNS>
+	</SCOREFXNS>
+	<FILTERS>
+        </FILTERS>
+	<MOVERS>
+	</MOVERS>
+	<PROTOCOLS>
+	</PROTOCOLS>
+      </ROSETTASCRIPTS>
+    </MultiplePoseMover>
+    <FastRelax name="fast_relax"
+               scorefxn="beta"
+               repeats="5"
+	       task_operations="init,ic,limchi2"
+               batch="false"
+               ramp_down_constraints="false"
+               cartesian="true"
+               bondangle="true"
+               bondlength="true"
+               min_type="lbfgs_armijo_nonmonotone" />
+  </MOVERS>
+  
+  <APPLY_TO_POSE>
+  </APPLY_TO_POSE>
+  
+  <PROTOCOLS>  
+    <Add mover_name="gmc" />
+    <Add mover_name="fast_relax" />
+    
+    <Add filter_name="dslf_quality_check" />
+    <Add filter_name="dslf_fa13" />
+  </PROTOCOLS>
+  
+  <OUTPUT scorefxn="beta" />
+  
+</ROSETTASCRIPTS>

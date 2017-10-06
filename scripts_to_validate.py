@@ -20,6 +20,7 @@ scripts_to_be_validated = [
     "scripts/public/docking/lrf_docking_with_autointerfacecst.xml",
     "scripts/public/docking/lrf_docking_with_usersuppliedconstraints.xml",
     "scripts/public/homology_modeling/hybridize_example.xml",
+    "scripts/pilot/protein_design/backrub_disulfidize_monte_carlo/backrub_disulfidize_monte_carlo.xml",
     "scripts/pilot/mutation_scanning/filterscan_score_all/filterscan-nopssm.xml",
 
 ]
