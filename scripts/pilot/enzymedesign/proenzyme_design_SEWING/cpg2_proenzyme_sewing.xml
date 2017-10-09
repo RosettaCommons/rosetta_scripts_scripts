@@ -1,0 +1,198 @@
+<ROSETTASCRIPTS>
+Keywords: SEWING, protein interface design, single sided design, enzyme design
+Author: Brahm Yachnin
+Email: brahm.yachnin@rutgers.edu
+
+Starting a short helix that we have found to autoinhibit carboxypeptidease G2,
+this script extends that helix using SEWING (AppendAssembly), adapted using suggestions from
+Sharon Guffy and Frank Teets (Kuhlman lab).  Because of a number of issues with
+multichain proteins and zinc-containing proteins, the protocol works as follows:
+-Start with the inhibitory helix (prodomain) alone as the input PDB.
+-Run AppendAssemblyMover SEWING, using the CPG2 "scaffold" as the partner_pdb.  The
+ last residue of the scaffold-prodomain is removed from the partner_pdb to prevent the 
+ SEWING mover from thinking it's a clash.
+-Add the CPG2 "scaffold" as new chains, and connect chain A of the scaffold to chain B
+ (the prodomain).
+-Do a repack/design and cartesian minimization to relieve clashes.
+-Do FastDesign for more extensive design with small backbone movements.
+	<SCOREFXNS>
+		<ScoreFunction name="ref" weights="ref2015.wts"/>
+		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts"/>
+		<ScoreFunction name="ref_cst_cart" weights="ref2015_cart.wts">
+			<Reweight scoretype="angle_constraint" weight="1.0"/>
+			<Reweight scoretype="atom_pair_constraint" weight="1.0"/>
+			<Reweight scoretype="chainbreak" weight="1.0"/>
+			<Reweight scoretype="coordinate_constraint" weight="1.0"/>
+			<Reweight scoretype="dihedral_constraint" weight="1.0"/>
+			<Reweight scoretype="res_type_constraint" weight="1.0"/>
+		</ScoreFunction>
+	</SCOREFXNS>
+	
+	<RESIDUE_SELECTORS>
+		<And name="dockchain">
+			<Chain chains="B"/>
+			<Not>
+				<ResidueName residue_name3="ZN"/>
+			</Not>
+		</And>
+		
+		<Not name="scaffoldzn" selector="dockchain"/>
+		
+		<Index name="linker" resnums="392-402"/>
+		<Or name="dockpluslinker" selectors="dockchain,linker"/>
+		
+		Index name="cat_glu" resnums="9"/>
+		<Index name="cat_glu" resnums="411B"/>
+		<SecondaryStructure name="loops" overlap="1" include_terminal_loops="false" ss="L" use_dssp="true"/>
+	</RESIDUE_SELECTORS>
+	
+	<TASKOPERATIONS>
+		<InitializeFromCommandline name="init"/>
+		<IncludeCurrent name="inccurrent"/>
+		<ExtraRotamersGeneric name="ex" ex1="1" ex2="1" ex1aro="1" ex1_sample_level="1" ex2_sample_level="1" ex1aro_sample_level="1" extrachi_cutoff="1"/>
+		
+		<RestrictToRepacking name="designoff"/>
+		
+		<OperateOnResidueSubset name="repacksewed">
+			<Chain chains="B"/>
+			<RestrictToRepackingRLT/>
+		</OperateOnResidueSubset>
+		
+		<OperateOnResidueSubset name="dontrepackscaffold">
+			<Chain chains="A,C"/>
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+		
+		<OperateOnResidueSubset name="dontrepackscaflink">
+			<Not selector="dockpluslinker"/>
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+		
+		<OperateOnResidueSubset name="designonly_b_interface">
+			<Not>
+				<Neighborhood distance="8.0" selector="dockchain"/>
+			</Not>
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+		
+		<OperateOnResidueSubset name="nodesignscaffold" selector="scaffoldzn">
+			<RestrictToRepackingRLT/>
+		</OperateOnResidueSubset>
+		
+		<OperateOnResidueSubset name="nodesigncatglu" selector="cat_glu">
+			<RestrictToRepackingRLT/>
+		</OperateOnResidueSubset>
+		
+		Design restriction task ops
+		<DisallowIfNonnative name="dontaddGPC" resnum="0" disallow_aas="GCP"/>
+		<RestrictIdentities name="dontremGPC" identities="GLY,CYS,PRO" prevent_repacking="0"/>
+		<DsspDesign name="designbyss"/>
+	</TASKOPERATIONS>
+	
+	<FILTERS>
+		<PackStat name="packstat" threshold="0.50" chain="1"/>
+		<BuriedUnsatHbonds name="buriedunsat" scorefxn="ref_cst" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>cutoff=20
+		<CavityVolume name="cavvolume" selector="dockchain"/>
+		<SSShapeComplementarity name="shapecomp" residue_selector="dockchain" verbose="1" min_sc="0.0"/>
+		
+		<Report name="packstat_rep" filter="packstat"/>
+		<Report name="shapecomp_rep" filter="shapecomp"/>
+		
+		<PoseInfo name="poseinfo"/>
+	</FILTERS>
+	<MOVERS>
+		<AppendAssemblyMover name="aam" model_file_name="smotifs_H_5_40_L_1_6_H_5_40.segments" hashed="false"
+			add_probability="0.9" delete_probability = "0.1" max_segments = "9" minimum_cycles = "100"
+			maximum_cycles = "110" modifiable_terminus = "C" output_pose_per_move = "true"
+			partner_pdb = "cpg2-gstevg-.pdb" required_selector="cat_glu" output_partner="0">
+		pose_segment_starts="403" pose_segment_ends="419" required_resnums = "21"
+			<AssemblyScorers>
+				<MotifScorer weight = "1" />
+				<InterModelMotifScorer weight = "10" />
+				<PartnerMotifScorer weight = "2" />
+				
+				<SubsetPartnerMotifScorer weight="10" region_start="23" region_end="26"/>
+				<SubsetPartnerMotifScorer weight="10" region_start="109" region_end="120"/>
+				<SubsetPartnerMotifScorer weight="10" region_start="267" region_end="270"/>
+				<SubsetPartnerMotifScorer weight="10" region_start="291" region_end="297"/>
+				<SubsetPartnerMotifScorer weight="10" region_start="543" region_end="545"/>
+				<SubsetPartnerMotifScorer weight="10" region_start="586" region_end="590"/>
+			</AssemblyScorers>
+			<AssemblyRequirements>
+				<ClashRequirement clash_radius = "4" />
+				<LengthInResiduesRequirement minimum_length="25" maximum_length="70"/>
+			</AssemblyRequirements>
+		</AppendAssemblyMover> 
+		
+		Post-SEWING pack and min movers.
+		<PackRotamersMover name="repacksewed"   scorefxn="ref_cst" task_operations="init,inccurrent,ex,designoff,repacksewed,dontrepackscaffold,nodesigncatglu"/>
+		<TaskAwareMinMover name="cartmin-sewed" scorefxn="ref_cst_cart" chi="1" bb="1" jump="0" cartesian="1" task_operations="init,inccurrent,ex,dontrepackscaflink"/>
+		<TaskAwareMinMover name="min-sewed" scorefxn="ref_cst" chi="1" bb="1" jump="0" cartesian="0" task_operations="init,inccurrent,ex,dontrepackscaffold"/>
+			
+		Chain order stuff
+		<AddChain name="add_partnera" file_name="cpg2-tev-_chaina.pdb" new_chain="1" scorefxn="ref_cst"/>
+		<AddChain name="add_partnerc" file_name="cpg2-tev-_chainc.pdb" new_chain="1" scorefxn="ref_cst"/>
+		<SwitchChainOrder name="swapchains" chain_order="21"/>
+		<DeclareBond name="connectchains" res1="402" res2="403" atom1="C" atom2="N"/>	res2="798"
+		
+		Design stuff
+		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff,
+		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold"/>catdesignoff
+		FastDesign name="fastdesign_cart" cartesian="1" scorefxn="ref_cst_cart" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff
+		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss">catdesignoff
+			<MoveMap>
+				<Chain number="A" chi="1" bb="0"/>
+				<Chain number="C" chi="1" bb="0"/>
+				<Chain number="B" chi="1" bb="1"/>
+				<Jump number="(&integer)" setting="(&bool)"/>
+			</MoveMap>
+		</FastDesign>
+		
+		Constraints
+		<ClearConstraintsMover name="removecsts"/>
+		<AddConstraints name="add_coordcsts">
+			<CoordinateConstraintGenerator name="gen_coordcsts" residue_selector="scaffoldzn" sd="0.5" bounded="0" sidechain="0" ca_only="0"/>
+		</AddConstraints>
+		<AddConstraints name="favournative_loops">
+			<ResidueTypeConstraintGenerator name="loop_rescst" residue_selector="loops" favor_native_bonus="1.0" />
+		</AddConstraints>
+		<RemoveConstraints name="rem_coordcsts" constraint_generators="gen_coordcsts"/>
+		<RemoveConstraints name="rem_favournative" constraint_generators="loop_rescst"/>
+	</MOVERS>
+	<PROTOCOLS>
+		<Add mover_name="aam" />
+		
+		Fix the chain ordering
+		<Add mover_name="add_partnera"/>
+		<Add mover_name="swapchains"/>
+		<Add mover_name="add_partnerc"/>
+		<Add mover_name="connectchains"/>
+		
+		Do repacks with cartesian minimization to clean up clashes introduced by SEWING first.
+		<Add mover_name="favournative_loops"/>
+		<Add mover_name="repacksewed"/>
+		<Add mover_name="cartmin-sewed"/>
+		
+		Ensure reasonable packing and shape complementarity of the sewed domain
+		<Add filter_name="packstat"/>
+		<Add filter_name="shapecomp"/>
+		<Add filter_name="packstat_rep"/>
+		<Add filter_name="shapecomp_rep"/>
+		
+		Run fastdesign on chain b, with repacking in its neighbourhood, with cartesian on.
+		<Add mover_name="add_coordcsts"/>
+		<Add mover_name="fastdesign"/>
+		
+		Add some filters
+		<Add filter_name="packstat"/>
+		<Add filter_name="buriedunsat"/>
+		Add filter_name="cavvolume"/>
+		<Add filter_name="shapecomp"/>
+		
+		Reset constraints
+		<Add mover_name="removecsts"/>
+		<Add mover_name="rem_favournative"/>
+		
+		<Add filter_name="poseinfo"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>
