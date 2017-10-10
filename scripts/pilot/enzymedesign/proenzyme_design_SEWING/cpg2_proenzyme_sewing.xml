@@ -141,10 +141,12 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		FastDesign name="fastdesign_cart" cartesian="1" scorefxn="ref_cst_cart" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff
 		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss">catdesignoff
 			<MoveMap>
-				<Chain number="A" chi="1" bb="0"/>
-				<Chain number="C" chi="1" bb="0"/>
-				<Chain number="B" chi="1" bb="1"/>
-				<Jump number="(&integer)" setting="(&bool)"/>
+				<Chain number="1" chi="1" bb="0"/>Chain A
+				<Chain number="3" chi="1" bb="0"/>Chain C
+				<Chain number="2" chi="1" bb="1"/>Chain B
+				<Jump number="1" setting="0"/>
+				<Jump number="2" setting="0"/>
+				<Jump number="3" setting="0"/>
 			</MoveMap>
 		</FastDesign>
 		
@@ -179,7 +181,7 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<Add filter_name="packstat_rep"/>
 		<Add filter_name="shapecomp_rep"/>
 		
-		Run fastdesign on chain b, with repacking in its neighbourhood, with cartesian on.
+		Run fastdesign on chain b, with repacking in its neighbourhood.
 		<Add mover_name="add_coordcsts"/>
 		<Add mover_name="fastdesign"/>
 		
