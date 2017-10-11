@@ -103,9 +103,9 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 	<MOVERS>
 		<AppendAssemblyMover name="aam" model_file_name="smotifs_H_5_40_L_1_6_H_5_40.segments" hashed="false"
 			add_probability="0.9" delete_probability = "0.1" max_segments = "9" minimum_cycles = "100"
-			maximum_cycles = "110" modifiable_terminus = "C" output_pose_per_move = "true"
-			partner_pdb = "cpg2-gstevg-.pdb" required_selector="cat_glu" output_partner="0">
-		pose_segment_starts="403" pose_segment_ends="419" required_resnums = "21"
+			maximum_cycles = "110" modifiable_terminus = "C" output_pose_per_move = "false"
+			partner_pdb="cpg2-gstevg-_chains.pdb" required_selector="cat_glu" output_partner="0">
+			pose_segment_starts="403" pose_segment_ends="419" required_resnums = "21"
 			<AssemblyScorers>
 				<MotifScorer weight = "1" />
 				<InterModelMotifScorer weight = "10" />
@@ -139,14 +139,13 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff,
 		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold"/>catdesignoff
 		FastDesign name="fastdesign_cart" cartesian="1" scorefxn="ref_cst_cart" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff
-		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss">catdesignoff
+		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="1" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss">catdesignoff
 			<MoveMap>
+				The Chain settings only work with my hack of void foreach_movemap_tag located in protocols:rosetta_scripts (util.cc)
 				<Chain number="1" chi="1" bb="0"/>Chain A
 				<Chain number="3" chi="1" bb="0"/>Chain C
 				<Chain number="2" chi="1" bb="1"/>Chain B
-				<Jump number="1" setting="0"/>
-				<Jump number="2" setting="0"/>
-				<Jump number="3" setting="0"/>
+				<Jump number="0" setting="0"/>
 			</MoveMap>
 		</FastDesign>
 		
@@ -160,6 +159,8 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		</AddConstraints>
 		<RemoveConstraints name="rem_coordcsts" constraint_generators="gen_coordcsts"/>
 		<RemoveConstraints name="rem_favournative" constraint_generators="loop_rescst"/>
+		
+		<DumpPdb name="dumppdb" fname="dump.pdb" scorefxn="ref_cst" tag_time="1"/>
 	</MOVERS>
 	<PROTOCOLS>
 		<Add mover_name="aam" />
@@ -183,6 +184,7 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		
 		Run fastdesign on chain b, with repacking in its neighbourhood.
 		<Add mover_name="add_coordcsts"/>
+		<Add mover_name="dumppdb"/>
 		<Add mover_name="fastdesign"/>
 		
 		Add some filters
@@ -195,6 +197,6 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<Add mover_name="removecsts"/>
 		<Add mover_name="rem_favournative"/>
 		
-		<Add filter_name="poseinfo"/>
+		Add filter_name="poseinfo"/>
 	</PROTOCOLS>
 </ROSETTASCRIPTS>
