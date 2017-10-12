@@ -135,6 +135,16 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<SwitchChainOrder name="swapchains" chain_order="21"/>
 		<DeclareBond name="connectchains" res1="402" res2="403" atom1="C" atom2="N"/>	res2="798"
 		
+		Post-SEWING add back zincs
+		<PeptideStubMover name="add2zns">
+			<Append resname="ZN" repeat="1" jump="1" connecting_atom="ZN"/>
+			<Append resname="ZN" repeat="1" jump="1" connecting_atom="ZN"/>
+		</PeptideStubMover>
+		<RigidBodyTransMover name="trans_zn1" jump="2" distance="84.096" x="9.241" y="53.497" z="64.225"/>
+		<RigidBodyTransMover name="trans_zn2" jump="3" distance="4.070" x="3.624" y="1.168" z="1.438"/>
+		<RigidBodyTransMover name="trans_zn3" jump="5" distance="53.123" x="-31.458" y="36.728" z="21.988"/>
+		<RigidBodyTransMover name="trans_zn4" jump="6" distance="4.067" x="-3.161" y="-2.045" z="-1.538"/>
+		
 		Design stuff
 		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff,
 		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold"/>catdesignoff
@@ -163,12 +173,18 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<DumpPdb name="dumppdb" fname="dump.pdb" scorefxn="ref_cst" tag_time="1"/>
 	</MOVERS>
 	<PROTOCOLS>
-		<Add mover_name="aam" />
+		Add mover_name="aam" />
 		
 		Fix the chain ordering
 		<Add mover_name="add_partnera"/>
 		<Add mover_name="swapchains"/>
+		<Add mover_name="add2zns"/>
+		<Add mover_name="trans_zn1"/>
+		<Add mover_name="trans_zn2"/>
 		<Add mover_name="add_partnerc"/>
+		<Add mover_name="add2zns"/>
+		<Add mover_name="trans_zn3"/>
+		<Add mover_name="trans_zn4"/>
 		<Add mover_name="connectchains"/>
 		
 		Do repacks with cartesian minimization to clean up clashes introduced by SEWING first.
@@ -190,13 +206,13 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		Add some filters
 		<Add filter_name="packstat"/>
 		<Add filter_name="buriedunsat"/>
-		Add filter_name="cavvolume"/>
+		<Add filter_name="cavvolume"/>
 		<Add filter_name="shapecomp"/>
 		
 		Reset constraints
 		<Add mover_name="removecsts"/>
 		<Add mover_name="rem_favournative"/>
 		
-		Add filter_name="poseinfo"/>
+		<Add filter_name="poseinfo"/>
 	</PROTOCOLS>
 </ROSETTASCRIPTS>
