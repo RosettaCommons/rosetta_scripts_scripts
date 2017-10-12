@@ -1,0 +1,28 @@
+<ROSETTASCRIPTS>
+Keywords: pymol mover, protocol capture, rosetta scripts
+Author: Sinduja K. Marx (skmarx@uw.edu) and Jason Klima (klimaj@uw.edu)
+Purpose: A simple rosetta protocol to try when first setting up your real-time rosetta pymol visualizer. 
+    <SCOREFXNS>
+	<ScoreFunction name="ref2015" weights="ref2015.wts"/>
+    </SCOREFXNS>
+    <RESIDUE_SELECTORS>
+    </RESIDUE_SELECTORS>
+    <TASKOPERATIONS>
+    </TASKOPERATIONS>
+    <FILTERS>
+    </FILTERS>
+    <MOVERS>
+      <PyMOLMover name="pmm" keep_history="1" />
+        <!-- If you are running rosetta on an external server, find out your IP address and load it in the address="%%ip%%" option below. Accordingly adjust the last line pymol observer listner script "PyMOL-RosettaServer.py" stored on your local machine -->
+        <!-- <PyMOLMover name="pmm" keep_history="1" address="%%ip%%" port="65000" /> -->
+      <FastRelax name="fast_relax" scorefxn="ref2015" repeats="1" />
+    </MOVERS>
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+      <Add mover_name="pmm" />
+      <Add mover_name="fast_relax" />
+      <Add mover_name="pmm" />
+    </PROTOCOLS>
+    <OUTPUT />
+</ROSETTASCRIPTS>

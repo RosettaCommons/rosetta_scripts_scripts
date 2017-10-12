@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+~/Rosetta/main/source/bin/rosetta_scripts.default.macosclangrelease -database ~/Rosetta/main/database/ -s crambin.pdb -parser:protocol template_pymol_mover.xml -show_simulation_in_pymol 0 -keep_pymol_simulation_history 1
+
+#########README###################
+#change executable paths as needed
+#supply pymol_observer options at the command line (this is in addition to setting up a pymol mover in your xml)
