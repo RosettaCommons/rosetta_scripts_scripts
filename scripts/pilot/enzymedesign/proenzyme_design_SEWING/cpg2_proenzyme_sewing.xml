@@ -90,6 +90,7 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 	</TASKOPERATIONS>
 	
 	<FILTERS>
+		<EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="9999.0"/>
 		<PackStat name="packstat" threshold="0.50" chain="1"/>
 		<BuriedUnsatHbonds name="buriedunsat" scorefxn="ref_cst" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>cutoff=20
 		<CavityVolume name="cavvolume" selector="dockchain"/>
@@ -134,6 +135,7 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<AddChain name="add_partnerc" file_name="cpg2-tev-_chainc.pdb" new_chain="1" scorefxn="ref_cst"/>
 		<SwitchChainOrder name="swapchains" chain_order="21"/>
 		<DeclareBond name="connectchains" res1="402" res2="403" atom1="C" atom2="N"/>	res2="798"
+		<AtomTree name="basicft" simple_ft="1"/>
 		
 		Post-SEWING add back zincs
 		<PeptideStubMover name="add2zns">
@@ -144,6 +146,21 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<RigidBodyTransMover name="trans_zn2" jump="3" distance="4.070" x="3.624" y="1.168" z="1.438"/>
 		<RigidBodyTransMover name="trans_zn3" jump="5" distance="53.123" x="-31.458" y="36.728" z="21.988"/>
 		<RigidBodyTransMover name="trans_zn4" jump="6" distance="4.067" x="-3.161" y="-2.045" z="-1.538"/>
+		
+		Parsed Protocol for adding non-prodomain geometry.
+		<ParsedProtocol name="add_scaffold_and_zns">
+			<Add mover_name="add_partnera"/>
+			<Add mover_name="swapchains"/>
+			<Add mover_name="add2zns"/>
+			<Add mover_name="trans_zn1"/>
+			<Add mover_name="trans_zn2"/>
+			<Add mover_name="add_partnerc"/>
+			<Add mover_name="add2zns"/>
+			<Add mover_name="trans_zn3"/>
+			<Add mover_name="trans_zn4"/>
+			<Add mover_name="basicft"/>
+			<Add mover_name="connectchains"/>
+		</ParsedProtocol>
 		
 		Design stuff
 		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff,
@@ -169,23 +186,18 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		</AddConstraints>
 		<RemoveConstraints name="rem_coordcsts" constraint_generators="gen_coordcsts"/>
 		<RemoveConstraints name="rem_favournative" constraint_generators="loop_rescst"/>
+		AddOrRemoveMatchCsts name="matchcst" cst_instruction="add_new" cstfile="1cg2_zn_monomer_pluscomp.cst" accept_blocks_missing_header="1"/>
 		
 		<DumpPdb name="dumppdb" fname="dump.pdb" scorefxn="ref_cst" tag_time="1"/>
 	</MOVERS>
 	<PROTOCOLS>
-		Add mover_name="aam" />
+		<Add mover_name="aam" />
 		
-		Fix the chain ordering
-		<Add mover_name="add_partnera"/>
-		<Add mover_name="swapchains"/>
-		<Add mover_name="add2zns"/>
-		<Add mover_name="trans_zn1"/>
-		<Add mover_name="trans_zn2"/>
-		<Add mover_name="add_partnerc"/>
-		<Add mover_name="add2zns"/>
-		<Add mover_name="trans_zn3"/>
-		<Add mover_name="trans_zn4"/>
-		<Add mover_name="connectchains"/>
+		This series of movers adds the CPG2 chains and the Zn atoms to the SEWING domain.
+		It needs to be added this way to get the proper chain order and the Zns.
+		<Add mover_name="add_scaffold_and_zns"/>
+		Add enzdes constraints for chain A and prodomain
+		Add mover_name="matchcst"/>
 		
 		Do repacks with cartesian minimization to clean up clashes introduced by SEWING first.
 		<Add mover_name="favournative_loops"/>
@@ -213,6 +225,7 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<Add mover_name="removecsts"/>
 		<Add mover_name="rem_favournative"/>
 		
+		Add filter_name="cstE"/>
 		<Add filter_name="poseinfo"/>
 	</PROTOCOLS>
 </ROSETTASCRIPTS>
