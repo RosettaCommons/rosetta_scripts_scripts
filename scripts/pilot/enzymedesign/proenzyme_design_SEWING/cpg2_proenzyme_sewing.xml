@@ -102,8 +102,8 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 	</FILTERS>
 	<MOVERS>
 		<AppendAssemblyMover name="aam" model_file_name="smotifs_H_5_40_L_1_6_H_5_40.segments" hashed="false"
-			add_probability="0.9" delete_probability = "0.1" max_segments = "9" minimum_cycles = "100"
-			maximum_cycles = "110" modifiable_terminus = "C" output_pose_per_move = "false"
+			add_probability="0.9" delete_probability = "0.1" max_segments = "9" minimum_cycles = "10000"
+			maximum_cycles = "11000" modifiable_terminus = "C" output_pose_per_move = "false"
 			partner_pdb="cpg2-gstevg-_chains.pdb" required_selector="cat_glu" output_partner="0">
 			pose_segment_starts="403" pose_segment_ends="419" required_resnums = "21"
 			<AssemblyScorers>
@@ -139,7 +139,7 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff,
 		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold"/>catdesignoff
 		FastDesign name="fastdesign_cart" cartesian="1" scorefxn="ref_cst_cart" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff
-		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="1" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss">catdesignoff
+		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss">catdesignoff
 			<MoveMap>
 				The Chain settings only work with my hack of void foreach_movemap_tag located in protocols:rosetta_scripts (util.cc)
 				<Chain number="1" chi="1" bb="0"/>Chain A
