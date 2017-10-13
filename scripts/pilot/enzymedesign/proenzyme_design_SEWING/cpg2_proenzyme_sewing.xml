@@ -99,6 +99,7 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<SecondaryStructureHasResidue name="require_core" confidence="0" ss_select_task_operations="nodesignscaffold"/>
 		<FragmentLookupFilter name="fragment_lookup" lookup_name="source_fragments_4_mer" store_path="VALL_clustered/backbone_profiler_database_06032014"
 		 lookup_mode="first" chain="2" threshold="0" confidence="1" />
+		<ResidueCount name="nres_b" residue_selector="dockchain" min_residue_count="0" max_residue_count="1000"/>
 		
 		<Report name="packstat_rep" filter="packstat"/>
 		<Report name="shapecomp_rep" filter="shapecomp"/>
@@ -170,9 +171,9 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff,
 		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold"/>catdesignoff
 		FastDesign name="fastdesign_cart" cartesian="1" scorefxn="ref_cst_cart" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff
-		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss">catdesignoff
+		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="1" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss">catdesignoff
 			<MoveMap>
-				The Chain settings only work with my hack of void foreach_movemap_tag located in protocols:rosetta_scripts (util.cc)
+				For this to work, I had to merge PR 2556 from master into smart_sewing, which changes when MoveMaps are parsed.
 				<Chain number="1" chi="1" bb="0"/>Chain A
 				<Chain number="3" chi="1" bb="0"/>Chain C
 				<Chain number="2" chi="1" bb="1"/>Chain B
@@ -217,7 +218,7 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		Run fastdesign on chain b, with repacking in its neighbourhood.
 		<Add mover_name="add_coordcsts"/>
 		Add mover_name="dumppdb"/>
-		Add mover_name="fastdesign"/>
+		<Add mover_name="fastdesign"/>
 		
 		Add some filters
 		<Add filter_name="packstat"/>
@@ -226,6 +227,8 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<Add filter_name="shapecomp"/>
 		<Add filter_name="sspred"/>
 		<Add filter_name="require_core"/>
+		<Add filter_name="nres_b"/>
+		<Add filter_name="fragment_lookup"/>
 		
 		Reset constraints
 		<Add mover_name="removecsts"/>
