@@ -3,7 +3,7 @@ Keywords: SEWING, protein interface design, single sided design, enzyme design
 Author: Brahm Yachnin
 Email: brahm.yachnin@rutgers.edu
 
-Starting a short helix that we have found to autoinhibit carboxypeptidease G2,
+Starting with a short helix that we have found to autoinhibit carboxypeptidease G2,
 this script extends that helix using SEWING (AppendAssembly), adapted using suggestions from
 Sharon Guffy and Frank Teets (Kuhlman lab).  Because of a number of issues with
 multichain proteins and zinc-containing proteins, the protocol works as follows:
@@ -15,17 +15,10 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
  (the prodomain).
 -Do a repack/design and cartesian minimization to relieve clashes.
 -Do FastDesign for more extensive design with small backbone movements.
+This script runs the SEWING part, and a companion script does the design part.  This allows us to
+keep the SEWING scoreterms in the scorefile.
 	<SCOREFXNS>
 		<ScoreFunction name="ref" weights="ref2015.wts"/>
-		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts"/>
-		<ScoreFunction name="ref_cst_cart" weights="ref2015_cart.wts">
-			<Reweight scoretype="angle_constraint" weight="1.0"/>
-			<Reweight scoretype="atom_pair_constraint" weight="1.0"/>
-			<Reweight scoretype="chainbreak" weight="1.0"/>
-			<Reweight scoretype="coordinate_constraint" weight="1.0"/>
-			<Reweight scoretype="dihedral_constraint" weight="1.0"/>
-			<Reweight scoretype="res_type_constraint" weight="1.0"/>
-		</ScoreFunction>
 	</SCOREFXNS>
 	
 	<RESIDUE_SELECTORS>
@@ -38,78 +31,35 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		
 		<Not name="scaffoldzn" selector="dockchain"/>
 		
-		<Index name="linker" resnums="392-402"/>
-		<Or name="dockpluslinker" selectors="dockchain,linker"/>
-		
-		Index name="cat_glu" resnums="9"/>
 		<Index name="cat_glu" resnums="411B"/>
-		<SecondaryStructure name="loops" overlap="1" include_terminal_loops="false" ss="L" use_dssp="true"/>
 	</RESIDUE_SELECTORS>
 	
-	<TASKOPERATIONS>
-		<InitializeFromCommandline name="init"/>
-		<IncludeCurrent name="inccurrent"/>
-		<ExtraRotamersGeneric name="ex" ex1="1" ex2="1" ex1aro="1" ex1_sample_level="1" ex2_sample_level="1" ex1aro_sample_level="1" extrachi_cutoff="1"/>
-		
-		<RestrictToRepacking name="designoff"/>
-		
-		<OperateOnResidueSubset name="repacksewed">
-			<Chain chains="B"/>
-			<RestrictToRepackingRLT/>
-		</OperateOnResidueSubset>
-		
+	<TASKOPERATIONS>	
 		<OperateOnResidueSubset name="dontrepackscaffold">
 			<Chain chains="A,C"/>
-			<PreventRepackingRLT/>
-		</OperateOnResidueSubset>
-		
-		<OperateOnResidueSubset name="dontrepackscaflink">
-			<Not selector="dockpluslinker"/>
-			<PreventRepackingRLT/>
-		</OperateOnResidueSubset>
-		
-		<OperateOnResidueSubset name="designonly_b_interface">
-			<Not>
-				<Neighborhood distance="8.0" selector="dockchain"/>
-			</Not>
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
 		
 		<OperateOnResidueSubset name="nodesignscaffold" selector="scaffoldzn">
 			<RestrictToRepackingRLT/>
 		</OperateOnResidueSubset>
-		
-		<OperateOnResidueSubset name="nodesigncatglu" selector="cat_glu">
-			<RestrictToRepackingRLT/>
-		</OperateOnResidueSubset>
-		
-		Design restriction task ops
-		<DisallowIfNonnative name="dontaddGPC" resnum="0" disallow_aas="GCP"/>
-		<RestrictIdentities name="dontremGPC" identities="GLY,CYS,PRO" prevent_repacking="0"/>
-		<DsspDesign name="designbyss"/>
 	</TASKOPERATIONS>
 	
 	<FILTERS>
-		EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="9999.0"/>
 		<PackStat name="packstat" threshold="0.50" chain="1"/>
-		<BuriedUnsatHbonds name="buriedunsat" scorefxn="ref_cst" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>cutoff=20
-		<CavityVolume name="cavvolume"/> selector="dockchain"
+		<BuriedUnsatHbonds name="buriedunsat" scorefxn="ref" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>cutoff=20
+		<CavityVolume name="cavvolume"/>
 		<SSShapeComplementarity name="shapecomp" residue_selector="dockchain" verbose="1" min_sc="0.0"/>
 		<SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0"/>
 		<SecondaryStructureHasResidue name="require_core" confidence="0" ss_select_task_operations="nodesignscaffold"/>
 		<FragmentLookupFilter name="fragment_lookup" lookup_name="source_fragments_4_mer" store_path="VALL_clustered/backbone_profiler_database_06032014"
-		 lookup_mode="first" chain="2" threshold="0" confidence="1" />
+		 lookup_mode="first" chain="1" threshold="0" confidence="1" />
 		<ResidueCount name="nres_b" residue_selector="dockchain" min_residue_count="0" max_residue_count="1000"/>
-		
-		<Report name="packstat_rep" filter="packstat"/>
-		<Report name="shapecomp_rep" filter="shapecomp"/>
-		
-		<PoseInfo name="poseinfo"/>
 	</FILTERS>
 	<MOVERS>
 		<AppendAssemblyMover name="aam" model_file_name="smotifs_H_5_40_L_1_6_H_5_40.segments" hashed="false"
-			add_probability="0.9" delete_probability = "0.1" max_segments = "9" minimum_cycles = "10000"
-			maximum_cycles = "11000" modifiable_terminus = "C" output_pose_per_move = "false"
+			add_probability="0.9" delete_probability = "0.1" max_segments = "9" minimum_cycles = "1000"
+			maximum_cycles = "1100" modifiable_terminus = "C" output_pose_per_move = "false"
 			partner_pdb="cpg2-gstevg-_chains.pdb" required_selector="cat_glu" output_partner="0">
 			pose_segment_starts="403" pose_segment_ends="419" required_resnums = "21"
 			<AssemblyScorers>
@@ -129,97 +79,10 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 				<LengthInResiduesRequirement minimum_length="25" maximum_length="70"/>
 			</AssemblyRequirements>
 		</AppendAssemblyMover> 
-		
-		Post-SEWING pack and min movers.
-		<PackRotamersMover name="repacksewed"   scorefxn="ref_cst" task_operations="init,inccurrent,ex,designoff,repacksewed,dontrepackscaffold,nodesigncatglu"/>
-		<TaskAwareMinMover name="cartmin-sewed" scorefxn="ref_cst_cart" chi="1" bb="1" jump="0" cartesian="1" task_operations="init,inccurrent,ex,dontrepackscaflink"/>
-		<TaskAwareMinMover name="min-sewed" scorefxn="ref_cst" chi="1" bb="1" jump="0" cartesian="0" task_operations="init,inccurrent,ex,dontrepackscaffold"/>
-			
-		Chain order stuff
-		<AddChain name="add_partnera" file_name="cpg2-tev-_chaina.pdb" new_chain="1" scorefxn="ref_cst"/>
-		<AddChain name="add_partnerc" file_name="cpg2-tev-_chainc.pdb" new_chain="1" scorefxn="ref_cst"/>
-		<SwitchChainOrder name="swapchains" chain_order="21"/>
-		<DeclareBond name="connectchains" res1="402" res2="403" atom1="C" atom2="N"/>	res2="798"
-		<AtomTree name="basicft" simple_ft="1"/>
-		
-		Post-SEWING add back zincs
-		<PeptideStubMover name="add2zns">
-			<Append resname="ZN" repeat="1" jump="1" connecting_atom="ZN"/>
-			<Append resname="ZN" repeat="1" jump="1" connecting_atom="ZN"/>
-		</PeptideStubMover>
-		<RigidBodyTransMover name="trans_zn1" jump="2" distance="84.096" x="9.241" y="53.497" z="64.225"/>
-		<RigidBodyTransMover name="trans_zn2" jump="3" distance="4.070" x="3.624" y="1.168" z="1.438"/>
-		<RigidBodyTransMover name="trans_zn3" jump="5" distance="53.123" x="-31.458" y="36.728" z="21.988"/>
-		<RigidBodyTransMover name="trans_zn4" jump="6" distance="4.067" x="-3.161" y="-2.045" z="-1.538"/>
-		
-		Parsed Protocol for adding non-prodomain geometry.
-		<ParsedProtocol name="add_scaffold_and_zns">
-			<Add mover_name="add_partnera"/>
-			<Add mover_name="swapchains"/>
-			<Add mover_name="add2zns"/>
-			<Add mover_name="trans_zn1"/>
-			<Add mover_name="trans_zn2"/>
-			<Add mover_name="add_partnerc"/>
-			<Add mover_name="add2zns"/>
-			<Add mover_name="trans_zn3"/>
-			<Add mover_name="trans_zn4"/>
-			<Add mover_name="basicft"/>
-			<Add mover_name="connectchains"/>
-		</ParsedProtocol>
-		
-		Design stuff
-		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff,
-		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold"/>catdesignoff
-		FastDesign name="fastdesign_cart" cartesian="1" scorefxn="ref_cst_cart" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff
-		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="1" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss">catdesignoff
-			<MoveMap>
-				For this to work, I had to merge PR 2556 from master into smart_sewing, which changes when MoveMaps are parsed.
-				<Chain number="1" chi="1" bb="0"/>Chain A
-				<Chain number="3" chi="1" bb="0"/>Chain C
-				<Chain number="2" chi="1" bb="1"/>Chain B
-				<Jump number="0" setting="0"/>
-			</MoveMap>
-		</FastDesign>
-		
-		Constraints
-		<ClearConstraintsMover name="removecsts"/>
-		<AddConstraints name="add_coordcsts">
-			<CoordinateConstraintGenerator name="gen_coordcsts" residue_selector="scaffoldzn" sd="0.5" bounded="0" sidechain="0" ca_only="0"/>
-		</AddConstraints>
-		<AddConstraints name="favournative_loops">
-			<ResidueTypeConstraintGenerator name="loop_rescst" residue_selector="loops" favor_native_bonus="1.0" />
-		</AddConstraints>
-		<RemoveConstraints name="rem_coordcsts" constraint_generators="gen_coordcsts"/>
-		<RemoveConstraints name="rem_favournative" constraint_generators="loop_rescst"/>
-		AddOrRemoveMatchCsts name="matchcst" cst_instruction="add_new" cstfile="1cg2_zn_monomer_pluscomp.cst" accept_blocks_missing_header="1"/>
-		
-		<DumpPdb name="dumppdb" fname="dump.pdb" scorefxn="ref_cst" tag_time="1"/>
 	</MOVERS>
 	<PROTOCOLS>
 		<Add mover_name="aam" />
-		
-		This series of movers adds the CPG2 chains and the Zn atoms to the SEWING domain.
-		It needs to be added this way to get the proper chain order and the Zns.
-		<Add mover_name="add_scaffold_and_zns"/>
-		Add enzdes constraints for chain A and prodomain
-		Add mover_name="matchcst"/>
-		
-		Do repacks with cartesian minimization to clean up clashes introduced by SEWING first.
-		<Add mover_name="favournative_loops"/>
-		<Add mover_name="repacksewed"/>
-		<Add mover_name="cartmin-sewed"/>
-		
-		Ensure reasonable packing and shape complementarity of the sewed domain
-		<Add filter_name="packstat"/>
-		<Add filter_name="shapecomp"/>
-		<Add filter_name="packstat_rep"/>
-		<Add filter_name="shapecomp_rep"/>
-		
-		Run fastdesign on chain b, with repacking in its neighbourhood.
-		<Add mover_name="add_coordcsts"/>
-		Add mover_name="dumppdb"/>
-		<Add mover_name="fastdesign"/>
-		
+	
 		Add some filters
 		<Add filter_name="packstat"/>
 		<Add filter_name="buriedunsat"/>
@@ -229,12 +92,5 @@ multichain proteins and zinc-containing proteins, the protocol works as follows:
 		<Add filter_name="require_core"/>
 		<Add filter_name="nres_b"/>
 		<Add filter_name="fragment_lookup"/>
-		
-		Reset constraints
-		<Add mover_name="removecsts"/>
-		<Add mover_name="rem_favournative"/>
-		
-		Add filter_name="cstE"/>
-		<Add filter_name="poseinfo"/>
 	</PROTOCOLS>
 </ROSETTASCRIPTS>
