@@ -60,7 +60,8 @@ keep the SEWING scoreterms in the scorefile.
 		<AppendAssemblyMover name="aam" model_file_name="smotifs_H_5_40_L_1_6_H_5_40.segments" hashed="false"
 			add_probability="0.9" delete_probability = "0.1" max_segments = "9" minimum_cycles = "1000"
 			maximum_cycles = "1100" modifiable_terminus = "C" output_pose_per_move = "false"
-			partner_pdb="cpg2-gstevg-_chains.pdb" required_selector="cat_glu" output_partner="0">
+			partner_pdb="cpg2-gstevg-_chains.pdb" required_selector="cat_glu" output_partner="0"
+			pose_segment_starts="1" pose_segment_ends="17">
 			pose_segment_starts="403" pose_segment_ends="419" required_resnums = "21"
 			<AssemblyScorers>
 				<MotifScorer weight = "1" />
