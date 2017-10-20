@@ -100,7 +100,7 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		<SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0"/>
 		<SecondaryStructureHasResidue name="require_core" confidence="0" ss_select_task_operations="nodesignscaffold"/>
 		<FragmentLookupFilter name="fragment_lookup" lookup_name="source_fragments_4_mer" store_path="VALL_clustered/backbone_profiler_database_06032014"
-		 lookup_mode="first" chain="0" threshold="0" confidence="1" />
+		 lookup_mode="first" chain="2" threshold="0" confidence="0"/>
 		<ResidueCount name="nres_b" residue_selector="dockchain" min_residue_count="0" max_residue_count="1000"/>
 		
 		<Report name="packstat_rep" filter="packstat"/>
@@ -215,7 +215,7 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		<Add filter_name="sspred"/>
 		<Add filter_name="require_core"/>
 		<Add filter_name="nres_b"/>
-		Add filter_name="fragment_lookup"/>
+		<Add filter_name="fragment_lookup"/>
 		
 		Reset constraints
 		<Add mover_name="removecsts"/>
