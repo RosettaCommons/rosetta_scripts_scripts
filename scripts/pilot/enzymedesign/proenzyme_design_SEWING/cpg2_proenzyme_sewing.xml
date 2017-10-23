@@ -23,7 +23,7 @@ keep the SEWING scoreterms in the scorefile.
 	
 	<RESIDUE_SELECTORS>
 		<And name="dockchain">
-			<Chain chains="B"/>
+			<Chain chains="A"/>
 			<Not>
 				<ResidueName residue_name3="ZN"/>
 			</Not>
@@ -47,19 +47,19 @@ keep the SEWING scoreterms in the scorefile.
 	
 	<FILTERS>
 		<PackStat name="packstat" threshold="0.50" chain="1"/>
-		<BuriedUnsatHbonds name="buriedunsat" scorefxn="ref" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>cutoff=20
+		<BuriedUnsatHbonds name="buriedunsat" scorefxn="ref" jump_number="1" cutoff="20" task_operations="dontrepackscaffold" confidence="0"/>
 		<CavityVolume name="cavvolume"/>
 		<SSShapeComplementarity name="shapecomp" residue_selector="dockchain" verbose="1" min_sc="0.0"/>
 		<SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0"/>
 		<SecondaryStructureHasResidue name="require_core" confidence="0" ss_select_task_operations="nodesignscaffold"/>
 		<FragmentLookupFilter name="fragment_lookup" lookup_name="source_fragments_4_mer" store_path="VALL_clustered/backbone_profiler_database_06032014"
 		 lookup_mode="first" chain="1" threshold="0" confidence="1" />
-		<ResidueCount name="nres_b" residue_selector="dockchain" min_residue_count="0" max_residue_count="1000"/>
+		<ResidueCount name="nres_b" residue_selector="dockchain" min_residue_count="0" max_residue_count="1000" confidence="0"/>
 	</FILTERS>
 	<MOVERS>
 		<AppendAssemblyMover name="aam" model_file_name="smotifs_H_5_40_L_1_6_H_5_40.segments" hashed="false"
-			add_probability="0.9" delete_probability = "0.1" max_segments = "9" minimum_cycles = "1000"
-			maximum_cycles = "1100" modifiable_terminus = "C" output_pose_per_move = "false"
+			add_probability="0.9" delete_probability = "0.1" max_segments = "9" minimum_cycles = "10000"
+			maximum_cycles = "11000" modifiable_terminus = "C" output_pose_per_move = "false"
 			partner_pdb="cpg2-gstevg-_zns.pdb" required_selector="cat_glu" output_partner="1"
 			pose_segment_starts="1" pose_segment_ends="17">
 			pose_segment_starts="403" pose_segment_ends="419" required_resnums = "21"
@@ -70,6 +70,7 @@ keep the SEWING scoreterms in the scorefile.
 				<MotifScorer weight = "1" />
 				<InterModelMotifScorer weight = "10" />
 				<PartnerMotifScorer weight = "2" />
+				<LigandScorer weight="10" ligand_interaction_cutoff_distance="4.0"/>
 				
 				<SubsetPartnerMotifScorer weight="10" region_start="23" region_end="26"/>
 				<SubsetPartnerMotifScorer weight="10" region_start="109" region_end="120"/>
@@ -80,6 +81,7 @@ keep the SEWING scoreterms in the scorefile.
 			</AssemblyScorers>
 			<AssemblyRequirements>
 				<ClashRequirement clash_radius = "4" />
+				<LigandClashRequirement maximum_clashes_allowed="0" clash_radius="2"/>
 				<LengthInResiduesRequirement minimum_length="25" maximum_length="70"/>
 			</AssemblyRequirements>
 		</AppendAssemblyMover> 
