@@ -4,11 +4,8 @@
 
 #Sewing
 -use_input_sc
--mh:match:aa1 false
--mh:match:aa2 false
 -mh:score:use_ss1 true
 -mh:score:use_ss2 true
 -mh:path:motifs xsmax_bb_ss_AILV_resl0.8_msc0.3/xsmax_bb_ss_AILV_resl0.8_msc0.3/xsmax_bb_ss_AILV_resl0.8_msc0.3.rpm.bin.gz
 -mh:path:scores_BB_BB xsmax_bb_ss_AILV_resl0.8_msc0.3/xsmax_bb_ss_AILV_resl0.8_msc0.3/xsmax_bb_ss_AILV_resl0.8_msc0.3
 -mh:gen_reverse_motifs_on_load false     # I think the inverse motifs are already in the datafiles
--mh::dump::max_rms 0.4
