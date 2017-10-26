@@ -1,92 +1,93 @@
 <ROSETTASCRIPTS>
 	<SCOREFXNS>
-        <ScoreFunction name="bb_hbond_tors" weights="empty.wts">
-            <Reweight scoretype="hbond_sr_bb" weight="1.17" />
-            <Reweight scoretype="hbond_lr_bb" weight="1.17" />
-            <Reweight scoretype="omega" weight="0.5" />
-            <Reweight scoretype="rama" weight="0.2" />
-            <Reweight scoretype="p_aa_pp" weight="0.32" />
-        </ScoreFunction>
-        <ScoreFunction name="ref_cst" weights="ref2015_cst.wts"/>
+		<ScoreFunction name="bb_hbond_tors" weights="empty.wts">
+			<Reweight scoretype="hbond_sr_bb" weight="1.17" />
+			<Reweight scoretype="hbond_lr_bb" weight="1.17" />
+			<Reweight scoretype="omega" weight="0.5" />
+			<Reweight scoretype="rama" weight="0.2" />
+			<Reweight scoretype="p_aa_pp" weight="0.32" />
+		</ScoreFunction>
+		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts"/>
 	</SCOREFXNS>
 	<RESIDUE_SELECTORS>
-        <Index name="loop" resnums="392-402"/>
-        <Not name="not_loop" selector="loop"/>
+		<Index name="loop" resnums="392-402"/>
+		<Not name="not_loop" selector="loop"/>
 	</RESIDUE_SELECTORS>
 	<TASKOPERATIONS>
-        <InitializeFromCommandline name="init"/>
-        <IncludeCurrent name="incCurrent"/>
+		<InitializeFromCommandline name="init"/>
+		<IncludeCurrent name="inccurrent"/>
 		<ExtraRotamersGeneric name="ex" ex1="1" ex2="1" ex1aro="1" ex1_sample_level="1" ex2_sample_level="1" ex1aro_sample_level="1" extrachi_cutoff="1"/>
 		<RestrictToRepacking name="designoff"/>
 		
-        <OperateOnResidueSubset name="norep_loop" selector="loop">
-            <PreventRepackingRLT/>
-        </OperateOnResidueSubset>
-        <DesignAround name="designaround" repack_shell="10.0" resnums="392A,393A,393A,394A,395A,396A,397A,398A,399A,400A,401A,402A" allow_design="0" resnums_allow_design="0"/>
+		<OperateOnResidueSubset name="norep_loop" selector="loop">
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+		<DesignAround name="designaround" repack_shell="10.0" resnums="392A,393A,393A,394A,395A,396A,397A,398A,399A,400A,401A,402A" allow_design="0" resnums_allow_design="0"/>
 		<SetCatalyticResPackBehavior name="freeze-noncat" fix_catalytic_aa="0" behavior_non_catalytic="NATRO"/>
 	</TASKOPERATIONS>
 	<FILTERS>
-        <ContingentFilter name="genkic_filter" />
-        <PoseInfo name="poseinfo" />
-        <EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="9999.0"/>
+		<ContingentFilter name="genkic_filter" />
+		<PoseInfo name="poseinfo" />
+		<EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="9999.0"/>
 	</FILTERS>
 	<MOVERS>
 		Packing/minimizing catalytic region.
 		<PackRotamersMover name="packcatalytic" scorefxn="ref_cst" task_operations="init,inccurrent,ex,freeze-noncat,designoff"/>
 		<TaskAwareMinMover name="mincatalytic"  scorefxn="ref_cst" task_operations="init,inccurrent,ex,freeze-noncat" chi="1" bb="0" jump="0"/>
-	
-        <DeclareBond name="linkdomain" res1="402" atom1="C" res2="403" atom2="N" />
-        <GeneralizedKIC name="genkic" closure_attempts="5000" stop_if_no_solution="0" stop_when_n_solutions_found="1000" selector="lowest_energy_selector" selector_scorefunction="bb_hbond_tors" contingent_filter="genkic_filter">
-            <AddResidue res_index="392"/>
-            <AddResidue res_index="393"/>
-            <AddResidue res_index="394"/>
-            <AddResidue res_index="395"/>
-            <AddResidue res_index="396"/>
-            <AddResidue res_index="397"/>
-            <AddResidue res_index="398"/>
-            <AddResidue res_index="399"/>
-            <AddResidue res_index="400"/>
-            <AddResidue res_index="401"/>
-            <AddResidue res_index="402"/>
-            <AddResidue res_index="403"/>
-            <SetPivots res1="392" atom1="CA" res2="%%pivot%%" atom2="CA" res3="403" atom3="CA" />
-            
+
+		<DeclareBond name="linkdomain" res1="402" atom1="C" res2="403" atom2="N"/>
+		<AtomTree name="foldtree" fold_tree_file="cpg2-tev-helixR2.ft"/>
+		<GeneralizedKIC name="genkic" closure_attempts="5000" stop_if_no_solution="0" stop_when_n_solutions_found="1000" selector="lowest_energy_selector" selector_scorefunction="bb_hbond_tors" contingent_filter="genkic_filter" low_memory_mode="true">
+			<AddResidue res_index="392"/>
+			<AddResidue res_index="393"/>
+			<AddResidue res_index="394"/>
+			<AddResidue res_index="395"/>
+			<AddResidue res_index="396"/>
+			<AddResidue res_index="397"/>
+			<AddResidue res_index="398"/>
+			<AddResidue res_index="399"/>
+			<AddResidue res_index="400"/>
+			<AddResidue res_index="401"/>
+			<AddResidue res_index="402"/>
+			<AddResidue res_index="403"/>
+			<SetPivots res1="392" atom1="CA" res2="%%pivot%%" atom2="CA" res3="403" atom3="CA" />
+
 			<CloseBond prioratom_res="402" prioratom="CA" res1="402" atom1="C" res2="403" atom2="N" followingatom_res="403" followingatom="CA" bondlength="1.30" angle1="120" angle2="120" randomize_flanking_torsions="false"/>
 			<AddPerturber effect="set_dihedral">
-                <AddAtoms res1="392" atom1="CA" res2="392" atom2="C" res3="393" atom3="N" res4="393" atom4="CA"/>
-                <AddAtoms res1="393" atom1="CA" res2="393" atom2="C" res3="394" atom3="N" res4="394" atom4="CA"/>
-                <AddAtoms res1="394" atom1="CA" res2="394" atom2="C" res3="395" atom3="N" res4="395" atom4="CA"/>
-                <AddAtoms res1="395" atom1="CA" res2="395" atom2="C" res3="396" atom3="N" res4="396" atom4="CA"/>
-                <AddAtoms res1="396" atom1="CA" res2="396" atom2="C" res3="397" atom3="N" res4="397" atom4="CA"/>
-                <AddAtoms res1="397" atom1="CA" res2="397" atom2="C" res3="398" atom3="N" res4="398" atom4="CA"/>
-                <AddAtoms res1="398" atom1="CA" res2="398" atom2="C" res3="399" atom3="N" res4="399" atom4="CA"/>
-                <AddAtoms res1="399" atom1="CA" res2="399" atom2="C" res3="400" atom3="N" res4="400" atom4="CA"/>
-                <AddAtoms res1="400" atom1="CA" res2="400" atom2="C" res3="401" atom3="N" res4="401" atom4="CA"/>
-                <AddAtoms res1="401" atom1="CA" res2="401" atom2="C" res3="402" atom3="N" res4="402" atom4="CA"/>
-                <AddAtoms res1="402" atom1="CA" res2="402" atom2="C" res3="403" atom3="N" res4="403" atom4="CA"/>
-                <AddValue value="180.0"/>
-            </AddPerturber>
+				<AddAtoms res1="392" atom1="CA" res2="392" atom2="C" res3="393" atom3="N" res4="393" atom4="CA"/>
+				<AddAtoms res1="393" atom1="CA" res2="393" atom2="C" res3="394" atom3="N" res4="394" atom4="CA"/>
+				<AddAtoms res1="394" atom1="CA" res2="394" atom2="C" res3="395" atom3="N" res4="395" atom4="CA"/>
+				<AddAtoms res1="395" atom1="CA" res2="395" atom2="C" res3="396" atom3="N" res4="396" atom4="CA"/>
+				<AddAtoms res1="396" atom1="CA" res2="396" atom2="C" res3="397" atom3="N" res4="397" atom4="CA"/>
+				<AddAtoms res1="397" atom1="CA" res2="397" atom2="C" res3="398" atom3="N" res4="398" atom4="CA"/>
+				<AddAtoms res1="398" atom1="CA" res2="398" atom2="C" res3="399" atom3="N" res4="399" atom4="CA"/>
+				<AddAtoms res1="399" atom1="CA" res2="399" atom2="C" res3="400" atom3="N" res4="400" atom4="CA"/>
+				<AddAtoms res1="400" atom1="CA" res2="400" atom2="C" res3="401" atom3="N" res4="401" atom4="CA"/>
+				<AddAtoms res1="401" atom1="CA" res2="401" atom2="C" res3="402" atom3="N" res4="402" atom4="CA"/>
+				<AddAtoms res1="402" atom1="CA" res2="402" atom2="C" res3="403" atom3="N" res4="403" atom4="CA"/>
+				<AddValue value="180.0"/>
+			</AddPerturber>
 
-            <AddPerturber effect="randomize_alpha_backbone_by_rama">
-                <AddResidue index="392"/>
-                <AddResidue index="393"/>
-                <AddResidue index="394"/>
-                <AddResidue index="395"/>
-                <AddResidue index="396"/>
-                <AddResidue index="397"/>
-                <AddResidue index="398"/>
-                <AddResidue index="399"/>
-                <AddResidue index="400"/>
-                <AddResidue index="401"/>
-                <AddResidue index="402"/>
-                <AddResidue index="403"/>
-            </AddPerturber>
-            <AddFilter type="loop_bump_check" />
-        </GeneralizedKIC>
+			<AddPerturber effect="randomize_alpha_backbone_by_rama">
+				<AddResidue index="392"/>
+				<AddResidue index="393"/>
+				<AddResidue index="394"/>
+				<AddResidue index="395"/>
+				<AddResidue index="396"/>
+				<AddResidue index="397"/>
+				<AddResidue index="398"/>
+				<AddResidue index="399"/>
+				<AddResidue index="400"/>
+				<AddResidue index="401"/>
+				<AddResidue index="402"/>
+				<AddResidue index="403"/>
+			</AddPerturber>
+			<AddFilter type="loop_bump_check" />
+		</GeneralizedKIC>
 		
-        <FastRelax name="fastrelax" repeats="4" scorefxn="ref_cst" task_operations="init,incCurrent,ex,designoff,designaround"/>
-        <AddOrRemoveMatchCsts name="match_cst" cst_instruction="add_new" cstfile="1cg2_zn_dimer_pluscomp.cst"/>
-        
+		<FastRelax name="fastrelax" repeats="4" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designoff,designaround"/>
+		<AddOrRemoveMatchCsts name="match_cst" cst_instruction="add_new" cstfile="1cg2_zn_dimer_pluscomp.cst"/>
+
 		<AddConstraints name="add_coordcsts">
 			<CoordinateConstraintGenerator name="coord_nolinker" residue_selector="not_loop"/>
 		</AddConstraints>
@@ -95,22 +96,23 @@
 	<APPLY_TO_POSE>
 	</APPLY_TO_POSE>
 	<PROTOCOLS>
-        Link the prodomain to chain A.
+		Link the prodomain to chain A.
 		<Add mover_name="linkdomain"/>
+		<Add mover_name="foldtree"/>
 		Add match csts and repack/minimize catalytic.
-        <Add mover_name="match_cst"/>
+		<Add mover_name="match_cst"/>
 		<Add mover_name="packcatalytic"/>
 		<Add mover_name="mincatalytic"/>
-			
+
 		GenKIC closed
-        <Add mover_name="genkic"/>
+		<Add mover_name="genkic"/>
 		Add coordinate constraints and relax around the linker.
-        <Add mover_name="add_coordcsts"/>
-        <Add mover_name="fastrelax"/>
-		
+		<Add mover_name="add_coordcsts"/>
+		<Add mover_name="fastrelax"/>
+
 		Remove coordinate constraints (leaving match csts) and calculate cstE.
 		<Add mover_name="rem_coordcsts"/>
-        <Add filter_name="cstE"/>
+		<Add filter_name="cstE"/>
 	</PROTOCOLS>
 	<OUTPUT scorefxn="ref_cst"/>
 </ROSETTASCRIPTS>
