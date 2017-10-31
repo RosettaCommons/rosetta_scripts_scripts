@@ -126,6 +126,7 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 	</FILTERS>
 	<MOVERS>
 		Setup the foldtree
+		<DeclareBond name="connectchains" res1="402" res2="403" atom1="C" atom2="N"/>
 		<AtomTree name="setup_ft" fold_tree_file="%%foldtree%%"/>
 		
 		Repack and min catalytic
@@ -141,7 +142,6 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		AddChain name="add_partnera" file_name="cpg2-tev-_chaina.pdb" new_chain="1"/> scorefxn="ref_cst"
 		AddChain name="add_partnerc" file_name="cpg2-tev-_chainc.pdb" new_chain="1"/> scorefxn="ref_cst"
 		SwitchChainOrder name="swapchains" chain_order="21"/>
-		DeclareBond name="connectchains" res1="402" res2="403" atom1="C" atom2="N"/>	res2="798"
 		AtomTree name="basicft" simple_ft="1"/>
 		
 		Post-SEWING add back zincs
@@ -202,8 +202,9 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		Add mover_name="add_scaffold_and_zns"/>
 		
 		Add enzdes constraints and minimize csts
-		<Add mover_name="matchcst"/>
+		<Add mover_name="connectchains"/>
 		<Add mover_name="setup_ft"/>
+		<Add mover_name="matchcst"/>
 		<Add mover_name="packcatalytic"/>
 		<Add mover_name="mincatalytic"/>
 		
