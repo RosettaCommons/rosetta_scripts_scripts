@@ -45,6 +45,11 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		Index name="cat_glu" resnums="9"/>
 		<Index name="cat_glu" resnums="411B"/>
 		<SecondaryStructure name="loops" overlap="1" include_terminal_loops="false" ss="L" use_dssp="true"/>
+		
+		Layer design selectors
+		<Layer name="core" select_core="true" use_sidechain_neighbors="true"/>
+		<Layer name="boundary" select_boundary="true" use_sidechain_neighbors="true"/>
+		<Layer name="surface" select_surface="true" use_sidechain_neighbors="true"/>
 	</RESIDUE_SELECTORS>
 	
 	<TASKOPERATIONS>
@@ -89,6 +94,17 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		<DisallowIfNonnative name="dontaddGPC" resnum="0" disallow_aas="GCP"/>
 		<RestrictIdentities name="dontremGPC" identities="GLY,CYS,PRO" prevent_repacking="0"/>
 		<DsspDesign name="designbyss"/>
+		
+		Layer design task operations
+		<OperateOnResidueSubset name="surface_to" selector="surface" >
+		  <RestrictAbsentCanonicalAASRLT aas="DEGHKNPQRST"/>
+		</OperateOnResidueSubset>
+		<OperateOnResidueSubset name="boundary_to" selector="boundary" >
+		  <RestrictAbsentCanonicalAASRLT aas="ADEFGIKLNPQRSTVWY"/>
+		</OperateOnResidueSubset>
+		<OperateOnResidueSubset name="core_to" selector="core" >
+		  <RestrictAbsentCanonicalAASRLT aas="AFILPVWY"/>
+		</OperateOnResidueSubset>
 	</TASKOPERATIONS>
 	
 	<FILTERS>
@@ -157,7 +173,7 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff,
 		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold"/>catdesignoff
 		FastDesign name="fastdesign_cart" cartesian="1" scorefxn="ref_cst_cart" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff
-		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="1" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss">catdesignoff
+		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="1" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss,surface_to,boundary_to,core_to">catdesignoff
 			<MoveMap>
 				<Chain number="1" chi="1" bb="0"/>Chain A
 				<Chain number="3" chi="1" bb="0"/>Chain C
