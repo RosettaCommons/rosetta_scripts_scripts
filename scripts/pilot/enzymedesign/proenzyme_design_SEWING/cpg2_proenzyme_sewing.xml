@@ -21,37 +21,20 @@ keep the SEWING scoreterms in the scorefile.  Adding the scaffold is done "outsi
 	</SCOREFXNS>
 	
 	<RESIDUE_SELECTORS>
-		<And name="dockchain">
-			<Chain chains="A"/>
-			<Not>
-				<ResidueName residue_name3="ZN"/>
-			</Not>
-		</And>
-		
-		<Not name="scaffoldzn" selector="dockchain"/>
-		<ResidueName name="zns" residue_name3="ZN"/>
 		<Index name="cat_glu" resnums="411B"/>
 	</RESIDUE_SELECTORS>
 	
 	<TASKOPERATIONS>	
-		<OperateOnResidueSubset name="dontrepackscaffold">
-			<Chain chains="A,C"/>
-			<PreventRepackingRLT/>
-		</OperateOnResidueSubset>
-		
-		<OperateOnResidueSubset name="nodesignscaffold" selector="scaffoldzn">
-			<RestrictToRepackingRLT/>
-		</OperateOnResidueSubset>
 	</TASKOPERATIONS>
 	
 	<FILTERS>
 		<PackStat name="packstat" threshold="0.50" chain="1" confidence="0"/>
 		<CavityVolume name="cavvolume" confidence="0"/>
 		<SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0"/>
-		<SecondaryStructureHasResidue name="require_core" confidence="0" ss_select_task_operations="nodesignscaffold"/>
+		<SecondaryStructureHasResidue name="require_core" confidence="0"/>
 		<FragmentLookupFilter name="fragment_lookup" lookup_name="source_fragments_4_mer" store_path="VALL_clustered/backbone_profiler_database_06032014"
 		 lookup_mode="first" chain="1" threshold="0" confidence="0" />
-		<ResidueCount name="nres_b" residue_selector="dockchain" min_residue_count="0" max_residue_count="1000" confidence="0"/>
+		<ResidueCount name="nres_b" min_residue_count="0" max_residue_count="1000" confidence="0"/>
 	</FILTERS>
 	<MOVERS>
 		<AppendAssemblyMover name="aam" model_file_name="smotifs_H_5_40_L_1_6_H_5_40.segments" hashed="false"
