@@ -5,18 +5,17 @@ Email: brahm.yachnin@rutgers.edu
 
 Starting with a short helix that we have found to autoinhibit carboxypeptidease G2,
 this script extends that helix using SEWING (AppendAssembly), adapted using suggestions from
-Sharon Guffy and Frank Teets (Kuhlman lab).  Because of a number of issues with
-multichain proteins and zinc-containing proteins, the protocol works as follows:
+Sharon Guffy and Frank Teets (Kuhlman lab).  This will be followed by subsequent design steps
+in a separate script:
 -Start with the inhibitory helix (prodomain) alone as the input PDB.
 -Run AppendAssemblyMover SEWING, using the CPG2 "scaffold" as the partner_pdb.  The
  last residue of the scaffold-prodomain is removed from the partner_pdb to prevent the 
  SEWING mover from thinking it's a clash.
--Add the CPG2 "scaffold" as new chains, and connect chain A of the scaffold to chain B
- (the prodomain).
--Do a repack/design and cartesian minimization to relieve clashes.
--Do FastDesign for more extensive design with small backbone movements.
++Add the CPG2 "scaffold" as new chains in a separate script.
++Do a repack/design and cartesian minimization to relieve clashes.
++Do FastDesign for more extensive design with small backbone movements.
 This script runs the SEWING part, and a companion script does the design part.  This allows us to
-keep the SEWING scoreterms in the scorefile.
+keep the SEWING scoreterms in the scorefile.  Adding the scaffold is done "outside" of Rosetta.
 	<SCOREFXNS>
 		<ScoreFunction name="ref" weights="ref2015.wts"/>
 	</SCOREFXNS>
@@ -46,14 +45,12 @@ keep the SEWING scoreterms in the scorefile.
 	</TASKOPERATIONS>
 	
 	<FILTERS>
-		<PackStat name="packstat" threshold="0.50" chain="1"/>
-		<BuriedUnsatHbonds name="buriedunsat" scorefxn="ref" jump_number="1" cutoff="20" task_operations="dontrepackscaffold" confidence="0"/>
-		<CavityVolume name="cavvolume"/>
-		<SSShapeComplementarity name="shapecomp" residue_selector="dockchain" verbose="1" min_sc="0.0"/>
+		<PackStat name="packstat" threshold="0.50" chain="1" confidence="0"/>
+		<CavityVolume name="cavvolume" confidence="0"/>
 		<SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0"/>
 		<SecondaryStructureHasResidue name="require_core" confidence="0" ss_select_task_operations="nodesignscaffold"/>
 		<FragmentLookupFilter name="fragment_lookup" lookup_name="source_fragments_4_mer" store_path="VALL_clustered/backbone_profiler_database_06032014"
-		 lookup_mode="first" chain="1" threshold="0" confidence="1" />
+		 lookup_mode="first" chain="1" threshold="0" confidence="0" />
 		<ResidueCount name="nres_b" residue_selector="dockchain" min_residue_count="0" max_residue_count="1000" confidence="0"/>
 	</FILTERS>
 	<MOVERS>
@@ -62,7 +59,6 @@ keep the SEWING scoreterms in the scorefile.
 			maximum_cycles = "11000" modifiable_terminus = "C" output_pose_per_move = "false"
 			partner_pdb="cpg2-gstevg-_zns.pdb" required_selector="cat_glu" output_partner="0"
 			pose_segment_starts="1" pose_segment_ends="17">
-			pose_segment_starts="403" pose_segment_ends="419" required_resnums = "21"
 			<Ligands>
 				<Ligand ligand_resnum="402" partner_ligand="1" auto_detect_contacts="1"/>
 			</Ligands>
@@ -91,9 +87,7 @@ keep the SEWING scoreterms in the scorefile.
 	
 		Add some filters
 		<Add filter_name="packstat"/>
-		Add filter_name="buriedunsat"/>
 		<Add filter_name="cavvolume"/>Cavity volume doesn't work with the selector.
-		Add filter_name="shapecomp"/>
 		<Add filter_name="sspred"/>
 		<Add filter_name="require_core"/>
 		<Add filter_name="nres_b"/>
