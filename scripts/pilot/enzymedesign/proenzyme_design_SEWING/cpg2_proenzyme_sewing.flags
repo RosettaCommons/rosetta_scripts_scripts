@@ -1,6 +1,7 @@
 -run:preserve_header
 -linmem_ig 10
 -mute core.io.database
+-out:levels all:300 devel.smart_sewing:200 protocols.filters.Filter:200 protocols.rosetta_scripts.ParsedProtocol:200 protocols.rosetta_scripts.ParsedProtocol.REPORT:300 
 
 #Sewing
 -use_input_sc
