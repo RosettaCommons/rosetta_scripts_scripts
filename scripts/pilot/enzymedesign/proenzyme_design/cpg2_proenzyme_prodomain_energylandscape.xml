@@ -1,0 +1,135 @@
+<ROSETTASCRIPTS>
+Keywords: protein interface design, single sided design, enzyme design
+Authors: Brahm Yachnin, Elliott Dolan
+Email: brahm.yachnin@rutgers.edu
+
+This script is intended to sample the energy landscape of a designed proenzyme.  The original 
+CPG2 enzyme dimer is in chains A and C, with the designed inhibitory prodomain as chain B.  
+The linker between chain A and the chain B prodomain (located at the C-term of chain A) allowed to 
+undergo random, rama-biased backbone conformational sampling, followed by packing and minimization.  This 
+allows relatively fast sampling of the conformational space available to the prodomain, allowing validation of 
+the designed position using score vs. rmsd plots similar to forward folding trajectories.
+
+Each torsion run in the MC mover samples a single residue's backbone torsion.  My tests with CPG2 found that 
+~30 torsion runs for an 11 residue linker gave a reasonable conformational landscape with an nstruct of 750.  
+Changing the temperature or setting preapply=1 will also alter what part of the landscape is sampled most 
+efficiently.  Ideal parameters should be determined for each project.
+
+The ex task operation can be used in linker_repack if run time is not a major concern.  Disabling linmem_ig also 
+improved run time in our tests.
+	<SCOREFXNS>
+		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts" />
+	</SCOREFXNS>
+	<RESIDUE_SELECTORS>
+		Set flexing to the linker residues to be sampled.
+		<Index name="flexing" resnums="396-406" />
+		<Not name="not_flexing" selector="flexing" />
+		<Neighborhood name="around_flex" selector="flexing" distance="8.0" />
+		<Or name="bothflex" selectors="around_flex,flexing" />
+		<Not name="notbothflex" selector="bothflex" />
+		<Index name="zncatalytic" resnums="25,54,89,113,298"/>
+	</RESIDUE_SELECTORS>
+
+	<TASKOPERATIONS>
+		<ExtraRotamersGeneric name="ex" ex1="1" ex2="1" ex1aro="1" ex1_sample_level="1" ex2_sample_level="1" ex1aro_sample_level="1" extrachi_cutoff="1"/>
+		<InitializeFromCommandline name="init"/>
+		<IncludeCurrent name="keep_curr"/>
+		<RestrictToRepacking name="restrict" />
+
+		<OperateOnResidueSubset name="nodesign_notflexing" selector="not_flexing" >
+			<RestrictToRepackingRLT/>
+		</OperateOnResidueSubset>
+		<OperateOnResidueSubset name="not_flex_prevent" selector="notbothflex" >
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+		
+		<OperateOnResidueSubset name="freeze_zn" selector="zncatalytic" >
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+	</TASKOPERATIONS>
+
+	<FILTERS>
+		<ScoreType name="score" scorefxn="ref_cst" score_type="total_score" threshold="9999"/>
+		<Report name="initscore" filter="score"/>
+		<Rmsd name="helix_linker_rmsd" chains="B" threshold="9999" superimpose="0"/>
+	</FILTERS>
+
+	<MOVERS>
+		Repack around flexing
+		<PackRotamersMover name="linker_repack" scorefxn="ref_cst" task_operations="init,keep_curr,not_flex_prevent,restrict,freeze_zn" />
+
+		Minimize around flexing
+		<TaskAwareMinMover name="all_minimizer" scorefxn="ref_cst" chi="1" bb="1" jump="0" type="lbfgs_armijo_nonmonotone" task_operations="init,keep_curr,not_flex_prevent,nodesign_notflexing,freeze_zn"/>
+
+		Declare bond between chain A and the inhibitory domain.  Set res1 and res2 to be the last residue of chain A and the first residue of chain B.
+		Currently, rebuild_fold_tree="True" causes problems with many filters, but avoids having to generate custom foldtrees for each input pose.
+		<DeclareBond name="attach_chains" res1="406" res2="407" atom1="C" atom2="N" add_termini="TRUE" rebuild_fold_tree="TRUE"/>
+		
+		Add a SetTorsion mover for every residue in the linker.  Add each of these movers to the random_twister mover.
+		<SetTorsion name="tor1" >
+			<Torsion residue="396" torsion_name="rama" angle="rama_biased" />
+		</SetTorsion>
+		<SetTorsion name="tor2" >
+			<Torsion residue="397" torsion_name="rama" angle="rama_biased" />
+		</SetTorsion>
+		<SetTorsion name="tor3" >
+			<Torsion residue="398" torsion_name="rama" angle="rama_biased" />
+		</SetTorsion>
+		<SetTorsion name="tor4" >
+			<Torsion residue="399" torsion_name="rama" angle="rama_biased" />
+		</SetTorsion>
+		<SetTorsion name="tor5" >
+			<Torsion residue="400" torsion_name="rama" angle="rama_biased" />
+		</SetTorsion>
+		<SetTorsion name="tor6" >
+			<Torsion residue="401" torsion_name="rama" angle="rama_biased" />
+		</SetTorsion>
+		<SetTorsion name="tor7" >
+			<Torsion residue="402" torsion_name="rama" angle="rama_biased" />
+		</SetTorsion>
+		<SetTorsion name="tor8" >
+			<Torsion residue="403" torsion_name="rama" angle="rama_biased" />
+		</SetTorsion>
+		<SetTorsion name="tor9" >
+			<Torsion residue="404" torsion_name="rama" angle="rama_biased" />
+		</SetTorsion>
+		<SetTorsion name="tor10" >
+			<Torsion residue="405" torsion_name="rama" angle="rama_biased" />
+		</SetTorsion>
+		<SetTorsion name="tor11" >
+			<Torsion residue="406" torsion_name="rama" angle="rama_biased" />
+		</SetTorsion>
+
+		<RandomMover name="random_twister" movers="tor1,tor2,tor3,tor4,tor5,tor6,tor7,tor8,tor9,tor10,tor11" repeats="1" />
+
+		Repack and minimize around flexing
+		<ParsedProtocol name="packmin" mode="sequence" >
+			<Add mover_name="linker_repack" />
+			<Add mover_name="all_minimizer" />
+		</ParsedProtocol>
+
+		Apply a random torsion, and then repack and min.
+		<ParsedProtocol name="twist_and_min" mode="sequence" >
+			<Add mover_name="random_twister" />
+			<Add mover_name="packmin" />
+		</ParsedProtocol>
+		
+		The GenericMonteCarlo mover for twist_and_min.
+		<GenericMonteCarlo name="monte_rando" mover_name="twist_and_min" scorefxn_name="ref_cst" trials="%%set_torsion_runs%%" preapply="0" temperature="10.0" recover_low="0"/>
+	</MOVERS>
+
+	<PROTOCOLS>
+		Attach chain A and chain B explicitly, since they are covalently linked.
+		<Add mover="attach_chains"/>
+		Calculate the score of the initial pose in a report filter so that this is easily available in the score file.
+		<Add filter="initscore"/>
+		
+		Run the monte carlo sampling of linker conformations.
+		<Add mover="monte_rando" />
+		
+		Calculate the RMSD to the original structure.
+		<Add filter="helix_linker_rmsd"/>
+	</PROTOCOLS>
+	
+	<OUTPUT scorefxn="ref_cst"/>
+</ROSETTASCRIPTS>
