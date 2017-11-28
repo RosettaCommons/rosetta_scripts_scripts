@@ -108,11 +108,11 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 	</TASKOPERATIONS>
 	
 	<FILTERS>
-		<EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="9999.0"/>
-		<PackStat name="packstat" threshold="0.50" chain="0"/>
-		<BuriedUnsatHbonds name="buriedunsat" scorefxn="ref_cst" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>cutoff=20
+		<EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="20.0"/>
+		<PackStat name="packstat" threshold="0.60" chain="0"/>
+		<BuriedUnsatHbonds name="buriedunsat" confidence="0" scorefxn="ref_cst" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>cutoff=20
 		<CavityVolume name="cavvolume"/> selector="dockchain"
-		<SSShapeComplementarity name="shapecomp" residue_selector="dockchain" verbose="1" min_sc="0.0"/>
+		<SSShapeComplementarity name="shapecomp" residue_selector="dockchain" verbose="1" min_sc="0.55"/>
 		<SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0"/>
 		<SecondaryStructureHasResidue name="require_core" confidence="0" ss_select_task_operations="nodesignscaffold"/>
 		<FragmentLookupFilter name="fragment_lookup" lookup_name="source_fragments_4_mer" store_path="VALL_clustered/backbone_profiler_database_06032014"
@@ -173,7 +173,7 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff,
 		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold"/>catdesignoff
 		FastDesign name="fastdesign_cart" cartesian="1" scorefxn="ref_cst_cart" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff
-		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="1" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss,surface_to,boundary_to,core_to">catdesignoff
+		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="2" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss,surface_to,boundary_to,core_to">catdesignoff
 			<MoveMap>
 				<Chain number="1" chi="1" bb="0"/>Chain A
 				<Chain number="3" chi="1" bb="0"/>Chain C
@@ -207,6 +207,7 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		<Add mover_name="matchcst"/>
 		<Add mover_name="packcatalytic"/>
 		<Add mover_name="mincatalytic"/>
+		<Add filter_name="cstE"/>
 		
 		Do repacks with cartesian minimization to clean up clashes introduced by SEWING first.
 		<Add mover_name="favournative_loops"/>
