@@ -111,10 +111,10 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 	
 	<FILTERS>
 		<EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="20.0"/>
-		<PackStat name="packstat" threshold="0.57" chain="0" repeats="3"/>
+		<PackStat name="packstat" threshold="0.55" confidence="0" chain="0" repeats="3"/>
 		<BuriedUnsatHbonds name="buriedunsat" confidence="0" scorefxn="ref_cst" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>cutoff=20
 		<CavityVolume name="cavvolume"/> selector="dockchain"
-		<SSShapeComplementarity name="shapecomp" residue_selector="dockchain" verbose="1" min_sc="0.55"/>
+		<SSShapeComplementarity name="shapecomp" confidence="0" residue_selector="dockchain" verbose="1" min_sc="0.55"/>
 		<SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0"/>
 		<SecondaryStructureHasResidue name="require_core" confidence="0" ss_select_task_operations="nodesignscaffold"/>
 		<FragmentLookupFilter name="fragment_lookup" lookup_name="source_fragments_4_mer" store_path="VALL_clustered/backbone_profiler_database_06032014"
@@ -135,7 +135,7 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 	
 		Post-SEWING pack and min movers.
 		<PackRotamersMover name="repacksewed"   scorefxn="ref_cst" task_operations="init,inccurrent,ex,designoff,repacksewed,dontrepackscaffold,nodesigncatglu"/>
-		<TaskAwareMinMover name="cartmin-sewed" scorefxn="ref_cst_cart" chi="1" bb="1" jump="0" cartesian="1" task_operations="init,inccurrent,ex,dontrepackscaflink"/>
+		<TaskAwareMinMover name="cartmin-sewed" scorefxn="ref_cst_cart" chi="1" bb="1" jump="0" cartesian="1" max_iter="2000" task_operations="init,inccurrent,ex,dontrepackscaflink"/>
 		<TaskAwareMinMover name="min-sewed" scorefxn="ref_cst" chi="1" bb="1" jump="0" cartesian="0" task_operations="init,inccurrent,ex,dontrepackscaffold"/>
 
 		Design stuff
