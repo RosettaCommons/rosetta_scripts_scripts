@@ -112,7 +112,7 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 	<FILTERS>
 		<EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="20.0"/>
 		<PackStat name="packstat" threshold="0.55" confidence="0" chain="0" repeats="3"/>
-		<BuriedUnsatHbonds name="buriedunsat" confidence="0" scorefxn="ref_cst" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>cutoff=20
+		<BuriedUnsatHbonds name="buriedunsat" confidence="0" scorefxn="ref_cst" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>
 		<CavityVolume name="cavvolume"/> selector="dockchain"
 		<SSShapeComplementarity name="shapecomp" confidence="0" residue_selector="dockchain" verbose="1" min_sc="0.55"/>
 		<SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0"/>
@@ -120,6 +120,7 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		<FragmentLookupFilter name="fragment_lookup" lookup_name="source_fragments_4_mer" store_path="VALL_clustered/backbone_profiler_database_06032014"
 		 lookup_mode="first" chain="2" threshold="0" confidence="0"/>
 		<ResidueCount name="nres_b" residue_selector="dockchain" min_residue_count="0" max_residue_count="1000"/>
+		<ExposedHydrophobics name="ex_hydrophobics" confidence="0"/>
 		
 		<Report name="packstat_rep" filter="packstat"/>
 		<Report name="shapecomp_rep" filter="shapecomp"/>
@@ -139,10 +140,9 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		<TaskAwareMinMover name="min-sewed" scorefxn="ref_cst" chi="1" bb="1" jump="0" cartesian="0" task_operations="init,inccurrent,ex,dontrepackscaffold"/>
 
 		Design stuff
-		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff,
-		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold"/>catdesignoff
-		FastDesign name="fastdesign_cart" cartesian="1" scorefxn="ref_cst_cart" repeats="3" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>catdesignoff
-		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="2" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss,surface_to,boundary_to,core_to">catdesignoff
+		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss"/>
+		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold"/>
+		<FastDesign name="fastdesign" cartesian="0" scorefxn="ref_cst" repeats="1" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,nodesigncatglu,dontaddGPC,dontremGPC,designbyss,surface_to,boundary_to,core_to">
 			<MoveMap>
 				<Chain number="1" chi="1" bb="0"/>Chain A
 				<Chain number="3" chi="1" bb="0"/>Chain C
@@ -162,8 +162,6 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		<RemoveConstraints name="rem_coordcsts" constraint_generators="gen_coordcsts"/>
 		<RemoveConstraints name="rem_favournative" constraint_generators="loop_rescst"/>
 		<AddOrRemoveMatchCsts name="matchcst" cst_instruction="add_new" cstfile="1cg2_zn_dimer_pluscomp.cst" accept_blocks_missing_header="1"/>
-		
-		<DumpPdb name="dumppdb" fname="dump.pdb" scorefxn="ref_cst" tag_time="1"/>
 	</MOVERS>
 	<PROTOCOLS>
 		Add enzdes constraints and minimize csts
@@ -198,6 +196,7 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		<Add filter_name="require_core"/>
 		<Add filter_name="nres_b"/>
 		<Add filter_name="fragment_lookup"/>
+		<Add filter_name="ex_hydrophobics"/>
 		
 		Reset constraints
 		<Add mover_name="removecsts"/>
