@@ -202,7 +202,7 @@ This script runs the post-SEWING part, and should run after the SEWING script.
 		Reset constraints
 		<Add mover_name="removecsts"/>
 		<Add mover_name="rem_favournative"/>
-		
+		<Add mover_name="matchcst"/>
 		<Add filter_name="cstE"/>
 	</PROTOCOLS>
 </ROSETTASCRIPTS>
