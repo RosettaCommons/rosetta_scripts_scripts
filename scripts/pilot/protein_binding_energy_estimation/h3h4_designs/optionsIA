@@ -1,0 +1,19 @@
+# The purpose of this flags file is to run the interface-analyzer application after
+# the hacked-together version of the fast-relax protocol run through RosettaScripts
+# using the fastrelax3x_h3h4_fullrelax.xml file.
+
+#-database /nas02/home/l/e/leaverfa/SVN/minirosetta_database
+#-l pdblist
+-jd2::no_output
+-jumpnum 1
+-overwrite
+#-is_compute_hbond_unsat true
+#-is_compute_packstat true
+-compute_packstat
+-tracer_data_print
+#-write_pymol_selections_to_file false
+#-print_pymol_selections false
+-mute protocols.toolbox
+-pack_input
+-pack_separated
+# TEMP!! -compute_interface_sc false

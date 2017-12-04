@@ -1,0 +1,32 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="ref2015_cst" weights="ref2015.wts">
+      <Reweight scoretype="coordinate_constraint" weight="1.0" />
+    </ScoreFunction>
+    <ScoreFunction name="ref2015" weights="ref2015.wts"/>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <Index name="h3h4_loop_residues" resnums="57A-63A,79A-85A,115A-120A,29B-30B,42B-49B,76B-82B"/>
+    <SecondaryStructure name="helix_res" ss="H"/>
+  </RESIDUE_SELECTORS>
+  <MOVE_MAP_FACTORIES>
+   <MoveMapFactory name="move_loops" bb="false" chi="true">
+     <Backbone residue_selector="h3h4_loop_residues"/>
+   </MoveMapFactory>
+  </MOVE_MAP_FACTORIES>
+
+  <FILTERS>
+  </FILTERS>
+  <MOVERS>
+    <AddConstraintsToCurrentConformationMover name="coord_constr1" CA_only="1" coord_dev="1.0" cst_weight="1" residue_selector="helix_res" bound_width="0.5" />
+    <FastRelax name="relax" scorefxn="ref2015_cst" repeats="3" min_type="lbfgs_armijo_nonmonotone"/>
+  </MOVERS>
+  <APPLY_TO_POSE>
+  </APPLY_TO_POSE>
+  <PROTOCOLS>
+    Add mover=pmut1
+    <Add mover="coord_constr1"/>
+    <Add mover="relax"/>
+  </PROTOCOLS>
+  <OUTPUT scorefxn="ref2015"/>
+</ROSETTASCRIPTS>
