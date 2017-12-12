@@ -1,4 +1,24 @@
 <ROSETTASCRIPTS>
+Keywords: protein interface design, single sided design, enzyme design
+Author: Brahm Yachnin
+Email: brahm.yachnin@rutgers.edu
+
+This script's purpose is to increase the diversity of prodomain designs of CPG2 by
+doing fixed backbone design on the prodomain.  The corresponding hbnet script will
+run a similar protocol, but includes explicit H-bond network design.  The input for
+this protocol is a "pro-CPG2" design, typically made using hotspot "docking" of an
+existing small domain or using SEWING to de novo design a backbone.  The starting
+model be relaxed.  The prodomain is expected to be chain B, with the inhibited domain
+as chain A and the other protomer being chain C.  A foldtree file should be generated
+to explicitly connect chain A and B.  The protocol works as follows:
+-Connect chain A of the scaffold to chain B (the prodomain), and apply foldtree.
+-Add match csts and pack and minimize catalytic residues.  Filter for cst energy and total score.
+-Do a series of design and minimization steps.
+-Apply appropriate filters.
+
+NOTE: The residue ids should be changed in the following residue selectors and task operations
+to match the appropriate residues in the input structure:
+-
 	<SCOREFXNS>
 		<ScoreFunction name="ref" weights="ref2015.wts"/>
 		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts"/>
