@@ -20,24 +20,7 @@ NOTE: The residue ids should be changed in the following residue selectors and t
 to match the appropriate residues in the input structure:
 -
 	<SCOREFXNS>
-		<ScoreFunction name="ref" weights="ref2015.wts"/>
 		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts"/>
-		<ScoreFunction name="ref_cst_cart" weights="ref2015_cart.wts">
-			<Reweight scoretype="angle_constraint" weight="1.0"/>
-			<Reweight scoretype="atom_pair_constraint" weight="1.0"/>
-			<Reweight scoretype="chainbreak" weight="1.0"/>
-			<Reweight scoretype="coordinate_constraint" weight="1.0"/>
-			<Reweight scoretype="dihedral_constraint" weight="1.0"/>
-			<Reweight scoretype="res_type_constraint" weight="1.0"/>
-		</ScoreFunction>
-		<ScoreFunction name="ref_soft" weights="ref2015_soft.wts">
-			<Reweight scoretype="angle_constraint" weight="1.0"/>
-			<Reweight scoretype="atom_pair_constraint" weight="1.0"/>
-			<Reweight scoretype="chainbreak" weight="1.0"/>
-			<Reweight scoretype="coordinate_constraint" weight="1.0"/>
-			<Reweight scoretype="dihedral_constraint" weight="1.0"/>
-			<Reweight scoretype="res_type_constraint" weight="1.0"/>
-		</ScoreFunction>
 		<ScoreFunction name="ref_cst_output" weights="ref2015_cst.wts">
 			<Reweight scoretype="res_type_constraint" weight="0.0"/>
 		</ScoreFunction>
@@ -50,20 +33,13 @@ to match the appropriate residues in the input structure:
 				<ResidueName residue_name3="ZN"/>
 			</Not>
 		</And>
-		
-		<ResidueName name="zns" residue_name3="ZN"/>
-		
+			
 		<Not name="scaffoldzn" selector="dockchain"/>
 			
 		<Or name="corecontact">
 			<Chain chains="B"/>
 			<Index resnums="29A,88A,89A,90A,91A,113A,237A,272A,298A"/>
 		</Or>
-		
-		<Index name="linkerres" resnums="394A,395A,396A,397A,398A,399A,400A,401A,402A,403A,404A,405A,406A"/>
-
-		<Or name="linkdomain" selectors="linkerres,dockchain"/>
-		<Neighborhood name="aroundaddition" selector="linkdomain" distance="5.0"/>
 	</RESIDUE_SELECTORS>
 	
 	<TASKOPERATIONS>
@@ -73,29 +49,10 @@ to match the appropriate residues in the input structure:
 		
 		<RestrictToRepacking name="designoff"/>
 		<SetCatalyticResPackBehavior name="catdesignoff" fix_catalytic_aa="0"/>
-		<SetCatalyticResPackBehavior name="fixcat" fix_catalytic_aa="1"/>
 		<SetCatalyticResPackBehavior name="freeze-noncat" fix_catalytic_aa="0" behavior_non_catalytic="NATRO"/>
-
-		<OperateOnResidueSubset name="fixdockchain" selector="dockchain">
-			<PreventRepackingRLT/>
-		</OperateOnResidueSubset>
-
-		<OperateOnResidueSubset name="fixawayaddition">
-			<Not selector="aroundaddition"/>
-			<PreventRepackingRLT/>
-		</OperateOnResidueSubset>
-		
-		<OperateOnResidueSubset name="fixlinker" selector="linkerres">
-			<PreventRepackingRLT/>
-		</OperateOnResidueSubset>
-		
+	
 		<OperateOnResidueSubset name="repackcoreonly">
-			<Not>
-				<Or>
-					<Chain chains="B"/>
-					<Index resnums="29A,88A,89A,90A,91A,113A,237A,272A,298A"/>
-				</Or>
-			</Not>
+			<Not selector="corecontact"/>
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
 
@@ -109,12 +66,7 @@ to match the appropriate residues in the input structure:
 		<OperateOnResidueSubset name="nodesignscaffold" selector="scaffoldzn">
 			<RestrictToRepackingRLT/>
 		</OperateOnResidueSubset>
-		
-		<OperateOnResidueSubset name="designlinkeronly">
-			<Not selector="linkerres"/>
-			<PreventRepackingRLT/>
-		</OperateOnResidueSubset>
-		
+			
 		Design restriction task ops
 		<DisallowIfNonnative name="dontaddGPC" resnum="0" disallow_aas="GCP"/>
 		<RestrictIdentities name="dontremGPC" identities="GLY,CYS,PRO" prevent_repacking="0"/>
@@ -132,15 +84,6 @@ to match the appropriate residues in the input structure:
 		<Rmsd name="rmsd_chainb" chains="B" threshold="1" superimpose="1"/>
 		
 		<ScoreType name="total" scorefxn="ref_cst_output" threshold="-2000"/>
-		<ScoreType name="farep" scorefxn="ref" score_type="fa_rep" threshold="600"/>
-
-		Report filters
-		Report name="cstE_start" filter="cstE"/>
-		
-		Diagnostic filters
-		PoseInfo name="poseinfo"/>
-		DesignableResidues name="designableres" task_operations="catdesignoff" designable="1" packable="1"/>
-		DesignableResidues name="designableres-NATRO" task_operations="freeze-noncat" designable="1" packable="1"/>
 	</FILTERS>
 	
 	<MOVERS>
@@ -148,11 +91,7 @@ to match the appropriate residues in the input structure:
 		<FavorNativeResidue name="favournative" bonus="2.0"/>
 		<AddOrRemoveMatchCsts name="addmatchcsts" cst_instruction="add_new" cstfile="1cg2_zn_dimer_pluscomp.cst" accept_blocks_missing_header="0"/>
 		<ClearConstraintsMover name="removecsts"/>
-		
-		<MutateResidue name="a_k177a" target="90A" new_res="ALA"/>
-		
-		<MutateResidue name="resetzns" residue_selector="zns" new_res="ZN" preserve_atom_coords="1"/>
-		
+			
 		Repack and min catalytic
 		<PackRotamersMover name="packcatalytic" scorefxn="ref_cst" task_operations="init,inccurrent,ex,freeze-noncat,designoff"/>
 		<TaskAwareMinMover name="mincatalytic"  scorefxn="ref_cst" task_operations="init,inccurrent,ex,freeze-noncat" chi="1" bb="0" jump="0"/>
@@ -160,18 +99,12 @@ to match the appropriate residues in the input structure:
 		Main design mover
 		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,catdesignoff,dontaddGPC,dontremGPC,designbyss"/>
 		
-		Minimization movers
-			Regular minimization
-			<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,catdesignoff"/>
-			Rigid body min of the inhibitory domain (needs rb_foldtree)
-			<MinMover name="rbmin_dock" scorefxn="ref_cst" chi="0" bb="0" jump="1"/>
-			Cartesian minimization of the linker
-			<TaskAwareMinMover name="linker_cartmin" scorefxn="ref_cst_cart" chi="1" bb="1" jump="0" cartesian="1" task_operations="init,inccurrent,ex,designlinkeronly"/>
+		Regular minimization
+		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,catdesignoff"/>
 						
 		Foldtree stuff
 		<DeclareBond name="connectchains" res1="406" res2="407" atom1="C" atom2="N"/>
 		<AtomTree name="chem_foldtree" fold_tree_file="%%prefix%%_chem.ft"/>
-		<AtomTree name="rb_foldtree" fold_tree_file="%%prefix%%_rb.ft"/>
 				
 		Parsed protocols
 		<ParsedProtocol name="designsequence">
@@ -182,7 +115,6 @@ to match the appropriate residues in the input structure:
 	</MOVERS>
 		
 	<PROTOCOLS>
-		<Add mover_name="a_k177a"/>
 		Connect chains A and B, and reset the foldtree.
 		<Add mover_name="favournative"/>
 		<Add mover_name="connectchains"/>
@@ -190,7 +122,6 @@ to match the appropriate residues in the input structure:
 		
 		Add match constraints, and do an initial pack and min.
 		<Add mover_name="addmatchcsts"/>
-		Add filter_name="cstE_start"/>
 		<Add mover_name="packcatalytic"/>
 		<Add mover_name="mincatalytic"/>
 		<Add filter_name="cstE"/>
@@ -206,7 +137,6 @@ to match the appropriate residues in the input structure:
 		<Add filter_name="contactcount"/>
 		<Add filter_name="buriedhbonds"/>
 		<Add filter_name="total"/>
-		<Add filter_name="farep"/>
 	</PROTOCOLS>
 	
 	<OUTPUT scorefxn="ref_cst_output"/>
