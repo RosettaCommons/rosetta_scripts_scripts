@@ -21,6 +21,8 @@ to match the appropriate residues in the input structure:
 -In corecontact, the residue list should match "core" residues close to the active site.
 -In declarebond, res1 and res2 should match the last residue of chain A and the first residue
  of chain B, respectively.
+Also, the %%prefix%% variable should contain the filename of the appropriate foldtree file.  The 
+.ft extension should be omitted from the variable, but included in the filename.
 	<SCOREFXNS>
 		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts"/>
 		<ScoreFunction name="ref_cst_output" weights="ref2015_cst.wts">
@@ -68,6 +70,11 @@ to match the appropriate residues in the input structure:
 		<OperateOnResidueSubset name="nodesignscaffold" selector="scaffoldzn">
 			<RestrictToRepackingRLT/>
 		</OperateOnResidueSubset>
+		
+		<OperateOnResidueSubset name="dontrepackscaffold">
+			<Chain chains="A,C"/>
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
 			
 		Design restriction task ops
 		<DisallowIfNonnative name="dontaddGPC" resnum="0" disallow_aas="GCP"/>
@@ -77,15 +84,17 @@ to match the appropriate residues in the input structure:
 	
 	<FILTERS>
 		<EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="20.0"/>
-		<AtomicContactCount name="contactcountdef" partition="chain" distance="4.5" task_operations="repackcoreonly"/>
-		<IfThenFilter name="contactcount" threshold="6" lower_threshold="true">
-			<IF testfilter="contactcountdef" valuefilter="contactcountdef"/>
-		</IfThenFilter>
-		
-		<BuriedUnsatHbonds name="buriedhbonds" scorefxn="ref_cst" jump_number="1" task_operations="designonly_b_interface" cutoff="20"/>
-		<Rmsd name="rmsd_chainb" chains="B" threshold="1" superimpose="1"/>
-		
+		<AtomicContactCount name="contactcount" partition="chain" distance="4.5" task_operations="repackcoreonly"/>
 		<ScoreType name="total" scorefxn="ref_cst_output" threshold="-2000"/>
+		
+		<PackStat name="packstat" threshold="0.55" confidence="0" chain="0" repeats="3"/>
+		<BuriedUnsatHbonds name="buriedunsat" confidence="0" scorefxn="ref_cst" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>
+		<CavityVolume name="cavvolume"/>
+		<SSShapeComplementarity name="shapecomp" confidence="0" residue_selector="dockchain" verbose="1" min_sc="0.55"/>
+		<SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0"/>
+		<SecondaryStructureHasResidue name="require_core" confidence="0" ss_select_task_operations="nodesignscaffold"/>
+		<ResidueCount name="nres_b" residue_selector="dockchain" min_residue_count="0" max_residue_count="1000"/>
+		<ExposedHydrophobics name="ex_hydrophobics" confidence="0"/>
 	</FILTERS>
 	
 	<MOVERS>
@@ -106,7 +115,7 @@ to match the appropriate residues in the input structure:
 						
 		Foldtree stuff
 		<DeclareBond name="connectchains" res1="402" res2="403" atom1="C" atom2="N"/>
-		<AtomTree name="chem_foldtree" fold_tree_file="%%prefix%%_chem.ft"/>
+		<AtomTree name="foldtree" fold_tree_file="%%prefix%%.ft"/>
 				
 		Parsed protocols
 		<ParsedProtocol name="designsequence">
@@ -120,7 +129,7 @@ to match the appropriate residues in the input structure:
 		Connect chains A and B, and reset the foldtree.
 		<Add mover_name="favournative"/>
 		<Add mover_name="connectchains"/>
-		<Add mover_name="chem_foldtree"/>
+		<Add mover_name="foldtree"/>
 		
 		Add match constraints, and do an initial pack and min.
 		<Add mover_name="addmatchcsts"/>
@@ -137,8 +146,15 @@ to match the appropriate residues in the input structure:
 		Final filters.
 		<Add filter_name="cstE"/>
 		<Add filter_name="contactcount"/>
-		<Add filter_name="buriedhbonds"/>
+		<Add filter_name="buriedunsat"/>
 		<Add filter_name="total"/>
+		<Add filter_name="packstat"/>
+		<Add filter_name="cavvolume"/>
+		<Add filter_name="shapecomp"/>
+		<Add filter_name="sspred"/>
+		<Add filter_name="require_core"/>
+		<Add filter_name="nres_b"/>
+		<Add filter_name="ex_hydrophobics"/>
 	</PROTOCOLS>
 	
 	<OUTPUT scorefxn="ref_cst_output"/>
