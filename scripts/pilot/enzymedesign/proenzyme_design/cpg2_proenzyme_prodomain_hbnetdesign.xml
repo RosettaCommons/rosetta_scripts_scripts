@@ -1,23 +1,41 @@
 <ROSETTASCRIPTS>
+Keywords: protein interface design, single sided design, enzyme design, hbnet
+Author: Brahm Yachnin
+Email: brahm.yachnin@rutgers.edu
+
+This script's purpose is to increase the diversity of prodomain designs of CPG2 by
+designing explicit H-bond networks and then doing fixed backbone design.  The corresponding fixed
+backbone script runs a similar protocol, but without H-bond network design.  The input for
+this protocol is a "pro-CPG2" design, typically made using hotspot "docking" of an
+existing small domain or using SEWING to de novo design a backbone.  The starting
+model be relaxed.  The prodomain is expected to be chain B, with the inhibited domain
+as chain A and the other protomer being chain C.  A foldtree file should be generated
+to explicitly connect chain A and B.  The protocol works as follows:
+-Connect chain A of the scaffold to chain B (the prodomain), and apply foldtree.
+-Add match csts and pack and minimize catalytic residues.  Filter for cst energy and total score.
+-Design explicit H-bond networks.
+-Pass the resulting poses to MultiplePoseMover.
+-Do a series of design and minimization steps.
+-Apply appropriate filters.
+
+NOTE: The favour native settings should be changed depending on whether using prodomains experimentally
+validated prodomain structures (ie. from PDB) or using SEWING domains.  For the latter, a small favour
+native bonus on loops is appropriate, whereas for the former, a larger bonus for the entire prodomain
+makes more sense.
+
+NOTE: The residue ids should be changed in the following residue selectors and movers
+to match the appropriate residues in the input structure:
+-In corecontact, the residue list should match "core" residues close to the active site (MPM and main script).
+-In declarebond, res1 and res2 should match the last residue of chain A and the first residue
+ of chain B, respectively (main script only).
+Also, the %%prefix%% variable should contain the filename of the appropriate foldtree file.  The 
+.ft extension should be omitted from the variable, but included in the filename.
+
+The MultiplePoseMover should be able to process movers, filters, etc. defined in the main rosettascript using
+the IMPORT tag, but I was not able to get that to work.  Instead, those items required in the MPM were duplicated
+in the MPM ROSETTASCRIPTS block.
 	<SCOREFXNS>
-		<ScoreFunction name="ref" weights="ref2015.wts"/>
 		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts"/>
-		<ScoreFunction name="ref_cst_cart" weights="ref2015_cart.wts">
-			<Reweight scoretype="angle_constraint" weight="1.0"/>
-			<Reweight scoretype="atom_pair_constraint" weight="1.0"/>
-			<Reweight scoretype="chainbreak" weight="1.0"/>
-			<Reweight scoretype="coordinate_constraint" weight="1.0"/>
-			<Reweight scoretype="dihedral_constraint" weight="1.0"/>
-			<Reweight scoretype="res_type_constraint" weight="1.0"/>
-		</ScoreFunction>
-		<ScoreFunction name="ref_soft" weights="ref2015_soft.wts">
-			<Reweight scoretype="angle_constraint" weight="1.0"/>
-			<Reweight scoretype="atom_pair_constraint" weight="1.0"/>
-			<Reweight scoretype="chainbreak" weight="1.0"/>
-			<Reweight scoretype="coordinate_constraint" weight="1.0"/>
-			<Reweight scoretype="dihedral_constraint" weight="1.0"/>
-			<Reweight scoretype="res_type_constraint" weight="1.0"/>
-		</ScoreFunction>
 		<ScoreFunction name="ref_cst_output" weights="ref2015_cst.wts">
 			<Reweight scoretype="res_type_constraint" weight="0.0"/>
 		</ScoreFunction>
@@ -35,13 +53,15 @@
 			
 		<Or name="corecontact">
 			<Chain chains="B"/>
-			<Index resnums="29A,88A,89A,90A,91A,113A,237A,272A,298A"/>
+			<Index resnums="25A,84A,85A,86A,87A,109A,233A,268A,294A"/>
 		</Or>
 		
-		<Index name="linkerres" resnums="394A,395A,396A,397A,398A,399A,400A,401A,402A,403A,404A,405A,406A"/>
-
-		<Or name="linkdomain" selectors="linkerres,dockchain"/>
-		<Neighborhood name="aroundaddition" selector="linkdomain" distance="5.0"/>
+		<SecondaryStructure name="loops" overlap="1" include_terminal_loops="false" ss="L" use_dssp="true"/>
+		
+		Layer design selectors
+		<Layer name="core" select_core="true" use_sidechain_neighbors="true"/>
+		<Layer name="boundary" select_boundary="true" use_sidechain_neighbors="true"/>
+		<Layer name="surface" select_surface="true" use_sidechain_neighbors="true"/>
 	</RESIDUE_SELECTORS>
 	
 	<TASKOPERATIONS>
@@ -54,26 +74,8 @@
 		<SetCatalyticResPackBehavior name="fixcat" fix_catalytic_aa="1"/>
 		<SetCatalyticResPackBehavior name="freeze-noncat" fix_catalytic_aa="0" behavior_non_catalytic="NATRO"/>
 
-		<OperateOnResidueSubset name="fixdockchain" selector="dockchain">
-			<PreventRepackingRLT/>
-		</OperateOnResidueSubset>
-
-		<OperateOnResidueSubset name="fixawayaddition">
-			<Not selector="aroundaddition"/>
-			<PreventRepackingRLT/>
-		</OperateOnResidueSubset>
-		
-		<OperateOnResidueSubset name="fixlinker" selector="linkerres">
-			<PreventRepackingRLT/>
-		</OperateOnResidueSubset>
-		
 		<OperateOnResidueSubset name="repackcoreonly">
-			<Not>
-				<Or>
-					<Chain chains="B"/>
-					<Index resnums="29A,88A,89A,90A,91A,113A,237A,272A,298A"/>
-				</Or>
-			</Not>
+			<Not selector="corecontact"/>
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
 
@@ -88,70 +90,69 @@
 			<RestrictToRepackingRLT/>
 		</OperateOnResidueSubset>
 		
-		<OperateOnResidueSubset name="designlinkeronly">
-			<Not selector="linkerres"/>
+		<OperateOnResidueSubset name="dontrepackscaffold">
+			<Chain chains="A,C"/>
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
-		
+			
 		Design restriction task ops
 		<DisallowIfNonnative name="dontaddGPC" resnum="0" disallow_aas="GCP"/>
 		<RestrictIdentities name="dontremGPC" identities="GLY,CYS,PRO" prevent_repacking="0"/>
 		<DsspDesign name="designbyss"/>
+		
+		Layer design task operations
+		<OperateOnResidueSubset name="surface_to" selector="surface" >
+			<RestrictAbsentCanonicalAASRLT aas="DEGHKNPQRST"/>
+		</OperateOnResidueSubset>
+		<OperateOnResidueSubset name="boundary_to" selector="boundary" >
+			<RestrictAbsentCanonicalAASRLT aas="ADEFGIKLNPQRSTVWY"/>
+		</OperateOnResidueSubset>
+		<OperateOnResidueSubset name="core_to" selector="core" >
+			<RestrictAbsentCanonicalAASRLT aas="AFILPVWY"/>
+		</OperateOnResidueSubset>
 	</TASKOPERATIONS>
 	
 	<FILTERS>
 		<EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="20.0"/>
-		<AtomicContactCount name="contactcountdef" partition="chain" distance="4.5" task_operations="repackcoreonly"/>
-		<IfThenFilter name="contactcount" threshold="6" lower_threshold="true">
-			<IF testfilter="contactcountdef" valuefilter="contactcountdef"/>
-		</IfThenFilter>
+		<AtomicContactCount name="contactcount" partition="chain" distance="4.5" task_operations="repackcoreonly"/>
+		<ScoreType name="total" scorefxn="ref_cst_output" threshold="-2000"/>
 		
-		<BuriedUnsatHbonds name="buriedhbonds" scorefxn="ref_cst" jump_number="1" task_operations="designonly_b_interface" cutoff="20"/>
-		<Rmsd name="rmsd_chainb" chains="B" threshold="1" superimpose="1"/>
-		
-		<ScoreType name="total" scorefxn="ref" threshold="-2000"/>
-		<ScoreType name="farep" scorefxn="ref" score_type="fa_rep" threshold="600"/>
-
-		Report filters
-		Report name="cstE_start" filter="cstE"/>
-		
-		Diagnostic filters
-		PoseInfo name="poseinfo"/>
-		DesignableResidues name="designableres" task_operations="catdesignoff" designable="1" packable="1"/>
-		DesignableResidues name="designableres-NATRO" task_operations="freeze-noncat" designable="1" packable="1"/>
+		<PackStat name="packstat" threshold="0.55" confidence="0" chain="0" repeats="3"/>
+		<BuriedUnsatHbonds name="buriedunsat" confidence="0" scorefxn="ref_cst" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>
+		<CavityVolume name="cavvolume"/>
+		<SSShapeComplementarity name="shapecomp" confidence="0" residue_selector="dockchain" verbose="1" min_sc="0.55"/>
+		<SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0"/>
+		<SecondaryStructureHasResidue name="require_core" confidence="0" ss_select_task_operations="nodesignscaffold"/>
+		<ResidueCount name="nres_b" residue_selector="dockchain" min_residue_count="0" max_residue_count="1000"/>
+		<ExposedHydrophobics name="ex_hydrophobics" confidence="0"/>
 	</FILTERS>
 	
 	<MOVERS>
 		Constraint stuff
-		<FavorNativeResidue name="favournative" bonus="2.0"/>
+		<FavorNativeResidue name="favournative" bonus="2"/>
 		<AddOrRemoveMatchCsts name="addmatchcsts" cst_instruction="add_new" cstfile="1cg2_zn_dimer_pluscomp.cst" accept_blocks_missing_header="0"/>
-		<AddOrRemoveMatchCsts name="remmatchcsts" cst_instruction="remove" cstfile="1cg2_zn_dimer_pluscomp.cst"/>
+		<AddConstraints name="favournative_loops">
+			<ResidueTypeConstraintGenerator name="loop_rescst" residue_selector="loops" favor_native_bonus="1.0" />
+		</AddConstraints>
+		<RemoveConstraints name="rem_favournative" constraint_generators="loop_rescst"/>
 		<ClearConstraintsMover name="removecsts"/>
-		
-		<MutateResidue name="a_k177a" target="90A" new_res="ALA"/>
-		
+			
 		Repack and min catalytic
 		<PackRotamersMover name="packcatalytic" scorefxn="ref_cst" task_operations="init,inccurrent,ex,freeze-noncat,designoff"/>
 		<TaskAwareMinMover name="mincatalytic"  scorefxn="ref_cst" task_operations="init,inccurrent,ex,freeze-noncat" chi="1" bb="0" jump="0"/>
 		
 		Main design mover
-		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,catdesignoff,dontaddGPC,dontremGPC,designbyss"/>
+		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,catdesignoff,dontaddGPC,dontremGPC,designbyss,surface_to,boundary_to,core_to"/>
 		
-		Minimization movers
-			Regular minimization
-			<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,catdesignoff"/>
-			Rigid body min of the inhibitory domain (needs rb_foldtree)
-			<MinMover name="rbmin_dock" scorefxn="ref_cst" chi="0" bb="0" jump="1"/>
-			Cartesian minimization of the linker
-			<TaskAwareMinMover name="linker_cartmin" scorefxn="ref_cst_cart" chi="1" bb="1" jump="0" cartesian="1" task_operations="init,inccurrent,ex,designlinkeronly"/>
+		Regular minimization
+		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,catdesignoff"/>
 			
 		<HBNetStapleInterface name="hbnet" scorefxn="ref_cst" hb_threshold="-0.5" start_selector="scaffoldzn"  min_intermolecular_hbonds="2"
 			task_operations="init,inccurrent,designonly_b_interface,nodesignscaffold,fixcat,dontaddGPC,dontremGPC,designbyss"/>
 			
 		Foldtree stuff
-		<DeclareBond name="connectchains" res1="406" res2="407" atom1="C" atom2="N"/>
-		<AtomTree name="chem_foldtree" fold_tree_file="%%prefix%%_chem.ft"/>
-		<AtomTree name="rb_foldtree" fold_tree_file="%%prefix%%_rb.ft"/>
+		<DeclareBond name="connectchains" res1="402" res2="403" atom1="C" atom2="N"/>
+		<AtomTree name="foldtree" fold_tree_file="%%prefix%%.ft"/>
 				
 		Parsed protocols
 		<ParsedProtocol name="designsequence">
@@ -164,7 +165,6 @@
 			<ROSETTASCRIPTS>
 				IMPORT movers="designsequence" filters="cstE" taskoperations="init"/>
 				<SCOREFXNS>
-					<ScoreFunction name="ref" weights="ref2015.wts"/>
 					<ScoreFunction name="ref_cst" weights="ref2015_cst.wts"/>
 					<ScoreFunction name="ref_cst_output" weights="ref2015_cst.wts">
 						<Reweight scoretype="res_type_constraint" weight="0.0"/>
@@ -180,7 +180,19 @@
 		
 					<Not name="scaffoldzn" selector="dockchain"/>
 					
+					<Or name="corecontact">
+						<Chain chains="B"/>
+						<Index resnums="25A,84A,85A,86A,87A,109A,233A,268A,294A"/>
+					</Or>
+					
+					<SecondaryStructure name="loops" overlap="1" include_terminal_loops="false" ss="L" use_dssp="true"/>
+					
 					<ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet"/>
+					
+					Layer design selectors
+					<Layer name="core" select_core="true" use_sidechain_neighbors="true"/>
+					<Layer name="boundary" select_boundary="true" use_sidechain_neighbors="true"/>
+					<Layer name="surface" select_surface="true" use_sidechain_neighbors="true"/>
 				</RESIDUE_SELECTORS>
 				<TASKOPERATIONS>
 					<InitializeFromCommandline name="init"/>
@@ -189,12 +201,7 @@
 					<SetCatalyticResPackBehavior name="catdesignoff" fix_catalytic_aa="0"/>
 					
 					<OperateOnResidueSubset name="repackcoreonly">
-						<Not>
-							<Or>
-								<Chain chains="B"/>
-								<Index resnums="29A,88A,89A,90A,91A,113A,237A,272A,298A"/>
-							</Or>
-						</Not>
+						<Not selector="corecontact"/>
 						<PreventRepackingRLT/>
 					</OperateOnResidueSubset>
 					
@@ -209,6 +216,11 @@
 						<PreventRepackingRLT/>
 					</OperateOnResidueSubset>
 					
+					<OperateOnResidueSubset name="dontrepackscaffold">
+						<Chain chains="A,C"/>
+						<PreventRepackingRLT/>
+					</OperateOnResidueSubset>
+					
 					<OperateOnResidueSubset name="hbnet_task" selector="hbnet_residues">
 						<RestrictToRepackingRLT/>
 					</OperateOnResidueSubset>
@@ -216,22 +228,40 @@
 					<DisallowIfNonnative name="dontaddGPC" resnum="0" disallow_aas="GCP"/>
 					<RestrictIdentities name="dontremGPC" identities="GLY,CYS,PRO" prevent_repacking="0"/>
 					<DsspDesign name="designbyss"/>
+					
+					Layer design task operations
+					<OperateOnResidueSubset name="surface_to" selector="surface" >
+						<RestrictAbsentCanonicalAASRLT aas="DEGHKNPQRST"/>
+					</OperateOnResidueSubset>
+					<OperateOnResidueSubset name="boundary_to" selector="boundary" >
+						<RestrictAbsentCanonicalAASRLT aas="ADEFGIKLNPQRSTVWY"/>
+					</OperateOnResidueSubset>
+					<OperateOnResidueSubset name="core_to" selector="core" >
+						<RestrictAbsentCanonicalAASRLT aas="AFILPVWY"/>
+					</OperateOnResidueSubset>
 				</TASKOPERATIONS>
 				<FILTERS>
 					<EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="20.0"/>
-					<AtomicContactCount name="contactcountdef" partition="chain" distance="4.5" task_operations="repackcoreonly"/>
-					<IfThenFilter name="contactcount" threshold="6" lower_threshold="true">
-						<IF testfilter="contactcountdef" valuefilter="contactcountdef"/>
-					</IfThenFilter>
-		
-					<BuriedUnsatHbonds name="buriedhbonds" scorefxn="ref_cst" jump_number="1" task_operations="designonly_b_interface" cutoff="20"/>
-		
-					<ScoreType name="total" scorefxn="ref" threshold="-2000"/>
-					<ScoreType name="farep" scorefxn="ref" score_type="fa_rep" threshold="600"/>
+					<AtomicContactCount name="contactcount" partition="chain" distance="4.5" task_operations="repackcoreonly"/>
+					<ScoreType name="total" scorefxn="ref_cst_output" threshold="-2000"/>
+					
+					<PackStat name="packstat" threshold="0.55" confidence="0" chain="0" repeats="3"/>
+					<BuriedUnsatHbonds name="buriedunsat" confidence="0" scorefxn="ref_cst" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>
+					<CavityVolume name="cavvolume"/>
+					<SSShapeComplementarity name="shapecomp" confidence="0" residue_selector="dockchain" verbose="1" min_sc="0.55"/>
+					<SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0"/>
+					<SecondaryStructureHasResidue name="require_core" confidence="0" ss_select_task_operations="nodesignscaffold"/>
+					<ResidueCount name="nres_b" residue_selector="dockchain" min_residue_count="0" max_residue_count="1000"/>
+					<ExposedHydrophobics name="ex_hydrophobics" confidence="0"/>
 				</FILTERS>
 				<MOVERS>
-					<FavorNativeResidue name="favournative" bonus="2.0"/>
-					<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,catdesignoff,dontaddGPC,dontremGPC,designbyss,hbnet_task"/>
+					<FavorNativeResidue name="favournative" bonus="2"/>
+					<AddConstraints name="favournative_loops">
+						<ResidueTypeConstraintGenerator name="loop_rescst" residue_selector="loops" favor_native_bonus="1.0" />
+					</AddConstraints>
+					<RemoveConstraints name="rem_favournative" constraint_generators="loop_rescst"/>
+					
+					<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,catdesignoff,dontaddGPC,dontremGPC,designbyss,surface_to,boundary_to,core_to,hbnet_task"/>
 					<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,catdesignoff,hbnet_task"/>
 					<ParsedProtocol name="designsequence">
 						Pack and min around the docked chain, with design on the docked chain.
@@ -241,16 +271,24 @@
 				</MOVERS>
 			
 				<PROTOCOLS>
-					<Add mover_name="favournative"/>
+					<Add mover_name="favournative_loops"/>
 					<Add mover_name="designsequence"/>
 					<Add mover_name="designsequence"/>
-		
+					
+					<Add mover_name="rem_favournative"/>
+								
 					Final filters.
 					<Add filter_name="cstE"/>
 					<Add filter_name="contactcount"/>
-					<Add filter_name="buriedhbonds"/>
+					<Add filter_name="buriedunsat"/>
 					<Add filter_name="total"/>
-					<Add filter_name="farep"/>
+					<Add filter_name="packstat"/>
+					<Add filter_name="cavvolume"/>
+					<Add filter_name="shapecomp"/>
+					<Add filter_name="sspred"/>
+					<Add filter_name="require_core"/>
+					<Add filter_name="nres_b"/>
+					<Add filter_name="ex_hydrophobics"/>
 				</PROTOCOLS>
 				<OUTPUT scorefxn="ref_cst_output"/>
 			</ROSETTASCRIPTS>
@@ -258,14 +296,12 @@
 	</MOVERS>
 		
 	<PROTOCOLS>
-		<Add mover_name="a_k177a"/>
 		Connect chains A and B, and reset the foldtree.
 		<Add mover_name="connectchains"/>
-		<Add mover_name="chem_foldtree"/>
+		<Add mover_name="foldtree"/>
 		
 		Add match constraints, and do an initial pack and min.
 		<Add mover_name="addmatchcsts"/>
-		Add filter_name="cstE_start"/>
 		<Add mover_name="packcatalytic"/>
 		<Add mover_name="mincatalytic"/>
 		<Add filter_name="cstE"/>
@@ -276,16 +312,21 @@
 		
 		---This is taken over by posthbnet when used.---
 		Design the inhibitor domain (chain B) and repack around.
-		Add mover_name="favournative"/>
 		Add mover_name="designsequence"/>
 		Add mover_name="designsequence"/>
-			
+					
 		Final filters.
 		Add filter_name="cstE"/>
 		Add filter_name="contactcount"/>
-		Add filter_name="buriedhbonds"/>
+		Add filter_name="buriedunsat"/>
 		Add filter_name="total"/>
-		Add filter_name="farep"/>
+		Add filter_name="packstat"/>
+		Add filter_name="cavvolume"/>
+		Add filter_name="shapecomp"/>
+		Add filter_name="sspred"/>
+		Add filter_name="require_core"/>
+		Add filter_name="nres_b"/>
+		Add filter_name="ex_hydrophobics"/>
 	</PROTOCOLS>
 	
 	<OUTPUT scorefxn="ref_cst_output"/>
