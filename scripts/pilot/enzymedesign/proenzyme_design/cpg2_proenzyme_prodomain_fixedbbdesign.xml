@@ -16,6 +16,11 @@ to explicitly connect chain A and B.  The protocol works as follows:
 -Do a series of design and minimization steps.
 -Apply appropriate filters.
 
+NOTE: The favour native settings should be changed depending on whether using prodomains experimentally
+validated prodomain structures (ie. from PDB) or using SEWING domains.  For the latter, a small favour
+native bonus on loops is appropriate, whereas for the former, a larger bonus for the entire prodomain
+makes more sense.
+
 NOTE: The residue ids should be changed in the following residue selectors and movers
 to match the appropriate residues in the input structure:
 -In corecontact, the residue list should match "core" residues close to the active site.
@@ -44,6 +49,8 @@ Also, the %%prefix%% variable should contain the filename of the appropriate fol
 			<Chain chains="B"/>
 			<Index resnums="25A,84A,85A,86A,87A,109A,233A,268A,294A"/>
 		</Or>
+		
+		<SecondaryStructure name="loops" overlap="1" include_terminal_loops="false" ss="L" use_dssp="true"/>
 		
 		Layer design selectors
 		<Layer name="core" select_core="true" use_sidechain_neighbors="true"/>
@@ -115,7 +122,11 @@ Also, the %%prefix%% variable should contain the filename of the appropriate fol
 	
 	<MOVERS>
 		Constraint stuff
-		<FavorNativeResidue name="favournative" bonus="2.0"/>
+		<FavorNativeResidue name="favournative" bonus="2"/>
+		<AddConstraints name="favournative_loops">
+			<ResidueTypeConstraintGenerator name="loop_rescst" residue_selector="loops" favor_native_bonus="1.0" />
+		</AddConstraints>
+		<RemoveConstraints name="rem_favournative" constraint_generators="loop_rescst"/>
 		<AddOrRemoveMatchCsts name="addmatchcsts" cst_instruction="add_new" cstfile="1cg2_zn_dimer_pluscomp.cst" accept_blocks_missing_header="0"/>
 		<ClearConstraintsMover name="removecsts"/>
 			
@@ -143,7 +154,8 @@ Also, the %%prefix%% variable should contain the filename of the appropriate fol
 		
 	<PROTOCOLS>
 		Connect chains A and B, and reset the foldtree.
-		<Add mover_name="favournative"/>
+		Add mover_name="favournative"/>
+		<Add mover_name="favournative_loops"/>
 		<Add mover_name="connectchains"/>
 		<Add mover_name="foldtree"/>
 		
@@ -158,6 +170,8 @@ Also, the %%prefix%% variable should contain the filename of the appropriate fol
 		Design the inhibitor domain (chain B) and repack around.
 		<Add mover_name="designsequence"/>
 		<Add mover_name="designsequence"/>
+		
+		<Add mover_name="rem_favournative"/>
 					
 		Final filters.
 		<Add filter_name="cstE"/>
