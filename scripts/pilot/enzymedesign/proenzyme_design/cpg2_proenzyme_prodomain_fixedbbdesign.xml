@@ -170,6 +170,7 @@ Also, the %%prefix%% variable should contain the filename of the appropriate fol
 		Design the inhibitor domain (chain B) and repack around.
 		<Add mover_name="designsequence"/>
 		<Add mover_name="designsequence"/>
+		<Add mover_name="designsequence"/>
 		
 		<Add mover_name="rem_favournative"/>
 					

@@ -274,6 +274,7 @@ in the MPM ROSETTASCRIPTS block.
 					<Add mover_name="favournative_loops"/>
 					<Add mover_name="designsequence"/>
 					<Add mover_name="designsequence"/>
+					<Add mover_name="designsequence"/>
 					
 					<Add mover_name="rem_favournative"/>
 								
@@ -312,6 +313,7 @@ in the MPM ROSETTASCRIPTS block.
 		
 		---This is taken over by posthbnet when used.---
 		Design the inhibitor domain (chain B) and repack around.
+		Add mover_name="designsequence"/>
 		Add mover_name="designsequence"/>
 		Add mover_name="designsequence"/>
 					
