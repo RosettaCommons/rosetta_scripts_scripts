@@ -1,2 +1,3 @@
 -run:preserve_header
 -mute core.io.database
+-delete_old_poses 1
