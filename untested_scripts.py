@@ -20,6 +20,7 @@ scripts_not_tested = [
     "scripts/public/sewing/legacy_sewing/ca_assembly.xml",
     "scripts/public/sewing/append/HEM_append.xml",
     "scripts/public/sewing/append/zn_append_script.xml",
+    "scripts/public/sewing/append/append_C-terminal_binding_helix.xml",
     "scripts/public/sewing/ligand_contacts/zn_tetra_script.xml",
     "scripts/public/sewing/ligand_contacts/zn_sewing_script.xml",
     "scripts/pilot/fold_and_dock_membrane_single_spanning_homodimers/fnd_homo.xml"

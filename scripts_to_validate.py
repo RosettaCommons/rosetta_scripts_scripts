@@ -15,6 +15,7 @@ scripts_to_be_validated = [
     "scripts/public/homology_modeling/RosettaCM_with_density/cm_with_density.xml",
     "scripts/public/sewing/refinement/HR1B_refinement.xml",
     "scripts/public/sewing/refinement/HR1B_refinement_remove_partner.xml",
+    "scripts/public/sewing/refinement/refine_C-terminal_binding_helix.xml",
     "scripts/public/analysis/interface/custom_interface_filter2.xml",
     "scripts/public/docking/ancient_lrf_docking.xml",
     "scripts/public/docking/lrf_docking_with_autointerfacecst.xml",
