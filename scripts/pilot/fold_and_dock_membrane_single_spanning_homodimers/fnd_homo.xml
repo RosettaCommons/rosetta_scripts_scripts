@@ -84,7 +84,7 @@
     <ScoreType name="a_helicality_symm" scorefxn="%%energy_function%%" score_type="mp_helicality" confidence="0" threshold="10"/>
     <MPSpanAngle name="a_angle_1" tm="1" ang_min="0" ang_max="50" confidence="0"/>
     <MPSpanAngle name="a_angle_2" tm="2" ang_min="0" ang_max="50" confidence="0"/>
-    <RmsdFromResidueSelector name="a_rmsd" CA_only="1" reference_selector="layer" query_selector="layer" confidence="0"/>
+    <RmsdFromResidueSelectorFilter name="a_rmsd" CA_only="1" reference_selector="layer" query_selector="layer" confidence="0"/>
   </FILTERS>
   <PROTOCOLS>
    <Add mover="symm"/>
