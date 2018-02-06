@@ -1,0 +1,55 @@
+-database /home/matt/Rosetta/main/database
+
+-in
+	-file
+		-s hth_V866W_extended.pdb
+		#-l
+		#-native hth_V866W.pdb
+		#-fasta
+
+-out
+	#-prefix
+	-suffix _append
+	-path
+		-all /home/matt/Documents/research/unc/gq_binders/rosetta/stage_1_SEWING_assembly/outputs/hth_V866W_extended
+	-file
+		-scorefile hth_V866W_extended.dat
+		#-silent_struct_type binary
+		#-silent	/nas02/home/m/c/mccummin/scratch/plc_gtpase_binding/stage_0_fast_relax/outputs/gaq_hth/gaq_hth.out
+
+-parser
+	-view
+	-protocol /home/matt/Documents/research/unc/gq_binders/rosetta/stage_1_SEWING_assembly/inputs/hth_V866W_extended/gaq_binder_append.xml
+
+-use_input_sc
+-ignore_unrecognized_res
+-linmem_ig 10
+
+-overwrite
+
+-nstruct 100
+
+#-mute all
+#-out:level 500
+
+-show_simulation_in_pymol .01
+-keep_pymol_simulation_history 1
+
+#sewing
+-mh:match:aa1 false
+-mh:match:aa2 false
+
+-mh:score:use_ss1 true
+-mh:score:use_ss2 true
+
+-mh:path:motifs /home/matt/Documents/research/unc/gq_binders/rosetta/stage_1_SEWING_assembly/inputs/xsmax_bb_ss_AILV_resl0.8_msc0.3/xsmax_bb_ss_AILV_resl0.8_msc0.3.rpm.bin.gz
+-mh:path:scores_BB_BB /home/matt/Documents/research/unc/gq_binders/rosetta/stage_1_SEWING_assembly/inputs/xsmax_bb_ss_AILV_resl0.8_msc0.3/xsmax_bb_ss_AILV_resl0.8_msc0.3
+
+-mh:gen_reverse_motifs_on_load false     # I think the inverse motifs are already in the datafiles
+
+-mh::dump::max_rms 0.4
+
+-pdb_comments true
+-output_pose_energies_table false
+-output_pose_cache_data false
+-preserve_crystinfo true
