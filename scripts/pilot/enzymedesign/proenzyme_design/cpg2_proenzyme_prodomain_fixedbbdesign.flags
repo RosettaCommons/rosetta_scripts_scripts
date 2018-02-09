@@ -1,3 +1,5 @@
 -run:preserve_header
 -mute core.io.database
 -delete_old_poses 1
+
+-parser:script_vars prefix=foldtree
