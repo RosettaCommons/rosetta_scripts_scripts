@@ -1,0 +1,33 @@
+<ROSETTASCRIPTS>
+<!--
+Keywords: de novo protein design, protein interface design
+Author: Christopher D. Bahl
+Email: cdbahl@gmail.com
+
+This protocol is intended to take a helical peptide fragment that is bound to a target protein and stabilize it by building a de novo protein to hold this motif.
+-->
+	<SCOREFXNS>
+	</SCOREFXNS>
+	<FILTERS>
+	</FILTERS>
+	<MOVERS>
+		<AppendAssemblyMover name="assemble" model_file_name="%%segment_file%%"  partner_pdb="%%contextpdb%%" hashed="false" minimum_cycles= "10000" maximum_cycles="50000" modifiable_terminus="N" required_resnums="5,6,8,9,12,13,16,17,18" pose_segment_dssp="HHHHHHHHHHHHLL" pose_segment_starts="5" pose_segment_ends="18" output_partner="true" window_width="4" >
+			<AssemblyScorers>
+				<MotifScorer weight="1" />
+				<InterModelMotifScorer weight="10" />
+				<StartingNodeMotifScorer weight="1" />
+				<PartnerMotifScorer weight="1" />
+			</AssemblyScorers>
+			<AssemblyRequirements>
+				<ClashRequirement maximum_clashes_allowed="0" clash_radius="4" />	
+				<DsspSpecificLengthRequirement dssp_code="H" minimum_length="5" maximum_length="30" />
+				<DsspSpecificLengthRequirement dssp_code="L" maximum_length="8" />
+				<SizeInSegmentsRequirement minimum_size="5" maximum_size="13" />
+				<LengthInResiduesRequirement maximum_length="250" />
+			</AssemblyRequirements>
+		</AppendAssemblyMover> 
+	</MOVERS>
+	<PROTOCOLS>
+		<Add mover_name="assemble" />
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

@@ -85,7 +85,7 @@ def main( input_args ):
 
     args = parser.parse_args()
 
-    rosetta = opsys.path.abspath('./../..') if args.rosetta is None else args.rosetta
+    rosetta = opsys.path.abspath('./../../main') if args.rosetta is None else args.rosetta
     parallel_source = rosetta + '/tests/benchmark/util/parallel.py'
     if not opsys.path.isfile(parallel_source): print('Could not guess Rosetta/main location (was trying {}), exiting...'.format(rosetta) ); sys.exit(1)
     if args.rosetta is None: print( 'Found Rosetta/main at {}, going to use it...'.format(rosetta) )

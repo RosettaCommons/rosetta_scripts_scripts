@@ -1,0 +1,32 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+	</SCOREFXNS>
+	<RESIDUE_SELECTORS>
+	</RESIDUE_SELECTORS>
+	<TASKOPERATIONS>
+	</TASKOPERATIONS>
+	<FILTERS>
+	</FILTERS>
+	<MOVERS>
+		<AppendAssemblyMover name="aam" model_file_name="/home/matt/Documents/research/unc/gq_binders/rosetta/stage_1_SEWING_assembly/inputs/smotifs_H_5_40_L_1_6_H_5_40.segments" partner_pdb="gaq.pdb" hashed="false" required_resnums="11,12,13,14,15,16" minimum_cycles="5000" maximum_cycles="5500" start_temperature="2" end_temperature="0.5" pose_segment_starts="1,14,15" pose_segment_ends="13,14,28" output_partner="false" recover_lowest_assembly="true" modifiable_terminus="B" start_node_vital_segments="all" >
+			<AssemblyScorers>
+				<MotifScorer weight="1" />
+				<InterModelMotifScorer weight="10" />
+				<SubsetStartingNodeMotifScorer weight="15" region_start="7" region_end="23"/>
+				<PartnerMotifScorer weight="1" />
+			</AssemblyScorers>
+			<AssemblyRequirements>
+				<ClashRequirement clash_radius = "3.5" />
+				<DsspSpecificLengthRequirement dssp_code="H" maximum_length="25" minimum_length="12"/>
+				<DsspSpecificLengthRequirement dssp_code="L" maximum_length="4" />
+				<SizeInSegmentsRequirement maximum_size="7" />
+			</AssemblyRequirements>
+		</AppendAssemblyMover> 
+	</MOVERS>
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+	<PROTOCOLS>
+		<Add mover="aam"/>
+	</PROTOCOLS>
+	<OUTPUT />
+</ROSETTASCRIPTS>

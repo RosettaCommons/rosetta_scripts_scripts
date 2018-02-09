@@ -1,6 +1,6 @@
 <ROSETTASCRIPTS>
 Keywords: protein design, enzyme design, stability improvement
-Author: Jason C. Klima
+Author: Jason Klima
 Email: klimaj@uw.edu
 
 The backrub_disulfidize_monte_carlo protocol places the most statistically/energetically-favorable disulfide bond within the input protein
@@ -100,7 +100,6 @@ the perturbed backbones of the input protein.
   <PROTOCOLS>  
     <Add mover_name="gmc" />
     <Add mover_name="fast_relax" />
-    
     <Add filter_name="dslf_quality_check" />
     <Add filter_name="dslf_fa13" />
   </PROTOCOLS>
