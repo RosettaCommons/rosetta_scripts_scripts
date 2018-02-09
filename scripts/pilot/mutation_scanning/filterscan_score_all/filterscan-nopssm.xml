@@ -7,38 +7,38 @@ A modified version of the filterscan-pross.xml script from the Fleishman lab (Go
 
 	<SCOREFXNS>
 
-		<talaris_full weights=talaris2014>
-			<Reweight scoretype="coordinate_constraint" weight=%%cst_value%%/>
-			<Reweight scoretype="res_type_constraint" weight=0.4/>
-		</talaris_full>
+		<ScoreFunction name="talaris_full" weights="talaris2014">
+			<Reweight scoretype="coordinate_constraint" weight="%%cst_value%%"/>
+			<Reweight scoretype="res_type_constraint" weight="0.4"/>
+		</ScoreFunction>
 
     </SCOREFXNS>
 
     <TASKOPERATIONS>
-        <InitializeFromCommandline name=init/>
-		<DesignAround name=des_around design_shell=0.1 resnums="%%current_res%%" repack_shell=8.0/>
-		<RestrictResiduesToRepacking name=restrict_res residues="%%res_to_restrict%%"/>
-        <PreventResiduesFromRepacking name=fix_res reference_pdb_id="%%pdb_reference%%" residues="%%res_to_fix%%"/>
+        <InitializeFromCommandline name="init"/>
+		<DesignAround name="des_around" design_shell="0.1" resnums="%%current_res%%" repack_shell="8.0"/>
+		<RestrictResiduesToRepacking name="restrict_res" residues="%%res_to_restrict%%"/>
+        <PreventResiduesFromRepacking name="fix_res" reference_pdb_id="%%pdb_reference%%" residues="%%res_to_fix%%"/>
     </TASKOPERATIONS>
 
     <MOVERS>
-        <ConstraintSetMover name=add_CA_cst cst_file="%%cst_full_path%%"/>
-        <MinMover name=min_all scorefxn=talaris_full chi=1 bb=1 jump=0/>
+        <ConstraintSetMover name="add_CA_cst" cst_file="%%cst_full_path%%"/>
+        <MinMover name="min_all" scorefxn="talaris_full" chi="1" bb="1" jump="0"/>
     </MOVERS>
 
     <FILTERS>
-        <ScoreType name=stability_score_full scorefxn=talaris_full score_type=total_score threshold=0.0/>
-        <Delta name=delta_score_full filter=stability_score_full upper=1 lower=0 range=0.5/>
+        <ScoreType name="stability_score_full" scorefxn="talaris_full" score_type="total_score" threshold="0.0"/>
+        <Delta name="delta_score_full" filter="stability_score_full" upper="1" lower="0" range="0.5"/>
 		#upper and lower are booleans. Delta filters out all the mutations that are worse or better by less than -0.5R.E.U
-        <Time name=timer/>
-		<FilterScan name=filter_scan scorefxn=talaris_full relax_mover=min_all keep_native=1 task_operations=init,des_around,fix_res,restrict_res delta_filters=delta_score_full delta=true resfile_name="%%resfiles_path%%designable_aa_resfile" report_all=1 delta_filter_thresholds=0.45,0.75,1.0,1.25,1.5,1.8,2.0 score_log_file="%%scores_path%%res%%current_res%%_score_full.log" dump_pdb=0/>
+        <Time name="timer"/>
+		<FilterScan name="filter_scan" scorefxn="talaris_full" relax_mover="min_all" keep_native="1" task_operations="init,des_around,fix_res,restrict_res" delta_filters="delta_score_full" delta="true" resfile_name="%%resfiles_path%%designable_aa_resfile" report_all="1" delta_filter_thresholds="0.45,0.75,1.0,1.25,1.5,1.8,2.0" score_log_file="%%scores_path%%res%%current_res%%_score_full.log" dump_pdb="0"/>
     </FILTERS>
 
     <PROTOCOLS>
-        <Add filter=timer/>
-		<Add mover_name=add_CA_cst/>
-        <Add filter=filter_scan/>
-        <Add filter=timer/>
+        <Add filter="timer"/>
+		<Add mover_name="add_CA_cst"/>
+        <Add filter="filter_scan"/>
+        <Add filter="timer"/>
 	</PROTOCOLS>
 
 </ROSETTASCRIPTS>
