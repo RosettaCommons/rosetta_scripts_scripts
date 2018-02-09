@@ -16,7 +16,7 @@ scripts_not_tested = [
     "scripts/public/sewing/append/GTPase_inhibitors/HR1A_RhoA_LOV_cage/HR1A_RhoA_LOV_cage.xml",
     "scripts/public/sewing/append/GTPase_inhibitors/HR1B_Rac1_LOV_cage/HR1B_Rac1_LOV_cage.xml",
     "scripts/public/sewing/append/GTPase_inhibitors/Kalirin_zLock_2/Kalirin_zLock_2.xml",
-    "scripts/public/sewing/append/gaq_binder_append.flags",
+    #"scripts/public/sewing/append/gaq_binder_append.flags",
     "scripts/public/sewing/append/gaq_binder_append.xml",
     "scripts/public/sewing/refinement/HEM_refinement.xml",
     "scripts/public/sewing/legacy_sewing/ca_assembly.xml",

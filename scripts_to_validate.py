@@ -16,7 +16,6 @@ scripts_to_be_validated = [
     "scripts/public/sewing/refinement/HR1B_refinement.xml",
     "scripts/public/sewing/refinement/HR1B_refinement_remove_partner.xml",
     "scripts/public/sewing/refinement/refine_C-terminal_binding_helix.xml",
-    "scripts/public/sewing/refinement/gaq_binder_refinement.flags",
     "scripts/public/sewing/refinement/gaq_binder_refinement.xml",
     "scripts/public/analysis/interface/custom_interface_filter2.xml",
     "scripts/public/docking/ancient_lrf_docking.xml",
@@ -30,7 +29,7 @@ scripts_to_be_validated = [
 	"scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_prodomain_fixedbbdesign.xml",
 	"scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_rebuildlinker.xml",
 	"scripts/pilot/enzymedesign/proenzyme_design_SEWING/cpg2_proenzyme_postsewing.xml",
-	"scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_prodomain_hbnetdesign.xml"
+	"scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_prodomain_hbnetdesign.xml",
     "scripts/pilot/protein_binding_energy_estimation/h3h4_designs/fastrelax3x_h3h4_fullrelax.xml"
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world
