@@ -1,0 +1,96 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+		<sfx_symm_cst weights=talaris2013 symmetric=1 >
+                      <Reweight scoretype=res_type_constraint weight=1.0 />
+                </sfx_symm_cst>
+		<sfx_hard_symm_surf weights=talaris2013 symmetric=1 >
+			<Reweight scoretype=fa_elec weight=2.0 />
+                </sfx_hard_symm_surf>
+		<sfx_hard_symm weights=talaris2013 symmetric=1 >
+                </sfx_hard_symm>
+		<sfx_soft_symm weights=soft_rep symmetric=1 >
+			Reweight scoretype=fa_elec weight=2.0 />
+                </sfx_soft_symm>
+
+	</SCOREFXNS>
+
+	<TASKOPERATIONS>
+	        <ReadResfile name=core_resfile filename="%%resfile%%" />
+		<IncludeCurrent name=ic />
+		<DisallowIfNonnative name=dsgn_aa_core disallow_aas=CG />
+		<DisallowIfNonnative name=dsgn_aa_surf disallow_aas=CGP />
+		BuildingBlockInterface name=bbi nsub_bblock=1 />
+		<BuildingBlockInterface name=bbi nsub_bblock=1 contact_dist=8.0  sym_dof_names=JUMP_0_0_0,JUMP_0_0_0_to_com/>
+		<LimitAromaChi2 name=limitaro chi2max=110 chi2min=70 />
+		<RetrieveStoredTask name=design_task task_name="design_task" />
+		<RetrieveStoredTask name=scan_task task_name="scan_task" />
+		<RestrictToRepacking name=repack_only />
+		<SelectBySASA name=core mode="sc" state="bound" core_asa=30 surface_asa=0 core=1 boundary=0 surface=0 verbose=1 />
+                <SelectBySASA name=surf mode="sc" state="bound" core_asa=0 surface_asa=30 core=0 boundary=0 surface=1 verbose=1 />
+	</TASKOPERATIONS>
+
+	<FILTERS>
+		<ShapeComplementarity name=sc_filt jump=1 verbose=1 min_sc=0.0 write_int_area=1 confidence=0/>
+		<OligomericAverageDegree name=avg_deg threshold=8 distance_threshold=10.0 write2pdb=1 task_operations=design_task />
+		<TaskAwareAlaScan name=ala_scan task_operations=bbi jump=1 repeats=1 scorefxn=sfx_hard_symm repack=1 report_diffs=0 exempt_identities=PRO,GLY write2pdb=1 />
+		<TaskAwareAlaScan name=ala_scan_refine task_operations=design_task jump=1 repeats=1 scorefxn=sfx_hard_symm repack=1 report_diffs=0 exempt_identities=PRO,GLY write2pdb=1 />
+
+		<Ddg name=ddG_filt scorefxn=sfx_hard_symm jump=1 repack=1 repeats=3 threshold=20000000000 confidence=0/>
+		15 before
+		<SymUnsatHbonds name=unsat_pols jump=1 cutoff=1500000 verbose=1 write2pdb=1 confidence=0/>
+		was 8 before
+		<DesignableResidues name=des_pos task_operations=design_task designable=1 packable=1 />
+		<Sasa name=sasa_int_area threshold=0 upper_threshold=100000000 hydrophobic=0 polar=0 jump=1 confidence=0/>
+		<SequenceRecovery name=mutations rate_threshold=0.0 mutation_threshold=50 report_mutations=1 verbose=1 write2pdb=1 task_operations=design_task />
+	</FILTERS>
+
+	<MOVERS>
+		RollMover name=sample_orientation random_roll=true random_roll_angle_mag=2.5 />	
+		<SetupForSymmetry   name=gen_docked_config definition="%%symmfile%%" />
+		<StoreTaskMover name=store_design_task task_name="design_task" task_operations=limitaro,core_resfile />
+         	<SymPackRotamersMover name=design_soft scorefxn=sfx_soft_symm task_operations=design_task,core_resfile />
+         	SymPackRotamersMover name=design_soft scorefxn=sfx_soft_symm task_operations=design_task,core_resfile />
+         	<SymPackRotamersMover name=design_hard scorefxn=sfx_hard_symm task_operations=design_task,core_resfile />
+		<TaskAwareSymMinMover name=min0 scorefxn=sfx_hard_symm bb=0 chi=1 rb=0 task_operations=design_task />
+		<TaskAwareSymMinMover name=min scorefxn=sfx_hard_symm bb=0 chi=1 rb=0 task_operations=bbi />
+		bbi and core?
+		rb was 1 up 	
+		<TaskAwareSymMinMover name=mins scorefxn=sfx_soft_symm bb=0 chi=1 rb=0 task_operations=design_task,core />
+
+		bbi, core
+		core before
+		<TaskAwareSymMinMover name=mine scorefxn=sfx_hard_symm_surf bb=0 chi=1 rb=0 task_operations=design_task,surf  />
+		<TaskAwareSymMinMover name=min1 scorefxn=sfx_hard_symm bb=1 chi=1 rb=0 task_operations=design_task />
+		<ParsedProtocol name=design_min_soft>
+			<Add mover=design_soft />
+			<Add mover=mins />
+		</ParsedProtocol>
+		<ParsedProtocol name=design_min_hard>
+			<Add mover=design_hard />
+			<Add mover=min />
+		</ParsedProtocol>
+                <ParsedProtocol name=design_core>
+                        <add mover_name=design_min_soft />                       
+                        <add mover_name=min />             
+                </ParsedProtocol>
+	</MOVERS>
+
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+
+	<PROTOCOLS>
+		Add mover_name=sample_orientation />	
+		<Add mover_name=gen_docked_config />
+		<Add mover_name=store_design_task />
+		Add mover_name=design_core />
+		Add filter_name=sc_filt />
+		Add filter_name=ddG_filt />
+		Add filter_name=ala_scan />
+		Add filter_name=ala_scan_refine />
+		Add filter_name=unsat_pols />
+		Add filter_name=sasa_int_area />
+		Add filter_name=des_pos />
+		<Add filter_name=mutations />
+	</PROTOCOLS>
+
+</ROSETTASCRIPTS>

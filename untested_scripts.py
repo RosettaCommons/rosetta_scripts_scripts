@@ -27,7 +27,14 @@ scripts_not_tested = [
     "scripts/public/sewing/ligand_contacts/zn_sewing_script.xml",
     "scripts/pilot/fold_and_dock_membrane_single_spanning_homodimers/fnd_homo.xml",
 	"scripts/pilot/enzymedesign/proenzyme_design_SEWING/cpg2_proenzyme_sewing.xml",	#This script uses refactored SEWING, which is not yet in master.
+    "scripts/pilot/protein_design/motif_fiber_design/designCx.xml",
     "scripts/pilot/protein_design/motif_fiber_design/designHx.xml",
-    "scripts/pilot/protein_design/motif_fiber_design/refineCx.xml"
+    "scripts/pilot/protein_design/motif_fiber_design/designHx_alatest.xml",
+    "scripts/pilot/protein_design/motif_fiber_design/refineCx.xml",
+    "scripts/pilot/protein_design/motif_fiber_design/refine_cap.xml",
+    "scripts/pilot/protein_design/motif_fiber_design/refineCx_layer.xml",
+    "scripts/pilot/protein_design/motif_fiber_design/refineCx_less_filter.xml",
+    "scripts/pilot/protein_design/motif_fiber_design/refine_setup.xml",
+    "scripts/pilot/protein_design/motif_fiber_design/setup_sym.xml",
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world
