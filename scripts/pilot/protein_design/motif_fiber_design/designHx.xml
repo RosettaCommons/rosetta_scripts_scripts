@@ -1,0 +1,103 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+		<sfx_symm_norep weights=talaris2013 symmetric=1 >
+                      <Reweight scoretype=fa_rep weight=0.05 />
+                </sfx_symm_norep>
+		<sfx_hard_symm_surf weights=talaris2013 symmetric=1 >
+                  <Reweight scoretype=fa_elec weight=2.0 />
+		</sfx_hard_symm_surf>
+		<sfx_hard_symm weights=talaris2013 symmetric=1 >
+                </sfx_hard_symm>
+	</SCOREFXNS>
+
+	<TASKOPERATIONS>
+		<ReadResfile name=core_resfile filename="%%resfile%%" />
+		<ReadResfile name=surf_resfile filename="surf.resfile" />
+		<IncludeCurrent name=ic />
+		<DisallowIfNonnative name=dsgn_aa_core disallow_aas=CG />
+		<DisallowIfNonnative name=dsgn_aa_surf disallow_aas=CGP />
+		<BuildingBlockInterface name=bbi nsub_bblock=1 contact_dist=8.0  sym_dof_names=JUMP_0_0_0,JUMP_0_0_0_to_com/>
+		<LimitAromaChi2 name=limitaro chi2max=110 chi2min=70 />
+		<RestrictIdentities name=no_pack_hydrophilics identities="ASP,GLU,HIS,LYS,ASN,GLN,ARG,SER" prevent_repacking=1 /> 
+		<RetrieveStoredTask name=design_task task_name="design_task" />
+		<RetrieveStoredTask name=scan_task task_name="scan_task" />
+		<RestrictToRepacking name=repack_only />
+		<SelectBySASA name=core mode="sc" state="bound" core_asa=30 surface_asa=0 core=1 boundary=0 surface=0 verbose=1 />
+                <SelectBySASA name=surf mode="sc" state="bound" core_asa=0 surface_asa=30 core=0 boundary=0 surface=1 verbose=1 />
+	</TASKOPERATIONS>
+
+	<FILTERS>
+		<ShapeComplementarity name=sc_filt jump=1 verbose=1 min_sc=0.6 write_int_area=1 />
+		<TaskAwareAlaScan name=ala_scan task_operations=design_task jump=1 repeats=1 scorefxn=sfx_hard_symm repack=1 report_diffs=0 exempt_identities=PRO,GLY write2pdb=1 />
+		<Ddg name=ddG_filt scorefxn=sfx_hard_symm translate_by=10000000 jump=1 repack=0 repeats=0 threshold=-15 />
+		<SymUnsatHbonds name=unsat_pols jump=1 cutoff=5 verbose=1 write2pdb=1 />
+		<DesignableResidues name=des_pos task_operations=design_task designable=1 packable=1 />
+		<Sasa name=sasa_int_area threshold=700 upper_threshold=10000 hydrophobic=0 polar=0 jump=1 />
+		<ResidueCount name=ala_count  residue_types="ALA" task_operations=bbi />
+		<ResidueCount name=hydrophobic_count residue_types="VAL,LEU,ILE" task_operations=bbi />
+		<ResidueCount name=met_count residue_types="MET" task_operations=bbi />
+		<PackStat name=pstat threshold=0.4 chain=0 repeats=1 confidence=0 />
+		<AtomicContactCount name=acc partition=none taskA=design_task,no_pack_hydrophilics taskB=repack_only  distance=4.5 confidence=0 />
+        	MoveBeforeFilter name=unbound_acc mover=gen_unbound_pose filter=acc confidence=0 />
+        	CalculatorFilter name=delta_acc threshold=0 equation="X - Y" confidence=0 >
+            		VAR name=X filter=acc />
+            		VAR name=Y filter=unbound_acc />
+        	/CalculatorFilter>
+		<SequenceRecovery name=mutations rate_threshold=0.0 mutation_threshold=100 report_mutations=1 verbose=1 write2pdb=1 task_operations=design_task />
+		SequenceRecovery name=seq_core rate_threshold=0.0 mutation_threshold=100 report_mutations=1 verbose=1 write2pdb=1 task_operations=core />
+		SequenceRecovery name=seq_design_core rate_threshold=0.0 mutation_threshold=100 report_mutations=1 verbose=1 write2pdb=1 task_operations=core,design_task />
+		<Mutations name=core_mutations rate_threshold=0.0 mutation_threshold=100 report_mutations=1 verbose=1 write2pdb=1 task_operations=design_task,core confidence=0 />
+	</FILTERS>
+
+	<MOVERS>
+		<SetupForSymmetry   name=gen_docked_config definition="%%symmfile%%" />
+		<RollMover name=sample_orientation random_roll=true random_roll_angle_mag=5.0 />  
+		<StoreTaskMover name=store_design_task task_name="design_task" task_operations=bbi,limitaro />
+		<StoreTaskMover name=store_scan_task task_name="scan_task" task_operations=dsgn_aa_core,bbi,limitaro />
+         	<SymPackRotamersMover name=design_hard scorefxn=sfx_hard_symm task_operations=design_task,dsgn_aa_core,core_resfile,core />
+         	<SymPackRotamersMover name=design_elec scorefxn=sfx_hard_symm_surf task_operations=design_task,surf,dsgn_aa_surf,surf_resfile />
+		<SymPackRotamersMover name=repack scorefxn=sfx_hard_symm task_operations=design_task,repack_only />
+		<TaskAwareSymMinMover name=min0 scorefxn=sfx_hard_symm bb=0 chi=1 rb=0 task_operations=design_task />
+		<TaskAwareSymMinMover name=min scorefxn=sfx_hard_symm bb=0 chi=1 rb=1 task_operations=design_task />
+		<TaskAwareSymMinMover name=mine scorefxn=sfx_hard_symm_surf bb=0 chi=1 rb=0 task_operations=design_task,surf  />
+		<TaskAwareSymMinMover name=min1 scorefxn=sfx_hard_symm bb=1 chi=1 rb=0 task_operations=design_task />
+		<ParsedProtocol name=design_min_hard>
+			<Add mover=design_hard />
+			<Add mover=min />
+		</ParsedProtocol>
+                <ParsedProtocol name=design_surf>
+                        <add mover_name=design_elec />
+                        <add mover_name=min />
+                </ParsedProtocol>
+		<FavorSequenceProfile name=fsp  use_current=1  weight=2.0  />
+		FavorNativeResidue name=fsp  bonus=2.0  />
+		<SchemePlaceMotifs name=place_motifs scorefxn=sfx_symm_norep motif_sets="xs_bb_ss_AILMV_sf5_std.rpm.bin.gz" />
+	</MOVERS>
+
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+
+	<PROTOCOLS>
+		<Add mover_name=sample_orientation />
+		<Add mover_name=gen_docked_config />
+		<Add mover_name=store_design_task />
+		<Add mover_name=fsp />
+		<Add mover_name=place_motifs />
+		<Add mover_name=min />
+		<Add mover_name=design_surf />
+		<Add filter_name=sc_filt />
+		<Add filter_name=ddG_filt />
+		<Add filter_name=sasa_int_area />
+		<Add filter_name=des_pos />
+		<Add filter_name=mutations />
+		Add filter_name=seq_design_core />
+		Add filter_name=seq_core />
+		<Add filter_name=core_mutations />	
+		<Add filter_name=ala_count />
+		<Add filter_name=hydrophobic_count />
+		<Add filter_name=met_count />
+		<Add filter_name=pstat />
+		<Add filter_name=acc />
+	</PROTOCOLS>
+
+</ROSETTASCRIPTS>
