@@ -27,6 +27,7 @@ scripts_not_tested = [
     "scripts/public/sewing/ligand_contacts/zn_sewing_script.xml",
     "scripts/pilot/fold_and_dock_membrane_single_spanning_homodimers/fnd_homo.xml",
 	"scripts/pilot/enzymedesign/proenzyme_design_SEWING/cpg2_proenzyme_sewing.xml",	#This script uses refactored SEWING, which is not yet in master.
+    "scripts/pilot/protein_design/modular_protein_design/design.xml",
     "scripts/pilot/protein_design/motif_fiber_design/designCx.xml",
     "scripts/pilot/protein_design/motif_fiber_design/designHx.xml",
     "scripts/pilot/protein_design/motif_fiber_design/designHx_alatest.xml",
