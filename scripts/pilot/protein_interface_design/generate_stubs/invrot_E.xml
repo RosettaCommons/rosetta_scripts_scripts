@@ -1,0 +1,34 @@
+<ROSETTASCRIPTS>
+<SCOREFXNS>
+	<ScoreFunction name="NOV16" weights="beta" >
+		<Reweight scoretype="coordinate_constraint" weight="1" />
+	</ScoreFunction>
+</SCOREFXNS>
+<RESIDUE_SELECTORS>
+	<Index name="stub" resnums="167"/>
+</RESIDUE_SELECTORS>
+<TASKOPERATIONS>
+</TASKOPERATIONS>
+<FILTERS>
+	EnergyPerResidue name="fa_dun_ASP" scorefxn="NOV16" score_type="fa_dun" res_num="167" energy_cutoff="100"/>
+	EnergyPerResidue name="fa_dun_random" scorefxn="NOV16" score_type="fa_dun" res_num="10" energy_cutoff="100"/>
+	### These are the filters Eva's script uses ###
+	<EnergyPerResidue name="EnPerRes" pdb_num="167B" energy_cutoff="0" confidence="0"/>
+	<Ddg name="ddg" threshold="0" confidence="0"/>
+</FILTERS>
+<MOVERS>
+	<AtomTree name="tree" host_chain="2" pdb_num="167B" connect_to="OE1"/>
+	AtomTree name="tree" fold_tree_file="%%foldtree%%"/>
+	<TryRotamers name="invRot" res_num="167" scorefxn="NOV16" explosion="3"/>
+</MOVERS>
+<APPLY_TO_POSE>
+</APPLY_TO_POSE>
+<PROTOCOLS>
+	<Add mover_name="tree"/>
+	<Add mover_name="invRot"/>
+	Add mover_name="cterm"/>
+	Add mover_name="nterm"/>
+	<Add filter_name="ddg"/>
+	<Add filter_name="EnPerRes"/>
+</PROTOCOLS>
+</ROSETTASCRIPTS>
