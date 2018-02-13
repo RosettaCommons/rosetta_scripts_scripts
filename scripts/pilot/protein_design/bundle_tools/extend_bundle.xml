@@ -1,0 +1,72 @@
+<ROSETTASCRIPTS>
+    <SCOREFXNS>
+        <ScoreFunction name="beta" weights="beta_nov16" symmetric="1"/>
+        <ScoreFunction name="beta_cst" weights="beta_nov16" symmetric="1">
+            <Reweight scoretype="coordinate_constraint" weight="1.0" />
+        </ScoreFunction>
+        <ScoreFunction name="beta_cart_cst" weights="beta_nov16_cart" symmetric="1">
+        	<Reweight scoretype="coordinate_constraint" weight="1.0" />
+        	<Reweight scoretype="cart_bonded" weight="0.5" />
+        </ScoreFunction>
+    </SCOREFXNS>
+	<RESIDUE_SELECTORS>
+		<Index name="outer" resnums="1-37" />
+		<Index name="inner" resnums="81-114" />
+        <Or name="inner_outer" selectors="outer,inner"/>
+        <SymmetricalResidue name="inner_outer_sym" selector="inner_outer" />
+        <Layer name="surface" select_surface="true" />
+		<Layer name="boundary" select_boundary="true" />
+		<Layer name="core" select_core="true" />
+		<And name="surface_design" selectors="surface,inner_outer_sym"/>
+        <And name="boundary_design" selectors="boundary,inner_outer_sym"/>
+        <And name="core_design" selectors="core,inner_outer_sym"/>
+		<Not name="not_surface" selector="surface_design" />
+		<Not name="not_boundary" selector="boundary_design" />
+		<Not name="not_core" selector="core_design" />
+	</RESIDUE_SELECTORS>
+    <TASKOPERATIONS>
+        <ExtraRotamersGeneric name="ex1ex2" ex1="true" ex2="true"/>
+        <RestrictToRepacking name="rtrp" />
+        <OperateOnResidueSubset name="design_core" selector="not_core"><PreventRepackingRLT/></OperateOnResidueSubset>
+        <OperateOnResidueSubset name="design_boundary" selector="not_boundary"><PreventRepackingRLT/></OperateOnResidueSubset>
+        <OperateOnResidueSubset name="design_surface" selector="not_surface"><PreventRepackingRLT/></OperateOnResidueSubset>
+        <OperateOnResidueSubset name="restrict_core" selector="core_design"><RestrictAbsentCanonicalAASRLT aas="A"/></OperateOnResidueSubset>
+        <OperateOnResidueSubset name="restrict_boundary" selector="boundary_design"><RestrictAbsentCanonicalAASRLT aas="A"/></OperateOnResidueSubset>
+        <OperateOnResidueSubset name="restrict_surface" selector="surface_design"><RestrictAbsentCanonicalAASRLT aas="DE"/></OperateOnResidueSubset>
+    </TASKOPERATIONS>
+    <FILTERS>
+    </FILTERS>
+    <MOVERS>
+        <SetupForSymmetry name="setup_sym" definition="C3_Z.sym" />
+    	<SymMinMover name="sym_min" scorefxn="beta_cst" chi="true" bb="true" />
+        <SymMinMover name="sym_min_bb_cart" scorefxn="beta_cart_cst" tolerance="0.01" max_iter="600" type="lbfgs_armijo_nonmonotone" chi="false" bb="true" cartesian="true" bondlength="true" bondangle="true" jump="all"/>
+        <AddConstraints name="add_coord_cst"><CoordinateConstraintGenerator name="coord_cst_gen" /></AddConstraints>
+        <ClearConstraintsMover name="clear_cst"/>
+        <SymPackRotamersMover name="design_core" scorefxn="beta" task_operations="design_core,restrict_core,ex1ex2"/>
+        <SymPackRotamersMover name="design_surface" scorefxn="beta" task_operations="design_surface,restrict_surface,ex1ex2"/>
+        <SymPackRotamersMover name="design_boundary" scorefxn="beta" task_operations="design_boundary,restrict_boundary,ex1ex2"/>
+        <SymPackRotamersMover name="repack" scorefxn="beta" task_operations="rtrp,ex1ex2" />
+    </MOVERS>
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+
+        <Add mover_name="setup_sym"/>
+        
+        <Add mover_name="add_coord_cst" />
+        <Add mover_name="sym_min" />
+    	<Add mover_name="sym_min_bb_cart" />
+        <Add mover_name="clear_cst" />
+
+        <Add mover_name="design_core"/>
+        <Add mover_name="design_surface"/>
+        <Add mover_name="design_boundary"/>
+        <Add mover_name="repack" />
+    	
+    </PROTOCOLS>
+    <OUTPUT />
+</ROSETTASCRIPTS>
+
+ 
+
+
