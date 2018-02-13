@@ -1,0 +1,205 @@
+<ROSETTASCRIPTS>
+  
+  <SCOREFXNS>
+    <ScoreFunction name="beta" weights="beta.wts">
+      <Reweight scoretype="aa_composition" weight="1.0" />
+    </ScoreFunction>
+  </SCOREFXNS>
+  
+  <RESIDUE_SELECTORS>
+    
+    # Basic residue selectors
+    <Layer name="core_residues" select_core="true" use_sidechain_neighbors="true" core_cutoff="5.2" surface_cutoff="2.0" />
+    <Layer name="boundary_residues" select_boundary="true" use_sidechain_neighbors="true" core_cutoff="5.2" surface_cutoff="2.0" />
+    <Layer name="surface_residues" select_surface="true" use_sidechain_neighbors="true" core_cutoff="5.2" surface_cutoff="2.0" />
+
+    <Not name="not_core_residues" selector="core_residues" />
+    <Not name="not_boundary_residues" selector="boundary_residues" />
+    <Not name="not_surface_residues" selector="surface_residues" />
+    # SecondaryStructure defined by dssp
+    <SecondaryStructure name="helix" ss="H" use_dssp="1" />
+    <SecondaryStructure name="strand" ss="E" use_dssp="1" />
+    <SecondaryStructure name="loop" ss="L" use_dssp="1" />
+
+
+    <And name="design_core_H_residues" selectors="core_residues,helix" />
+    <And name="design_boundary_H_residues" selectors="boundary_residues,helix" />
+    <And name="design_surface_H_residues" selectors="surface_residues,helix" />
+    <And name="design_core_E_residues" selectors="core_residues,strand" />
+    <And name="design_boundary_E_residues" selectors="boundary_residues,strand" />
+    <And name="design_surface_E_residues" selectors="surface_residues,strand" />
+    <And name="design_core_L_residues" selectors="core_residues,loop" />
+    <And name="design_boundary_L_residues" selectors="boundary_residues,loop" />
+    <And name="design_surface_L_residues" selectors="surface_residues,loop" />
+  </RESIDUE_SELECTORS>
+  
+  <TASKOPERATIONS>
+
+    <SetIGType name="linmem" lin_mem_ig="true" lazy_ig="false" double_lazy_ig="false" />
+    <InitializeFromCommandline name="init" />
+    <IncludeCurrent name="ic" />
+    <LimitAromaChi2 name="limchi2"/>
+    <RestrictToRepacking name="repack_only" />
+    <ExtraRotamersGeneric name="ex1_2"
+                          ex1="1" ex2="1" ex3="0"  ex4="0"
+                          ex1aro="1" ex2aro="1" ex1aro_exposed="0" ex2aro_exposed="0"
+                          ex1_sample_level="1" ex2_sample_level="1" ex3_sample_level="0" ex4_sample_level="0"
+                          ex1aro_sample_level="1" ex2aro_sample_level="1" ex1aro_exposed_sample_level="0" ex2aro_exposed_sample_level="0"
+                          extrachi_cutoff="24"/>
+    <ExtraRotamersGeneric name="ex1_2_3_4"
+                          ex1="1" ex2="1" ex3="1"  ex4="1"
+                          ex1aro="0" ex2aro="0" ex1aro_exposed="0" ex2aro_exposed="0"
+                          ex1_sample_level="1" ex2_sample_level="1" ex3_sample_level="1" ex4_sample_level="1"
+                          ex1aro_sample_level="0" ex2aro_sample_level="0" ex1aro_exposed_sample_level="0" ex2aro_exposed_sample_level="0"
+                          extrachi_cutoff="0" />
+
+
+    <OperateOnResidueSubset name="core_H_design" selector="design_core_H_residues" >
+      <RestrictAbsentCanonicalAASRLT aas="AFILVMW" />
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="boundary_H_design" selector="design_boundary_H_residues" >
+      <RestrictAbsentCanonicalAASRLT aas="AFILVYMPDENQKRHST" />
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="surface_H_design" selector="design_surface_H_residues" >
+      <RestrictAbsentCanonicalAASRLT aas="DENQKRHSTP" />
+    </OperateOnResidueSubset>
+
+    <OperateOnResidueSubset name="core_E_design" selector="design_core_E_residues" >
+      <RestrictAbsentCanonicalAASRLT aas="AFILVMW" />
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="boundary_E_design" selector="design_boundary_E_residues" >
+      <RestrictAbsentCanonicalAASRLT aas="AFILVYMHKRNQEDSTW" />
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="surface_E_design" selector="design_surface_E_residues" >
+      <RestrictAbsentCanonicalAASRLT aas="HKRNQDETS" />
+    </OperateOnResidueSubset>
+
+    <OperateOnResidueSubset name="core_L_design" selector="design_core_L_residues" >
+      <RestrictAbsentCanonicalAASRLT aas="AGFILPVWM" />
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="boundary_L_design" selector="design_boundary_L_residues" >
+      <RestrictAbsentCanonicalAASRLT aas="ADEFGIKRLNQPSTVY" />
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="surface_L_design" selector="design_surface_L_residues" >
+      <RestrictAbsentCanonicalAASRLT aas="DEGHKRNQSTP" />
+    </OperateOnResidueSubset>
+ 
+    <OperateOnResidueSubset name="core_H_prevent_repacking" selector="design_core_H_residues" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="boundary_H_prevent_repacking" selector="design_boundary_H_residues" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="surface_H_prevent_repacking" selector="design_surface_H_residues" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    
+    <OperateOnResidueSubset name="core_E_prevent_repacking" selector="design_core_E_residues" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="boundary_E_prevent_repacking" selector="design_boundary_E_residues" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="surface_E_prevent_repacking" selector="design_surface_E_residues" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+
+    <OperateOnResidueSubset name="core_L_prevent_repacking" selector="design_core_L_residues" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="boundary_L_prevent_repacking" selector="design_boundary_L_residues" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="surface_L_prevent_repacking" selector="design_surface_L_residues" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+       
+  </TASKOPERATIONS>
+  <FILTERS>
+    
+    <Geometry name="geometry" omega="165" cart_bonded="20" start="1" end="1000000" confidence="0" />
+    <ScoreType name="total_score" score_type="total_score" scorefxn="beta" threshold="0" confidence="0" />
+    <ScoreType name="omega" score_type="omega" scorefxn="beta" threshold="0" confidence="0" />
+    <ResidueCount name="nres" confidence="0" />
+    <ResidueCount name="ala_counter" residue_types="ALA" confidence="0" />
+    <ResidueCount name="met_counter" residue_types="MET" confidence="0" />
+    <CalculatorFilter name="ala_res" confidence="0" equation="a_counter/NRES" threshold="0" >
+      <Var name="a_counter" filter_name="ala_counter" />
+      <Var name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+    <ResidueCount name="nresHelix" residue_selector="helix" confidence="0" />
+    <ResidueCount name="nHelix_ala" residue_types="ALA" residue_selector="helix" confidence="0" />
+    <CalculatorFilter name="ala_per_helix" confidence="0" equation="H_al/nH" threshold="0" >
+      <Var name="H_al" filter_name="nHelix_ala" />
+      <Var name="nH" filter_name="nresHelix" />
+    </CalculatorFilter>
+
+    <ResidueCount name="Bulkynp_counter" residue_types="VAL,PHE,ILE,LEU,MET,TYR" confidence="0" />
+    <CalculatorFilter name="Bulkynp_res" confidence="0" equation="-Bulkynp/NRES" threshold="-0.5" >
+      <Var name="Bulkynp" filter_name="Bulkynp_counter" />
+      <Var name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+    <CalculatorFilter name="total_score_res" confidence="0" equation="SCORE/NRES" threshold="0" >
+      <Var name="SCORE" filter_name="total_score" />
+      <Var name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+    <CombinedValue name="bulkytot" threshold="-1" confidence="0">
+      <Add filter_name="total_score_res" factor="1.0" />
+      <Add filter_name="Bulkynp_res" factor="1.0" />
+    </CombinedValue>
+    <ResidueCount name="nres_loops" residue_selector="loop" confidence="0" />
+    <CalculatorFilter name="loops_per_res" confidence="0" equation="NRES/NRES_loops" threshold="3" >
+      <Var name="NRES" filter_name="nres" />
+      <Var name="NRES_loops" filter_name="nres_loops" />
+    </CalculatorFilter> 
+
+    <PackStat name="pack" threshold="0.6" confidence="0"/>
+
+    <BuriedUnsatHbonds name="new_buns_sc_heavy" report_sc_heavy_atom_unsats="true" scorefxn="beta" cutoff="0" residue_surface_cutoff="20.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+    <BuriedUnsatHbonds name="new_buns_bb_heavy" report_bb_heavy_atom_unsats="true" scorefxn="beta" cutoff="4" residue_surface_cutoff="20.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+    
+    
+  </FILTERS>
+
+  <MOVERS>
+
+    <Dssp name="dssp"/>
+
+    <AddCompositionConstraintMover name="addposecomp" filename="pose.comp" />
+    <FastDesign name="fast_design"
+		scorefxn="beta"
+		repeats="1"
+		task_operations="init,ic,limchi2,linmem,core_H_design,boundary_H_design,surface_H_design,core_E_design,boundary_E_design,surface_E_design,core_L_design,boundary_L_design,surface_L_design"
+		min_type="lbfgs_armijo_nonmonotone" />
+    
+  </MOVERS>
+  
+  <APPLY_TO_POSE>
+  </APPLY_TO_POSE>
+  
+  <PROTOCOLS>
+
+    <Add mover_name="addposecomp" />
+    <Add mover_name="fast_design" />
+    <Add filter_name="total_score" />
+    <Add filter_name="total_score_res" />
+    <Add filter_name="omega" />
+    <Add filter_name="nres" />
+    <Add filter_name="nres_loops" />
+    <Add filter_name="loops_per_res" />
+    <Add filter_name="ala_counter" />
+    <Add filter_name="Bulkynp_counter" />
+    <Add filter_name="Bulkynp_res" />
+    <Add filter_name="ala_res" />
+    <Add filter_name="new_buns_bb_heavy" />
+    <Add filter_name="new_buns_sc_heavy" />
+    <Add filter_name="nresHelix" />
+    <Add filter_name="nHelix_ala" />
+    <Add filter_name="ala_per_helix" />
+    <Add filter_name="met_counter" />
+    
+  </PROTOCOLS>
+  
+  <OUTPUT scorefxn="beta" />
+  
+</ROSETTASCRIPTS>
