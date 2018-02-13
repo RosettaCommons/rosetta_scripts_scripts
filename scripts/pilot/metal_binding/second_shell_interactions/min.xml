@@ -1,0 +1,108 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="hard" weights="beta_nov16_cst" symmetric="0"/>
+    <ScoreFunction name="hard_symm" weights="beta_nov16_cst" symmetric="1">
+    </ScoreFunction>
+    <ScoreFunction name="sfxn_beta" weights="beta_nov16_cst" symmetric="true">
+        <Reweight scoretype="aa_composition" weight="1.0" />
+        <Set aa_composition_setup_file="/home/srgerb/hBundles/disfavor_polyala.comp" />
+        <Reweight scoretype="atom_pair_constraint" weight="1.0" />
+    </ScoreFunction>
+  </SCOREFXNS>
+
+  <RESIDUE_SELECTORS>
+      <ResiduePDBInfoHasLabel name="hbnet" property="HBNet" />
+      <Index name="n_base" resnums="1-21"/>
+      <SSElement name="cterm" selection="c_term" chain="A" />
+      <PrimarySequenceNeighborhood name="c_base" selector="cterm" lower="164" upper="1" />
+      <Or name="base" selectors="n_base,c_base"/>
+      <SecondaryStructure name="helix" minH="2" ss="H" />
+      <Layer name="core" select_core="true" select_boundary="false" select_surface="false"/>
+      <Layer name="boundary" select_core="false" select_boundary="true" select_surface="false"/>
+      <Layer name="surface" select_core="false" select_boundary="false" select_surface="true"/>
+      <And name="helix_core" selectors="helix,core"/>
+      <And name="helix_boundary" selectors="helix,boundary"/>
+      <And name="helix_surface" selectors="helix,surface"/>
+      <ResidueName name="binder" residue_name3="HIE,HID" />
+      <Chain name="chainA" chains="A"/>
+      <Chain name="chainC" chains="C"/>
+      <And name="binder_A" selectors="binder,chainA"/>
+      <And name="binder_C" selectors="binder,chainC"/>
+  </RESIDUE_SELECTORS>
+
+  <TASKOPERATIONS>
+     <OperateOnResidueSubset name="hbnet_residues" selector="hbnet">
+         <PreventRepackingRLT/>
+     </OperateOnResidueSubset>
+     <OperateOnResidueSubset name="keep_base" selector="base">
+        <RestrictToRepackingRLT/>
+     </OperateOnResidueSubset>
+     <OperateOnResidueSubset name="aa_core" selector="helix_core">
+        <RestrictAbsentCanonicalAASRLT aas="AFILVWYMSAQN"/>
+     </OperateOnResidueSubset>
+     <OperateOnResidueSubset name="aa_surface" selector="helix_surface">
+        <RestrictAbsentCanonicalAASRLT aas="DEHKNQRST"/>
+     </OperateOnResidueSubset>
+     <OperateOnResidueSubset name="aa_boundary" selector="helix_boundary">
+        <RestrictAbsentCanonicalAASRLT aas="AEIKLNQRSTVWY"/>
+     </OperateOnResidueSubset>
+     <OperateOnResidueSubset name="keep_binder" selector="binder">
+        <PreventRepackingRLT/>
+     </OperateOnResidueSubset>
+     
+     PSSM DESIGN
+    <InitializeFromCommandline name="init" />
+    <IncludeCurrent name="current"/>
+    <ExtraRotamersGeneric name="ex1_2"
+                          ex1="1" ex2="1" ex3="0" ex4="0"
+                          ex1aro="0" ex2aro="0" ex1aro_exposed="0" ex2aro_exposed="0"
+                          ex1_sample_level="1" ex2_sample_level="1" ex3_sample_level="0" ex4_sample_level="0"
+                          ex1aro_sample_level="1" ex2aro_sample_level="1" ex1aro_exposed_sample_level="0" ex2aro_exposed_sample_level="0"/>
+    <LimitAromaChi2 name="limitarochi2" include_trp="0"/>
+  </TASKOPERATIONS>
+
+  <FILTERS>
+     <SSPrediction name="psipred_conf" confidence="0" cmd="/home/srgerb/hBundles/psipred2.5/runpsipred_single" use_probability="1" use_svm="false"/>
+     <ResidueCount name="nres" confidence="0" />
+     <ScoreType name="total_score" scorefxn="sfxn_beta" score_type="total_score" threshold="0" confidence="0" />
+     <CalculatorFilter name="score_norm" confidence="0" equation="SCORE/NRES" threshold="3" >
+        <Var name="SCORE" filter="total_score" />
+        <Var name="NRES" filter="nres" />
+     </CalculatorFilter>
+     <Holes name="holes" threshold="1.8" />
+  </FILTERS>
+
+  <MOVERS>
+    ConstraintSetMover name="add_csts" add_constraints="true" cst_file="../HID_cst"/>
+    CoordinateConstraintGenerator name="add_csts" residue_selector="binder" sd="0.2" sidechain="true" ambiguous_hnq="true"/>
+    <AddConstraints name="add_csts" >
+       <DistanceConstraintGenerator name="N_csts" residue_selector1="binder_A" 
+             residue_selector2="binder_C" atom_name1="ND1" atom_name2="ND1" 
+             function="HARMONIC 4.2 0.2"/>
+       <DistanceConstraintGenerator name="CA_csts" residue_selector1="binder_A" 
+             residue_selector2="binder_C" atom_name1="CA" atom_name2="CA" 
+             function="HARMONIC 11.3 0.2"/>
+    </AddConstraints>
+    <SymPackRotamersMover name="pack2" scorefxn="sfxn_beta" task_operations="aa_core,aa_surface,aa_boundary,keep_base,hbnet_residues,ex1_2,limitarochi2"/>
+    <SymMinMover name="min" scorefxn="sfxn_beta" bb="1" chi="1" jump="ALL" />
+    <FastRelax name="frelax" scorefxn="sfxn_beta" repeats="1"/>
+    <ParsedProtocol name="combo_min">
+       <Add mover_name="pack2"/>
+       <Add mover_name="min"/>
+    </ParsedProtocol>
+    <GenericSimulatedAnnealer name="refine_all" mover_name="combo_min" trials="1" periodic_mover="frelax" eval_period="4" history="10" bolz_rank="1" recover_low="1" preapply="0" drift="1" checkpoint_file="mc" keep_checkpoint_file="0" filter_name="score_norm" temperature="0.02" sample_type="low" >
+       <Filters>
+          <AND filter_name="psipred_conf" temperature="0.0005" />
+          <AND filter_name="holes" temperature="0.0005" />
+       </Filters>
+    </GenericSimulatedAnnealer>
+    <FastRelax name="frelax2" scorefxn="hard_symm" repeats="5"/>
+  </MOVERS>
+  <PROTOCOLS>
+    <Add mover="add_csts"/>
+    <Add mover="pack2"/>
+    <Add mover="refine_all"/>
+    <Add mover="frelax2"/>
+  </PROTOCOLS>
+  <OUTPUT scorefxn="hard" />
+</ROSETTASCRIPTS>

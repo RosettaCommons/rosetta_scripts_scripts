@@ -1,0 +1,61 @@
+<ROSETTASCRIPTS>
+   <SCOREFXNS>
+     <ScoreFunction name="beta_nov16_symm" weights="beta_nov16_cst" symmetric="1">
+        <Reweight scoretype="atom_pair_constraint" weight="1.0" />
+     </ScoreFunction>
+   </SCOREFXNS>
+
+   <RESIDUE_SELECTORS>
+      <ResidueName name="binder" residue_name3="HIE,HID" />
+      <Chain name="chainA" chains="A"/>
+      <Chain name="chainC" chains="C"/>
+      <And name="binder_A" selectors="binder,chainA"/>
+      <And name="binder_C" selectors="binder,chainC"/>
+      <Index name="n_base" resnums="1-21"/>
+      <SSElement name="cterm" selection="c_term" chain="A" />
+      <PrimarySequenceNeighborhood name="c_base" selector="cterm" lower="164" upper="1" />
+      <Or name="base" selectors="n_base,c_base"/>
+      <Or name="base_and_binder" selectors="base,binder"/>
+   </RESIDUE_SELECTORS>
+
+   <TASKOPERATIONS>
+       <OperateOnResidueSubset name="keep_base_and_binder" selector="base_and_binder" >
+          <PreventRepackingRLT/>
+       </OperateOnResidueSubset>
+   </TASKOPERATIONS>
+
+   <FILTERS>
+   </FILTERS>
+
+   <MOVERS>
+     <SetupForSymmetry name="setup_symm" definition="/home/srgerb/hBundles/SymFiles/C4_Z.sym"/>
+     <AddConstraints name="add_csts" >
+        <DistanceConstraintGenerator name="N_csts" residue_selector1="binder_A"
+             residue_selector2="binder_C" atom_name1="NE2" atom_name2="NE2"
+             function="HARMONIC 4.2 0.2"/>
+        <DistanceConstraintGenerator name="CA_csts" residue_selector1="binder_A"
+             residue_selector2="binder_C" atom_name1="CA" atom_name2="CA"
+             function="HARMONIC 11.3 0.2"/>
+     </AddConstraints>
+     <FastRelax name="frelax" scorefxn="beta_nov16_symm" repeats="3"/>
+     <HBNet name="hbnet_core" scorefxn="beta_nov16_symm" start_selector="binder" hb_threshold="-0.30" 
+           min_network_size="2" max_network_size="4" write_network_pdbs="0" 
+           use_only_input_rot_for_start_res="True" write_cst_files="0" no_heavy_unsats_allowed="false" 
+           task_operations="keep_base_and_binder" monte_carlo="false" total_num_mc_runs="10000"
+           />
+     <MultiplePoseMover name="MPM_design" max_input_poses="10">
+         <xi:include href="min.xml"/>
+     </MultiplePoseMover>
+     <RemoveConstraints name="rm_csts" constraint_generators="N_csts,CA_csts" />
+   </MOVERS>
+
+<PROTOCOLS>
+  <Add mover_name="setup_symm"/>
+  <Add mover_name="add_csts"/>
+  <Add mover_name="frelax"/>
+  <Add mover_name="rm_csts"/>
+  <Add mover_name="hbnet_core"/>
+  <Add mover_name="MPM_design"/>
+</PROTOCOLS>
+
+</ROSETTASCRIPTS>

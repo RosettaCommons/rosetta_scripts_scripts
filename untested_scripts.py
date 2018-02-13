@@ -37,5 +37,6 @@ scripts_not_tested = [
     "scripts/pilot/protein_design/motif_fiber_design/refineCx_less_filter.xml",
     "scripts/pilot/protein_design/motif_fiber_design/refine_setup.xml",
     "scripts/pilot/protein_design/motif_fiber_design/setup_sym.xml",
+    "scripts/pilot/metal_binding/second_shell_interactions/min.xml"
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world
