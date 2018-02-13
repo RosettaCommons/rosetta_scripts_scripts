@@ -1,0 +1,147 @@
+<ROSETTASCRIPTS>        <SCOREFXNS>
+                <ScoreFunction name="hard" weights="beta"/>
+		<ScoreFunction name="hard_cart" weights="beta_cart"/>
+		<ScoreFunction name="soft_cst" weights="/work/sboyken/weights/beta_soft_rep_cst.wts"/>
+                hard weights=beta/>
+		<ScoreFunction name="hard_cst" weights="beta_cst"/>
+		<ScoreFunction name="beta_aa_comp" weights="beta_cst" >
+                                        <Reweight scoretype="aa_composition" weight="1.0" />
+                                        Set aa_composition_setup_file="CA2_constraint.comp" />
+                                </ScoreFunction>
+		<ScoreFunction name="up_ele" weights="beta_cst" >
+                                        <Reweight scoretype="fa_elec" weight="1.4" />
+                                        <Reweight scoretype="hbond_sc" weight="2.0" />
+                </ScoreFunction>
+        </SCOREFXNS>
+        <RESIDUE_SELECTORS>
+   		<Layer name="pick_core_and_boundary" select_core="true" select_boundary="true" core_cutoff="5.2" surface_cutoff="3.0"/>
+                <Layer name="pick_core_and_surface" select_core="true" select_surface="true" core_cutoff="5.2" surface_cutoff="3.0"/>
+                <Layer name="pick_surface_and_boundary" select_surface="true" select_boundary="true" core_cutoff="5.2" surface_cutoff="3.0"/>
+	        <Chain name="chain_a" chains="A"/>
+		<Chain name="chain_b" chains="B"/>
+		<Chain name="chain_c" chains="C"/>
+		<Layer name="core" select_core="true" core_cutoff="5.2" surface_cutoff="3.0"/>
+		<ResidueName name="ala_and_met" residue_name3="ALA,MET" />
+		<Not name="not_ala_or_met" selector="ala_and_met" /> 
+		<ResidueName name="ala_and_val" residue_name3="ALA,VAL" />
+		<Not name="not_ala_or_val" selector="ala_and_val" /> 
+		<SecondaryStructure name="loops" ss="L"/>
+		<Neighborhood name="around_loops" distance="6.0" selector="loops"/>
+      <Not name="not_around_loops" selector="around_loops"/>		
+        </RESIDUE_SELECTORS>
+	<TASKOPERATIONS>
+		<OperateOnResidueSubset name="only_loops_designable" selector="not_around_loops">
+            <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+		<ConsensusLoopDesign name="disallow_non_abego_aas"/>
+		<LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="5.2" surface="3.0">
+              <core>
+                <Helix append="M" />
+		<all exclude="WY" />
+              </core>
+              <boundary>
+                <Helix exclude="D" />
+		<all exclude="WY" />
+              </boundary>
+	      <surface>
+		<Helix append="A"/>
+              </surface>
+            </LayerDesign>
+         <OperateOnResidueSubset name="design_core" selector="pick_surface_and_boundary">
+           <PreventRepackingRLT/>
+         </OperateOnResidueSubset>
+         <OperateOnResidueSubset name="design_boundary" selector="pick_core_and_surface">
+           <PreventRepackingRLT/>
+         </OperateOnResidueSubset>
+         <OperateOnResidueSubset name="design_surface" selector="pick_core_and_boundary">
+           <PreventRepackingRLT/>
+         </OperateOnResidueSubset>
+	 <OperateOnResidueSubset name="repack_not_ala_or_met" selector="not_ala_or_met" >
+           <RestrictToRepackingRLT/>
+         </OperateOnResidueSubset>
+	 <OperateOnResidueSubset name="redesign_ala_met" selector="ala_and_met" >
+           <RestrictAbsentCanonicalAASRLT aas="AMILVF" />
+	 </OperateOnResidueSubset>
+	 <OperateOnResidueSubset name="design_ala" selector="not_ala_or_val" >
+           <PreventRepackingRLT/>
+         </OperateOnResidueSubset>
+      <InitializeFromCommandline name="init"/>
+      <ConstrainHBondNetwork name="hbnet_task" />
+      <IncludeCurrent name="current"/>
+      <LimitAromaChi2 name="arochi" />
+      <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+      <ExtraRotamersGeneric name="ex1" ex1="1"/>
+      <RestrictAbsentCanonicalAAS name="ala_only" resnum="0" keep_aas="A" />
+      </TASKOPERATIONS>
+      <FILTERS>
+      <PreProline name="prepro" use_statistical_potential="0" confidence="0"/>
+      <ScoreType name="scorefilter" scorefxn="hard_cst" score_type="total_score" threshold="0.0" confidence="1" />
+      <EnzScore name="cst_score" score_type="cstE" scorefxn="hard_cst" whole_pose="1" energy_cutoff="20" confidence="1"/>
+      <BuriedUnsatHbonds name="uhb" scorefxn="hard_cst" cutoff="4" task_operations="layer_all" confidence="0"/>
+      <BuriedUnsatHbonds2 name="uhb2" scorefxn="hard_cst" cutoff="4" task_operations="layer_all" confidence="0" AHD_cutoff="90" confidence="0"/>
+      <ResidueCount name="ala_count" max_residue_count="30" residue_types="ALA" confidence="1"/>
+      <ResidueCount name="chainA_ILVF_count" min_residue_count="5" residue_types="ILE,LEU,VAL,PHE" residue_selector="chain_a" confidence="0"/>
+      <ResidueCount name="chainB_ILVF_count" min_residue_count="5" residue_types="ILE,LEU,VAL,PHE" residue_selector="chain_b" confidence="0"/>
+      <ResidueCount name="chainC_ILVF_count" min_residue_count="5" residue_types="ILE,LEU,VAL,PHE" residue_selector="chain_c" confidence="0"/>
+      </FILTERS>
+      <MOVERS>
+	<PackRotamersMover name="only_design_loops" scorefxn="hard" task_operations="only_loops_designable,layer_all,disallow_non_abego_aas" />
+		<MinMover name="hardmin_bb" scorefxn="hard_cart" type="lbfgs_armijo_nonmonotone" tolerance="0.0001" chi="0" bb="1" bondangle="1" bondlength="1" jump="all" cartesian="1"/>
+		<MinMover name="hardmin_cart_all" scorefxn="hard_cart" type="lbfgs_armijo_nonmonotone" tolerance="0.0001" chi="1" bb="1" bondangle="1" bondlength="1" jump="all" cartesian="1"/>
+		<PackRotamersMover name="softpack_core" scorefxn="soft_cst" task_operations="init,layer_all,design_core,current,arochi,hbnet_task,disallow_non_abego_aas,design_ala"/>
+                <PackRotamersMover name="softpack_boundary" scorefxn="soft_cst" task_operations="init,layer_all,design_boundary,current,arochi,hbnet_task,disallow_non_abego_aas,design_ala"/>
+                <PackRotamersMover name="softpack_surface" scorefxn="soft_cst" task_operations="init,layer_all,design_surface,current,arochi,hbnet_task,disallow_non_abego_aas,design_ala"/>
+                <PackRotamersMover name="hardpack_core" scorefxn="hard_cst" task_operations="init,layer_all,design_core,current,arochi,ex1_ex2,hbnet_task,disallow_non_abego_aas,design_ala"/>
+                <PackRotamersMover name="hardpack_boundary" scorefxn="hard_cst" task_operations="init,layer_all,design_boundary,current,arochi,ex1_ex2,hbnet_task,disallow_non_abego_aas,design_ala"/>
+       
+
+         <PackRotamersMover name="hardpack_surface" scorefxn="up_ele" task_operations="init,layer_all,design_surface,current,arochi,ex1,hbnet_task,disallow_non_abego_aas"/>
+
+                <MinMover name="hardmin_sconly" scorefxn="hard_cst" chi="1" bb="0" bondangle="0" bondlength="0" />
+		<AddCompositionConstraintMover name="add_comp_file" filename="/work/sboyken/aa_comp_files/bundle_constraint_heterotrimer.comp" selector="pick_core_and_boundary" />
+		FastDesign name=fdes1 scorefxn=beta_aa_comp repeats=3 task_operations=init,layer_all,redesign_ala_met,repack_not_ala_or_met,current,arochi,ex1,hbnet_task,disallow_non_abego_aas />
+		<FastRelax name="frelax1" scorefxn="beta_aa_comp" repeats="5" task_operations="init,layer_all,redesign_ala_met,repack_not_ala_or_met,current,arochi,ex1,hbnet_task,disallow_non_abego_aas" />
+		<InterfaceAnalyzerMover name="interface_analyzer" scorefxn="beta_aa_comp" packstat="1" pack_input="1" pack_separated="1" />
+		<DumpPdb name="dump1" fname="dump1.pdb" scorefxn="beta_aa_comp"/>
+		<DumpPdb name="dump2" fname="dump2.pdb" scorefxn="beta_aa_comp"/>
+		<DumpPdb name="dump3" fname="dump3.pdb" scorefxn="beta_aa_comp"/>
+		<DumpPdb name="dump4" fname="dump4.pdb" scorefxn="beta_aa_comp"/>
+		<DumpPdb name="dump5" fname="dump5.pdb" scorefxn="beta_aa_comp"/>
+		<DumpPdb name="dump6" fname="dump6.pdb" scorefxn="beta_aa_comp"/>
+		<DumpPdb name="dump7" fname="dump6.pdb" scorefxn="beta_aa_comp"/>
+		<DumpPdb name="dump8" fname="dump6.pdb" scorefxn="beta_aa_comp"/>
+		<DumpPdb name="dump9" fname="dump6.pdb" scorefxn="beta_aa_comp"/>
+	</MOVERS>
+        <PROTOCOLS>
+        Add mover=hardmin_bb/>
+	Add mover=softpack_core/>
+	Add mover=dump1/>
+	Add mover=softpack_boundary/>
+	Add mover=dump2/>
+	Add mover=softpack_surface/>
+	Add mover=dump3/>
+	Add mover=hardmin_sconly/>
+        Add mover=hardpack_core/>
+        Add mover=hardpack_boundary/>
+	<Add mover="only_design_loops"/>
+	<Add mover="dump1"/>
+        Add mover=hardpack_surface/>
+	Add mover=dump2/>
+	<Add mover="hardmin_cart_all"/>
+	#fastdesign with aa_comp?
+	Add mover=frelax1/>
+	Add mover=hardpack_surface/>
+	Add mover=dump8/>
+	Add mover=add_comp_file />
+	Add mover=dump9/>
+	Add filter=cst_score/>
+	<Add filter="chainA_ILVF_count"/>
+	<Add filter="chainB_ILVF_count"/>
+	<Add filter="chainC_ILVF_count"/>
+	<Add filter="ala_count"/>
+	<Add filter="uhb"/>
+        <Add filter="uhb2"/>
+	<Add filter="prepro"/>
+	<Add mover="interface_analyzer"/>
+        </PROTOCOLS>
+</ROSETTASCRIPTS>

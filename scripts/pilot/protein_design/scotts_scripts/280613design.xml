@@ -1,0 +1,301 @@
+<ROSETTASCRIPTS>#06/21/13 
+#Vancomycin
+#Design with Per to further design hits that passed orientation and sasa filters soft design (soft_design.xml)
+#   will run with my copy of Rosetta, Talaris2013 score fxn
+#
+
+
+	<TASKOPERATIONS>
+	# Initialize from cmd
+	<InitializeFromCommandline name="init"/>	
+	# Detect interface with design
+	<DetectProteinLigandInterface name="edto" design="1" cut1="6.0" cut2="8.0" cut3="10.0" cut4="12.0"/>
+	# Detect interface with design
+	<DetectProteinLigandInterface name="dpli_nodesign" design="0" cut1="6.0" cut2="8.0" cut3="10.0" cut4="12.0"/>
+	# Detect interface without any design and different cuts
+	<DetectProteinLigandInterface name="edto2" design="0" cut1="10.0" cut2="12.0" cut3="12.0" cut4="12.0"/>
+	# Limit chi2 angles of aromatic residues ~ 0 degrees gives
+	# internal clash of the residue
+	<LimitAromaChi2 name="limchi2"/>
+	# Upweights the interaction between ligand and protein
+	# 1.5 is an empirical value
+        <ProteinLigandInterfaceUpweighter name="up" interface_weight="1.5"/>
+	# Access the memory in a linear fashion
+	# Avoid crashes due to using too much memory
+        <SetIGType name="linmem_ig" lin_mem_ig="1"/>
+	# Make sure you only repack and do not do any design
+        <RestrictToRepacking name="repack_only" /> 
+        # We have an issue with TRP hence we remove it from design
+        <RestrictAbsentCanonicalAAS name="removetrp" resnum="0" keep_aas="VLIMFNEQHKRDGASTYCP"/>
+        # Increase the volume of the following residues
+        # and tries to increase it for the rest it just leaves them
+        # alone: A, V, S, N, I, L, and F
+        #06/21/13 REMOVING ivol for now
+        #  This is a hack of Per's to combat the underpacking problem
+        #  may wish to add back later but will need to run with Per's Rosetta
+        #IncreaseAminoAcidVolume name=ivol
+        # Disallow if non-native residue
+	# to disfavor designed Trp, will not design any Trp, but allows native Trp is favorable
+         <DisallowIfNonnative name="dis_allow" resnum="0" disallow_aas="W"/>
+	 # Read resfile called resfile
+	 ReadResfile name=res filename=resfile
+	 # Includes the input rotamer of the pose ( protein )
+	 <IncludeCurrent name="incl"/>
+
+	</TASKOPERATIONS>
+
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+
+ 	<SCOREFXNS>
+
+	  # Using talaris2013 scoring fan throughout
+	  #enzdes is a variable that is used throughout rest of this script
+	  <ScoreFunction name="enzdes" weights="talaris2013.wts"/>
+	  # Change of the repulsive term in vdw calculation
+	  # It is made less steep
+	  <ScoreFunction name="soft" weights="ligand_soft_rep" />
+
+  	</SCOREFXNS>
+
+
+     <MOVERS>
+
+         # Minimization of complex - no design allowed
+         <TaskAwareMinMover name="min" bb="0" chi="1" jump="1" scorefxn="enzdes" task_operations="dpli_nodesign,init"/>
+         # Packing of rotamers making sure no aromatic with chi2 of 90 degrees
+         <PackRotamersMover name="repack" task_operations="init,dpli_nodesign,limchi2"/>
+
+         <ParsedProtocol name="min_repack_min">
+              <Add mover="min"/>
+              <Add mover="repack"/>
+              <Add mover="min"/>
+         </ParsedProtocol>
+
+
+      </MOVERS>
+
+   <FILTERS>
+   	 # Used this previously to filter hits in scaffold libraries, thus will not apply again
+     # Measure which atom is closest to the center of mass
+     # If atomA is closer to center of mass than atomB it returns true
+     #DiffAtomCenterOfMass name="com_ligand" AtomA="O2" AtomB="C7"
+
+     # Computes the energy of the ligand on the interaction graph
+     <LigInterfaceEnergy name="interfE" energy_cutoff="0"/>
+
+     # Initial interface energy filter 
+     # 06/21/13 changed cutoff to 50
+     #    because we previously filtered the pdbs for this run, don't want to be too stringent
+     <LigInterfaceEnergy name="initial_ife" energy_cutoff="50"/>
+
+     # Initially we set it to 0.62
+     <ShapeComplementarity name="sc" min_sc="0.25" jump="1"/>
+
+     # The relative sasa of the ligand 
+     <DSasa name="sasa" lower_threshold="0.5"/> # upper_threshold=1.0
+
+     # We use the delta-filter for the IfThenElse
+     <Delta name="delta_sasa" lower="1" filter="sasa" relax_mover="min_repack_min"/>
+
+     # We use the delta-filter for the IfThenElse
+     <Delta name="delta_interface_energy" upper="1" range="0" filter="initial_ife" relax_mover="min_repack_min"/>
+
+     # Below are the filters combined
+     # Based on logic - if one fail all fails
+     <CompoundStatement name="first_design_filter">
+       AND filter_name="com_ligand"
+       <AND filter_name="interfE"/>
+     </CompoundStatement>
+    
+     <CompoundStatement name="design_filter">
+       AND filter_name="com_ligand"
+       <AND filter_name="interfE"/>
+       <AND filter_name="sc"/>
+
+     </CompoundStatement>
+
+     # Filter for the total score of the pose
+     # Confidence is set to 1 to make sure we do not get positive scores
+     <ScoreType name="total_score" scorefxn="enzdes" threshold="0" confidence="1"/>
+
+     # chain=0 means compute for the complex - the threshold value
+     # 0.6 is based on empirical observation from Nobu
+     <PackStat name="pstat" chain="0" threshold="0.6" repeats="5"/>
+
+     #2.0 AA is high but the interface is large for vancomycin
+     #Start high at first
+     #look at distn from values at end of PDB
+     <RepackWithoutLigand name="rwl" scorefxn="enzdes" target_res="all_repacked" rms_threshold="2.0"/>
+
+     # The calculations is run 10 times to get a semi-reasonable value, the threshold is
+     # set quite lenient.
+     <Ddg name="ddg_complex" scorefxn="enzdes" threshold="-1" jump="1" repeats="10" relax_mover="min_repack_min"/>
+
+     # An upper bound is set, a range of 10 REU are used
+     <Delta name="delta_ts" upper="1" range="10" filter="total_score" relax_mover="min_repack_min" reference_name="specialpose"/>
+
+     # Keeping the hydrogen bonds
+     # NEED TO CAREFUL WITH HbondsToResidue filter!
+     <HbondsToResidue name="hbonds_filter" partners="2" energy_cutoff="-0.5" backbone="1" sidechain="1" pdb_num="1X"/>
+
+     # IfThenFilter if any of the above filters fail
+     # a penalty is given for the greedy optimization
+     # The energy is optimized based on interface energy
+
+
+     <IfThenFilter name="sc_opt">
+
+       <IF testfilter="delta_ts" inverttest="1" value="10" weight="1"/>
+       <IF testfilter="delta_sasa" inverttest="1" value="10" weight="1"/>
+       <IF testfilter="hbonds_filter" inverttest="1" value="10" weight="1"/>
+       <IF testfilter="sc" inverttest="1" value="10" weight="1"/>
+       <ELSE valuefilter="delta_interface_energy" weight="1"/>
+
+     </IfThenFilter>
+
+    <CombinedValue name="ivol_filter" threshold="0.0">
+      <Add filter_name="sc" factor="-100.0"/>
+      <Add filter_name="total_score" factor="1.0"/>
+    </CombinedValue>
+
+</FILTERS>
+
+   <MOVERS>	
+
+     # Adding a bonus to the native sequence
+     <FavorSequenceProfile name="fsp" scaling="prob" use_starting="1" matrix="IDENTITY" weight="1.5" scorefxns="enzdes"/>
+     # Design with hard minimization / soft repacking 
+     # Combined with generic-monte-carlo 10 runs 
+     # where we continue with the best one
+     # The introduced hydrogen bonding residues are kept fixed using a resfile
+     # 06/21/13 If minimization kicks out ligand, turn rigid body minimization off in first steps (minimize_rb=0)
+     <EnzRepackMinimize name="desmin" design="1" repack_only="0" scorefxn_minimize="enzdes" scorefxn_repack="soft" minimize_rb="1" minimize_sc="1" minimize_bb="0" cycles="1" minimize_lig="1" min_in_stages="0" backrub="0" task_operations="init,edto,limchi2,linmem_ig,dis_allow"/> 
+     <GenericMonteCarlo name="multides1" mover_name="desmin" filter_name="interfE" trials="10" sample_type="low" temperature="0.6" drift="1"/> 
+
+     # Make a perturbation of the ligand 
+     # Notice the detect_interface is increased from 6 to 10
+     #   06/21/13  WHERE INCREASE FROM 6 to 10?  AND WHY?
+     # NO PERTURBATION FOR THIS RUN, WILL RUN AN IDENTICAL PROTOCOL WITH PERTURBATION
+     # Soft repack / hard minimization, with design
+     <EnzRepackMinimize name="des" design="1" scorefxn_repack="soft" scorefxn_minimize="enzdes" minimize_rb="1" minimize_sc="1" minimize_lig="1" cycles="1" task_operations="edto,up,limchi2,linmem_ig,removetrp"/> 
+
+     # Running 5 trials taking the lowest energy based on the first_design_filter
+     <GenericMonteCarlo name="multides2" mover_name="des" filter_name="first_design_filter" trials="5" sample_type="low" temperature="0.6" drift="0"/>
+
+     # ADDED BY SCOTT, 06/21/13: g_min_des
+     # Hard minimization / hard repack WITH design, with backbone minimization 
+     <EnzRepackMinimize name="min_des" repack_only="0" design="1" scorefxn_minimize="enzdes" scorefxn_repack="enzdes" minimize_rb="1" minimize_sc="1" minimize_bb="1" cycles="1" task_operations="init,edto,up,limchi2,linmem_ig,removetrp"/> 
+     # Added 16-04-2013
+     <GenericMonteCarlo name="g_min_des" mover_name="min_des" filter_name="initial_ife" trials="10" sample_type="low" temperature="0.6" drift="0"/>
+	 
+     # Hard minimization / hard repack without design, with backbone minimization
+     # minimization 
+     <EnzRepackMinimize name="fin_min" repack_only="0" design="0" scorefxn_minimize="enzdes" scorefxn_repack="enzdes" minimize_rb="1" minimize_sc="1" minimize_bb="1" cycles="1" task_operations="init,dpli_nodesign,limchi2,linmem_ig,removetrp"/> 
+     # Added 16-04-2013
+     <GenericMonteCarlo name="g_fin_min" mover_name="fin_min" filter_name="initial_ife" trials="10" sample_type="low" temperature="0.6" drift="0"/>     
+
+     # Hard minimization / hard repack without design and no backbone minimization
+     # Leave rigid body min off here
+     <EnzRepackMinimize name="fin_rpkmin" repack_only="1" design="0" scorefxn_minimize="enzdes" scorefxn_repack="enzdes" minimize_rb="0" minimize_sc="1" minimize_bb="0" cycles="1" task_operations="init,dpli_nodesign,limchi2,linmem_ig,removetrp"/> 
+ <GenericMonteCarlo name="g_fin_rpkmin" mover_name="fin_rpkmin" filter_name="design_filter" trials="5" sample_type="low" temperature="0.6" drift="0"/>     
+
+# removed all instances of GreedyOpt, interface is too large for Vancomycin
+
+ # Increase packing around ligand
+ # Removed ivol and GreedyOptMutationMover that used ivol_filter
+
+# I use to set the baseline used to calculate the values in the greedy optimization
+#6/21/13 SavePoseMover is used to set reference (updates to most recent pose at that position in the protocol)
+<SavePoseMover name="current" restore_pose="0" reference_name="specialpose"/>
+
+#Dumps a pdb file of current pose at a given step
+#  used for debugging purposes
+<DumpPdb name="dpdb1" fname="dump1.pdb" scorefxn="enzdes"/>
+<DumpPdb name="dpdb2" fname="dump2.pdb" scorefxn="enzdes"/>
+<DumpPdb name="dpdb3" fname="dump3.pdb" scorefxn="enzdes"/>
+<DumpPdb name="dpdb4" fname="dump4.pdb" scorefxn="enzdes"/>
+
+   </MOVERS>
+
+<FILTERS>
+
+</FILTERS>
+
+   <PROTOCOLS>
+     # Hard minimization / soft repack
+     # No backbone movement
+     # 10 trial using generic monte carlo
+     # Filter is -5 REU ( can be changed )
+     # 06/21/13 DROP FILTER FOR FIRST ROUND
+     #    was previously set to initial_ife filter
+	 <Add mover_name="multides1" />
+
+
+     # Hard minimization / hard repack
+     # 10 trials using generic monte carlo
+     # Using the filter initial_ife
+     <Add mover_name="g_fin_min"/>
+
+     <Add mover_name="dpdb1"/>
+
+     # Hard minimization / soft repack
+     # No perturbation for this protocol
+     #   will run an identical protocol, 210613design_withPert.xml, with Perturbation
+     # 06/21/13 We need to do with and without perturbation
+     # Filter is interfE
+     <Add mover_name="multides2" filter_name="interfE"/>
+	 
+	 # Hard minimization / hard repack - WITH DESIGN
+     # 06/21/13 NEED NEW MOVER HERE, minimization WITH design
+	 <Add mover_name="g_min_des"/>
+	 
+     # Hard minimization / hard repack - NO DESIGN, no backbone minimization
+     # 5 trials 
+     <Add mover_name="fin_rpkmin" filter_name="design_filter"/>
+
+     # Add a bonus to the native sequence
+     #   favoring native sequence prevents over-mutation
+     <Add mover_name="fsp"/>
+
+     # we set the pose to the current pose for total energy 
+     # calculation
+     # 06/21/13
+     # current is baseline energy (sets reference)
+     <Add mover_name="current"/>
+     
+     #ORIGINALLY THERE WAS A GREEDY OPT MUTATION MOVER HERE
+     #   This is what required the "current" SavePoseMover
+     #   IT HAS BEEN REMOVED BECAUSE VANCOMYCIN IS TOO LARGE (GREEDY OPT TOOK > WEEK)
+
+
+     <Add mover_name="dpdb2"/>
+
+     # Hard minimization / hard repack without design, with backbone
+     # minimization 
+     <Add mover_name="g_fin_min" filter_name="interfE"/>
+
+     <Add mover_name="dpdb3"/>
+
+     # Hard minimization / hard repack without design, no backbone minimization
+     <Add mover_name="g_fin_rpkmin" filter_name="sc"/>
+	 
+     <Add mover_name="dpdb4"/>
+
+    # Computes shape complementarity
+    <Add filter_name="sc"/>
+    # Computes the pack stat
+    # uses RosettaHoles to estimate voids in the ligand binding pocket
+    # 0.6 is "good" value
+    <Add filter_name="pstat"/>
+
+    # Computes the ddG ( 10 runs)
+    <Add filter_name="ddg_complex"/>
+   
+    # Computes the repack without ligand if side chains move more than 
+    # thredshold
+    <Add filter_name="rwl"/>
+
+   </PROTOCOLS>
+
+</ROSETTASCRIPTS>

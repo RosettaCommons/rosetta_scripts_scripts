@@ -1,0 +1,37 @@
+<ROSETTASCRIPTS>
+   <SCOREFXNS>
+   	<ScoreFunction name="beta" weights="beta" />
+   </SCOREFXNS>
+   <RESIDUE_SELECTORS>
+   	ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet" /> # get all network residues as output by HBNet   
+    	Neighborhood name="around_hbnet" selector="hbnet_residues" distance="5.0" /> # select everything within 5A around the network residues
+     	<Layer name="core" select_core="true" core_cutoff="4.0" />  # select core using sidechain neighbors (don’t use SASA because of potential voids!)  
+    	And name="core_around_hbnet" selectors="core,around_hbnet"/> # select only the buried residues within this set  
+   </RESIDUE_SELECTORS>
+   <FILTERS>  
+   	Holes name="network_holes" threshold="1.8" residue_selector="core_around_hbnet" normalize_per_atom="true" exclude_bb_atoms="true" confidence= "0" />
+    	<Holes name="correct_holes" threshold="1.8" residue_selector="core" normalize_per_atom="true" exclude_bb_atoms="true" confidence= "0" />
+    	<Holes name="full_holes" threshold="1.8" confidence="0"/>
+   	<BuriedUnsatHbonds2 name="uhb2" scorefxn="beta" jump_number="0" cutoff="20" AHD_cutoff="90" confidence="0"/>
+        <BuriedUnsatHbonds name="uhb" scorefxn="beta" jump_number="0" cutoff="20" confidence="0" />
+	<BuriedUnsatHbonds3 name="correct_buns" scorefxn="beta" residue_surface_cutoff="15.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+   	<BuriedUnsatHbonds3 name="new_buns_sc_heavy" use_reporter_behavior="true" report_sc_heavy_atom_unsats="true" scorefxn="beta" residue_surface_cutoff="15.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+   	<BuriedUnsatHbonds3 name="new_buns_bb_heavy" use_reporter_behavior="true" report_bb_heavy_atom_unsats="true" scorefxn="beta" residue_surface_cutoff="15.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+	<BuriedUnsatHbonds3 name="new_buns_all_heavy" use_reporter_behavior="true" report_all_heavy_atom_unsats="true" scorefxn="beta" residue_surface_cutoff="15.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+   	<BuriedUnsatHbonds3 name="new_buns_nonheavy" use_reporter_behavior="true" report_nonheavy_unsats="true" scorefxn="beta" residue_surface_cutoff="15.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+   </FILTERS>
+   <MOVERS>
+	<Satisfier name="satisfy" scorefxn="beta" repack="false" design="false" />
+   </MOVERS>
+   <PROTOCOLS>
+	<Add mover_name="satisfy" />
+  	<Add filter="full_holes" />
+  	<Add filter="correct_holes" />
+  	<Add filter="uhb" />
+  	<Add filter="uhb2" />
+  	<Add filter="new_buns_sc_heavy" />
+	<Add filter="new_buns_bb_heavy" />
+	<Add filter="new_buns_all_heavy" />
+	<Add filter="new_buns_nonheavy" />
+   </PROTOCOLS>
+</ROSETTASCRIPTS>

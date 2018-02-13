@@ -1,0 +1,49 @@
+<ROSETTASCRIPTS>
+   <SCOREFXNS>
+          <ScoreFunction name="hbnet_sfxn" weights="beta_cst" symmetric="1"/>
+   </SCOREFXNS>
+   <TASKOPERATIONS>
+          InitializeFromCommandline name=init/>
+          IncludeCurrent name=current/>
+          <LimitAromaChi2 name="arochi" />
+          <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+          <ExtraRotamersGeneric name="ex1" ex1="1"/>
+          <RestrictAbsentCanonicalAAS name="ala_only" resnum="0" keep_aas="A" />
+	  <LayerDesign name="init_layers" layer="other" make_pymol_script="0">
+            <TaskLayer>
+                <SelectBySASA name="symmetric_inteface_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                <all copy_layer="core" />
+                <Helix append="NQSTHK"/>
+            </TaskLayer>
+            <TaskLayer>
+                <SelectBySASA name="symmetric_inteface_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                <all copy_layer="surface" />
+            </TaskLayer>
+            <TaskLayer>
+                <SelectBySASA name="symmetric_inteface_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                <all copy_layer="boundary" />
+                <Helix exclude="EKRW"/>
+            </TaskLayer>
+          </LayerDesign>
+          <SelectBySASA name="select_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          <SelectBySASA name="select_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          <SelectBySASA name="select_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          <SelectBySASA name="select_all" state="bound" mode="mc" core="1" boundary="1" surface="1" probe_radius="2.2" core_asa="35" surface_asa="45" verbose="1"/>
+   </TASKOPERATIONS>
+   <FILTERS>
+   </FILTERS>
+   <MOVERS>
+	  <DetectSymmetry name="detect_symm" />
+          <SetupForSymmetry name="setup_symm" definition="/Users/sboyken/Rosetta/main/database/symmetry/cyclic/C3_Z.sym"/>
+	  <HBNetStapleInterface scorefxn="hbnet_sfxn" name="hbnet_interf" hb_threshold="-0.5" design_residues="NQSTHK" show_task="1" pH_His="1" verbose="1" no_heavy_unsats_allowed="1" write_network_pdbs="1" pore_radius="2.5" minimize="0" min_network_size="3" max_unsat="3" comonebody_hb_threshold="-0.3" task_operations="arochi,init_layers" />
+</MOVERS>
+<PROTOCOLS>
+  Add mover= setup_symm/>
+          Add mover=transform_sc/>
+          Add mover=add_cst/>
+          Add mover=hardmin_bb/>
+          Add mover=clearconstraints/>
+  <Add mover_name="detect_symm"/>
+  <Add mover_name="hbnet_interf"/>
+</PROTOCOLS>
+</ROSETTASCRIPTS>

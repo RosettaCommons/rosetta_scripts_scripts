@@ -1,0 +1,216 @@
+<ROSETTASCRIPTS>
+        <SCOREFXNS>
+                <ScoreFunction name="beta_asymm" weights="beta" />
+                <ScoreFunction name="beta" weights="beta_cst"  symmetric="1" />
+        </SCOREFXNS>
+        <RESIDUE_SELECTORS>
+                <Layer name="core" select_core="true" core_cutoff="3.6" />
+                <ResidueName name="select_CA2_res_selector" residue_name3="CA2" />
+                <Not name="not_CA2" selector="select_CA2_res_selector" />
+                <Layer name="pick_surface_and_boundary" select_surface="true" select_boundary="true"/>
+		<Index name="no_design_please" resnums="1-7,29-35,36-42,64-70,71-77,99-105,106-112,134-140"/>
+    		Index name=middle_heptad resnums=15-21,50-56,85-91,120-126/>
+		Index name=middle_three_heptads resnums=8-28,43-63,78-98,113-133/>
+	</RESIDUE_SELECTORS>
+        <TASKOPERATIONS>
+		<OperateOnResidueSubset name="no_design" selector="no_design_please">
+                        <PreventRepackingRLT/>
+                </OperateOnResidueSubset>
+                <OperateOnResidueSubset name="select_CA2_for_SASA" selector="not_CA2" >
+                        <PreventRepackingRLT/>
+                </OperateOnResidueSubset>
+                OperateOnResidueSubset name=keep_AzoF selector=select_CA2_res_selector >
+                        PreventRepackingRLT/>
+                /OperateOnResidueSubset>
+                <OperateOnResidueSubset name="design_core" selector="pick_surface_and_boundary">
+                        <PreventRepackingRLT/>
+                </OperateOnResidueSubset>
+                <InitializeFromCommandline name="init"/>
+                <IncludeCurrent name="current"/> Includes current rotamers (eg - from input pdb)
+                <LimitAromaChi2 name="arochi" /> Prevent bad rotamers of aromatic amino acids
+                <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+                <ExtraRotamersGeneric name="ex1" ex1="1"/>
+                <LayerDesign name="azof_layers" make_pymol_script="0" layer="core_boundary_surface_Nterm_Cterm" use_sidechain_neighbors="1" core="3.6">
+                        <core>
+                          <all copy_layer="core" />
+                          <all ncaa_append="CA2"/>
+                        </core>
+
+                        <boundary>
+                          <all copy_layer="boundary" />
+                        </boundary>
+
+                        <surface>
+                          <all copy_layer="surface" />
+                        </surface>
+
+                </LayerDesign>
+                <LayerDesign name="hbnet_layers" make_pymol_script="0" layer="core_boundary_surface_Nterm_Cterm" use_sidechain_neighbors="1" core="3.6">
+                        <core>
+                           <Helix append="HNQYSTD"/>
+			   <all ncaa_append="CA2"/>
+                        </core>
+                        <boundary>
+                           <Helix exclude="EKRW"/>
+                        </boundary>
+                </LayerDesign>
+        <AzoPheRotamerFilter name="azoPheFilt"/>
+
+	DesignAround name=AzoF_shell design_shell=8.0 resnums=62A repack_shell=12.0 allow_design=1 resnums_allow_design=1 />
+
+        BuildingBlockInterface name=bbi contact_dist=10.0 bblock_dist=5.0 fa_rep_cut=3.0 />
+        </TASKOPERATIONS>
+        <FILTERS>
+                ScoreType name=total_e scorefxn=beta score_type=total_score threshold=-100.0 confidence=1/>
+        </FILTERS>
+        <MOVERS>
+                #2-layer 7-residue repeat
+                <BundleGridSampler name="bgs1" use_degrees="true" helix_length="35" reset="true" scorefxn="beta_asymm" crick_params_file="alpha_helix_100" set_bondlengths="true" set_bondangles="true" set_dihedrals="true" dump_pdbs="false" max_samples="3600" nstruct_mode="true" >
+                	<Helix r0_min="6.6" r0_max="7.6" r0_samples="3" omega0="-2.85" delta_omega0="0" invert="false" delta_omega1_min="0" delta_omega1_max="100" delta_omega1_samples="10" delta_t="0" />
+                        <Helix r0_min="9.1" r0_max="9.6" r0_samples="2" omega0="-2.85" delta_omega0="90" invert="true" delta_omega1_min="0" delta_omega1_max="100" delta_omega1_samples="10" z1_offset_min="-1.57" z1_offset_max="1.57" z1_offset_samples="3" delta_t="0" />
+		</BundleGridSampler>
+                        <DeclareBond name="add_termini1" add_termini="true" atom1="C" atom2="N" res1="1" res2="2" />
+                        <DeclareBond name="add_termini2" add_termini="true" atom1="C" atom2="N" res1="34" res2="35" />
+                        <DeclareBond name="add_termini3" add_termini="true" atom1="C" atom2="N" res1="36" res2="37" />
+                        <DeclareBond name="add_termini4" add_termini="true" atom1="C" atom2="N" res1="69" res2="70" />
+                DetectSymmetry name=detect_symm />
+                #HBNet
+                <HBNetStapleInterface scorefxn="beta" name="hbnet_interf" hb_threshold="-0.5" min_helices_contacted_by_network="4" core_selector="core" show_task="0" store_subnetworks="0" verbose="0" no_heavy_unsats_allowed="1" write_network_pdbs="1" min_network_size="3" max_unsat="1" min_core_res="2" min_unique_networks="1" write_cst_files="1" combos="2" max_staples_per_interface="2" task_operations="arochi,hbnet_layers,azoPheFilt,no_design" />
+                <SetupForSymmetry name="setup_symm" definition="/work/sboyken/Rosetta/main/database/symmetry/cyclic/C2_Z.sym"/>
+                SymPackRotamersMover name=design_AzoF scorefxn=beta task_operations=init,azof_layers,design_core,azoPheFilt,ex1_ex2 />
+                <MultiplePoseMover name="MPM_design" max_input_poses="50">		    
+		  <ROSETTASCRIPTS>
+			<SCOREFXNS>
+            			soft_cst weights="/work/sboyken/weights/beta_soft_rep_cst.wts" symmetric=1 />
+                		hard_cst weights="beta_cst"  symmetric=1 />
+				hard_asymm weights="beta"/>
+				<ScoreFunction name="beta_aa_comp" weights="beta_cst"  symmetric="1" >
+                        		<Reweight scoretype="aa_composition" weight="1.0" />
+                        		Set aa_composition_setup_file="CA2_constraint.comp" />
+                		</ScoreFunction>
+				<ScoreFunction name="soft_aa_comp" weights="/work/sboyken/weights/beta_soft_rep_cst.wts"  symmetric="1" >
+                                        <Reweight scoretype="aa_composition" weight="1.0" />
+                                        Set aa_composition_setup_file="CA2_constraint.comp" />
+                                </ScoreFunction>
+				<ScoreFunction name="up_ele" weights="beta_cst" symmetric="1">
+                                        <Reweight scoretype="fa_elec" weight="1.4" />
+                                        <Reweight scoretype="hbond_sc" weight="2.0" />
+					<Reweight scoretype="aa_composition" weight="1.0" />
+                                </ScoreFunction>
+        		</SCOREFXNS>
+			<RESIDUE_SELECTORS>
+				<ResidueName name="select_CA2_res_selector" residue_name3="CA2" />
+                		<Not name="not_CA2" selector="select_CA2_res_selector" />
+				<Index name="helix1" resnums="1-35"/>
+    				<Index name="helix2" resnums="36-70"/>
+				<Layer name="pick_core_and_boundary" select_core="true" select_boundary="true" core_cutoff="3.6"/>
+                          	<Layer name="pick_core_and_surface" select_core="true" select_surface="true" core_cutoff="3.6"/>
+                          	<Layer name="pick_surface_and_boundary" select_surface="true" select_boundary="true" core_cutoff="3.6"/>
+				<Index name="middle_three_heptads" resnums="8-28,43-63,78-98,113-133"/>
+				<ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet" />
+			</RESIDUE_SELECTORS>
+			<TASKOPERATIONS>
+				<OperateOnResidueSubset name="select_CA2_for_SASA" selector="not_CA2" >
+                        		<PreventRepackingRLT/>
+                		</OperateOnResidueSubset>
+                		OperateOnResidueSubset name=keep_AzoF selector=select_CA2_res_selector >
+                        		PreventRepackingRLT/>
+                		/OperateOnResidueSubset>
+				<OperateOnResidueSubset name="design_core" selector="pick_surface_and_boundary">
+                                 <PreventRepackingRLT/>
+                                </OperateOnResidueSubset>
+                                <OperateOnResidueSubset name="design_boundary" selector="pick_core_and_surface">
+                                 <PreventRepackingRLT/>
+                                </OperateOnResidueSubset>
+                                <OperateOnResidueSubset name="design_surface" selector="pick_core_and_boundary">
+                                  <PreventRepackingRLT/>
+                                </OperateOnResidueSubset>
+				<OperateOnResidueSubset name="hbnet_task" selector="hbnet_residues">
+                                  <RestrictToRepackingRLT/>
+                                </OperateOnResidueSubset>
+                                <InitializeFromCommandline name="init"/>
+                                ConstrainHBondNetwork name=hbnet_task />
+                                <IncludeCurrent name="current"/>
+                                <LimitAromaChi2 name="arochi" />
+                                <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+                                <ExtraRotamersGeneric name="ex1" ex1="1"/>
+                                <LayerDesign name="all_layers" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="3.6">
+                                  <core>
+					<all copy_layer="core" />
+                                        <Helix append="M"/>
+                                        <Helix exclude="W"/>
+                          		<all ncaa_append="CA2"/>
+                                </core>
+                                  <boundary>
+                                        <Helix exclude="D"/>
+                                </boundary>
+                                </LayerDesign>
+				<AzoPheRotamerFilter name="azoPheFilt"/>
+			</TASKOPERATIONS>
+			<FILTERS>
+                		<ScoreType name="total_e" scorefxn="beta_aa_comp" score_type="total_score" threshold="-100.0" confidence="1"/>
+                		<TotalSasa name="sasa_CA2" threshold="20" upper_threshold="50" hydrophobic="0" polar="0" task_operations="select_CA2_for_SASA" confidence="0" />
+                		<ResidueIE name="score_CA2" scorefxn="beta_aa_comp" score_type="total_score" restype3="CA2" interface="1" confidence="0" />
+				<ResidueCount name="ala_count" max_residue_count="20" residue_types="ALA" confidence="1"/>
+                		<ResidueCount name="AzoF_count" min_residue_count="2" residue_types="CA2" confidence="1"/>
+        			<ResidueCount name="helix1_ILV_count" min_residue_count="4" residue_types="ILE,LEU,VAL,PHE" residue_selector="helix1" confidence="1"/>
+      				<ResidueCount name="helix2_ILV_count" min_residue_count="4" residue_types="ILE,LEU,VAL,PHE" residue_selector="helix2" confidence="1"/>
+				<BuriedUnsatHbonds name="uhb" scorefxn="hard" cutoff="2" confidence="0"/>
+      				<BuriedUnsatHbonds2 name="uhb2" scorefxn="hard" cutoff="2" AHD_cutoff="90" confidence="0"/>
+			</FILTERS>
+        		<MOVERS>
+			   <AddCompositionConstraintMover name="addcomp1" filename="CA2_constraint.comp" selector="middle_three_heptads" />
+			   <SymPackRotamersMover name="softpack_core" scorefxn="soft_aa_comp" task_operations="init,azoPheFilt,all_layers,design_core,current,arochi,hbnet_task"/>
+                           <SymPackRotamersMover name="softpack_boundary" scorefxn="soft_aa_comp" task_operations="init,all_layers,design_boundary,current,arochi,hbnet_task"/>
+                           <SymPackRotamersMover name="softpack_surface" scorefxn="soft_aa_comp" task_operations="init,all_layers,design_surface,current,arochi,hbnet_task"/>
+                           <SymPackRotamersMover name="hardpack_core" scorefxn="beta_aa_comp" task_operations="init,azoPheFilt,all_layers,design_core,current,arochi,ex1_ex2,hbnet_task"/>
+                           <SymPackRotamersMover name="hardpack_boundary" scorefxn="beta_aa_comp" task_operations="init,all_layers,design_boundary,current,arochi,ex1_ex2,hbnet_task"/>
+                           <SymPackRotamersMover name="hardpack_surface" scorefxn="up_ele" task_operations="init,all_layers,design_surface,current,arochi,ex1,hbnet_task"/>
+                           <SymMinMover name="hardmin_sconly" scorefxn="beta_aa_comp" chi="1" bb="0" bondangle="0" bondlength="0" />
+                           DumpPdb name=dump1 fname=dump1.pdb scorefxn=beta_aa_comp/>
+			   DumpPdb name=dump2 fname=dump2.pdb scorefxn=beta_aa_comp/>
+			   DumpPdb name=dump3 fname=dump3.pdb scorefxn=beta_aa_comp/>
+			</MOVERS>
+                        <APPLY_TO_POSE>
+                        </APPLY_TO_POSE>
+                        <PROTOCOLS>
+				<Add mover="addcomp1"/>
+                         	<Add mover="softpack_core"/>
+				Add mover=dump1/>
+                             	<Add mover="softpack_boundary"/>
+                             	<Add mover="softpack_surface"/>
+                            	<Add mover="hardmin_sconly"/>
+				<Add mover="hardpack_core"/>
+				Add mover=dump2/>
+                             	<Add mover="hardpack_boundary"/>
+                             	<Add mover="hardpack_surface"/>
+				Add mover=dump3/>
+                		<Add filter="AzoF_count"/>
+                		<Add filter="ala_count"/>
+                		<Add filter="sasa_CA2"/>
+                		Add filter=shape_comp/>
+				<Add filter="score_CA2"/>
+                		<Add filter="total_e" />
+				<Add filter="helix1_ILV_count"/>
+            			<Add filter="helix2_ILV_count"/>
+				<Add filter="uhb"/>
+				<Add filter="uhb2"/>
+        		</PROTOCOLS>
+		   </ROSETTASCRIPTS>
+	     </MultiplePoseMover>
+        </MOVERS>
+        <APPLY_TO_POSE>
+        </APPLY_TO_POSE>
+        <PROTOCOLS>
+                Add mover=detect_symm />
+                <Add mover="bgs1"/>
+                <Add mover="add_termini1"/>
+                <Add mover="add_termini2"/>
+                <Add mover="add_termini3"/>
+                <Add mover="add_termini4"/>
+                <Add mover="setup_symm"/>
+                Add mover=design_AzoF/>
+                <Add mover="hbnet_interf"/>
+                <Add mover="MPM_design" />
+        </PROTOCOLS>
+</ROSETTASCRIPTS>

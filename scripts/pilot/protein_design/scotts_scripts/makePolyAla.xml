@@ -1,0 +1,16 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+          	#why is coordinate constraint needed here???
+	  	<ScoreFunction name="hard_symm" weights="talaris2013_cst" symmetric="1">
+               		<Reweight scoretype="coordinate_constraint" weight="0.5" />
+          	</ScoreFunction>
+   	</SCOREFXNS>
+	<MOVERS>
+		<DetectSymmetry name="detect_symm"/>
+		<MakePolyX name="makePolyAla" aa="ALA" keep_pro="1"  keep_gly="1"/>
+	</MOVERS>
+	<PROTOCOLS>
+		<Add mover_name="detect_symm"/>
+		<Add mover_name="makePolyAla"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

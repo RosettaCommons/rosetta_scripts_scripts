@@ -1,0 +1,21 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+	</SCOREFXNS>
+    
+	<TASKOPERATIONS>
+	</TASKOPERATIONS>
+    
+	<FILTERS>
+	</FILTERS>
+    
+	<MOVERS>
+        <MakeBundle name="make_bundle" symmetry="3" use_degrees="true" helix_length="%%length%%" crick_params_file="alpha_helix" omega0="-2.6" set_bondlengths="true" set_bondangles="true" set_dihedrals="true">
+            <Helix delta_omega0="0" r0="6.6" z1_offset="0" delta_omega1="-160.3" delta_t="%%delta_t%%" />
+            <Helix delta_omega0="60" r0="12.3" invert="true" delta_omega1="-186.67" z1_offset="-2.5" delta_t="%%inverse_delta_t%%" />
+        </MakeBundle>
+	</MOVERS>
+    
+	<PROTOCOLS>
+		<Add mover="make_bundle" />
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

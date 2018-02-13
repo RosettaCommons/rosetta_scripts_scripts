@@ -1,0 +1,42 @@
+<ROSETTASCRIPTS>
+
+	<TASKOPERATIONS>
+
+
+		<InitializeFromCommandline name="init"/>	
+
+		<LimitAromaChi2 name="limchi2"/>
+
+                <SetIGType name="linmem_ig" lin_mem_ig="1"/>
+
+                <RestrictToRepacking name="repack_only" /> 
+
+	</TASKOPERATIONS>
+
+
+
+      <APPLY_TO_POSE>
+      </APPLY_TO_POSE>
+
+      <SCOREFXNS>
+
+	<ScoreFunction name="enzdes" weights="talaris2013.wts"/>
+
+      </SCOREFXNS>
+
+      <FILTERS>
+      </FILTERS>
+
+   <MOVERS>	
+
+     <GridDesign name="tm" ife_threshold="0" min_dist="0.0" max_dist="1" dist_interval="0.5" min_rot="0.0" max_rot="20" rot_interval="10" scorefxn="enzdes"/>
+
+   </MOVERS>
+
+   <PROTOCOLS>
+     <Add mover_name="tm"/>     
+   </PROTOCOLS>
+
+
+
+</ROSETTASCRIPTS>

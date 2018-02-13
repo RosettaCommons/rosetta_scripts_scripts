@@ -1,0 +1,78 @@
+<ROSETTASCRIPTS>#06/19/2013
+#Scott Boyken
+#using Talaris2013, and my checked out branch of Per's pgreisen/griddesign
+#  will not run on current master of Rosetta, make sure pgreisen/griddesign checked out!
+#testing SecondaryStructureDensity to optimize SS content and SS contacts with ligand
+#  will apply to hits that already passed sasa and orientation filters (so removing those from this protocol)
+#  This version has no design (only the SecondaryStructureDensity filter)
+
+
+	<TASKOPERATIONS>
+	# Initialize from cmd
+	<InitializeFromCommandline name="init"/>	
+	# Detect interface with design
+	<DetectProteinLigandInterface name="edto" design="1" cut1="6.0" cut2="8.0" cut3="10.0" cut4="12.0"/>
+	# Detect interface with design
+	<DetectProteinLigandInterface name="dpli_nodesign" design="0" cut1="6.0" cut2="8.0" cut3="10.0" cut4="12.0"/>
+	# Detect interface without any design and different cuts
+	<DetectProteinLigandInterface name="edto2" design="0" cut1="10.0" cut2="12.0" cut3="12.0" cut4="12.0"/>
+	# Limit chi2 angles of aromatic residues ~ 0 degrees gives
+	# internal clash of the residue
+	<LimitAromaChi2 name="limchi2"/>
+	# Upweights the interaction between ligand and protein
+	# 1.5 is an empirical value
+        <ProteinLigandInterfaceUpweighter name="up" interface_weight="1.5"/>
+	# Access the memory in a linear fashion
+	# Avoid crashes due to using too much memory
+        <SetIGType name="linmem_ig" lin_mem_ig="1"/>
+	# Make sure you only repack and do not do any design
+        <RestrictToRepacking name="repack_only" /> 
+        # We have an issue with TRP hence we remove it from design
+        <RestrictAbsentCanonicalAAS name="removetrp" resnum="0" keep_aas="VLIMFNEQHKRDGASTYCP"/>
+        # Increase the volume of the following residues
+        # and tries to increase it for the rest it just leaves them
+        # alone: A, V, S, N, I, L, and F
+        #06/21/13 REMOVING ivol for now
+        #  This is a hack of Per's to combat the underpacking problem
+        #  may wish to add back later but will need to run with Per's Rosetta
+        #IncreaseAminoAcidVolume name=ivol
+        # Disallow if non-native residue
+	# to disfavor designed Trp, will not design any Trp, but allows native Trp is favorable
+         <DisallowIfNonnative name="dis_allow" resnum="0" disallow_aas="W"/>
+	 # Read resfile called resfile
+	 ReadResfile name=res filename=resfile
+	 # Includes the input rotamer of the pose ( protein )
+	 <IncludeCurrent name="incl"/>
+
+	</TASKOPERATIONS>
+
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+
+ 	<SCOREFXNS>
+
+	  # Using talaris2013 scoring fan throughout
+	  #enzdes is a variable that is used throughout rest of this script
+	  <ScoreFunction name="enzdes" weights="talaris2013.wts"/>
+	  # Change of the repulsive term in vdw calculation
+	  # It is made less steep
+	  <ScoreFunction name="soft" weights="ligand_soft_rep" />
+
+  	</SCOREFXNS>
+
+
+        <FILTERS>
+		#Per's secondary structure filter to optimize SS contacts with ligand
+		#  original threshold was 0.8
+		<SecondaryStructureDensity name="ssd" threshold="0.7" shell="8"/> 
+	              
+        </FILTERS>
+
+        <MOVERS>
+        </MOVERS>
+        <APPLY_TO_POSE>
+        </APPLY_TO_POSE>
+        <PROTOCOLS>
+                <Add filter_name="ssd"/>
+        </PROTOCOLS>
+</ROSETTASCRIPTS>

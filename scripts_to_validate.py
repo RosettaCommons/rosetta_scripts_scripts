@@ -42,6 +42,18 @@ scripts_to_be_validated = [
     "scripts/pilot/protein_interface_design/design_from_dock/FD_MRM_wbb.xml",
     "scripts/pilot/denovo_smallmolecule_binding_design/beta_barrel_design/hbi_p2_rectBarrel_aacomp.xml",
     "scripts/pilot/denovo_smallmolecule_binding_design/beta_barrel_design/hbi_p2_rectBarrel_aacomp_releaserif.xml",
-    "scripts/pilot/metal_binding/second_shell_interactions/hbnet.xml"
+    "scripts/pilot/metal_binding/second_shell_interactions/hbnet.xml",
+    "scripts/pilot/protein_design/scotts_scripts/monomer_fil.xml",
+    "scripts/pilot/protein_design/scotts_scripts/david_nohbnet.xml",
+    "scripts/pilot/protein_design/scotts_scripts/packing_filter.xml",
+    "scripts/pilot/protein_design/scotts_scripts/c3.xml",
+    "scripts/pilot/protein_design/scotts_scripts/david_nohbnet_polar_layer.xml",
+    "scripts/pilot/protein_design/scotts_scripts/post_hbnet_min_repack_filter.xml",
+    "scripts/pilot/protein_design/scotts_scripts/invrot_rem_itest.xml",
+    "scripts/pilot/protein_design/scotts_scripts/makePolyAla.xml",
+    "scripts/pilot/protein_design/scotts_scripts/all_interface_filters.xml",
+    "scripts/pilot/protein_design/scotts_scripts/bgs_hbnet_MPM.xml",
+    "scripts/pilot/protein_design/scotts_scripts/CDB_build_HHH_backbone_disulfides_and_design.xml",
+    "scripts/pilot/protein_design/scotts_scripts/mutate_minimize_w_cst.xml"
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world

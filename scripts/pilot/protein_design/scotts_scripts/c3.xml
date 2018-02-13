@@ -1,0 +1,69 @@
+<ROSETTASCRIPTS>
+   <SCOREFXNS>
+          score12_symm weights=score12_full symmetric=1 />
+          score12 weights=score12_full />
+          <ScoreFunction name="hard" weights="talaris2013_cst" />
+          <ScoreFunction name="soft" weights="/work/sboyken/weights/soft_rep_trp_ala"/>
+          <ScoreFunction name="soft_symm" weights="/work/sboyken/weights/soft_rep_trp_ala" symmetric="1"/>
+          <ScoreFunction name="hard_symm" weights="talaris2013_cst" symmetric="1">
+               <Reweight scoretype="coordinate_constraint" weight="0.5" />
+          </ScoreFunction>
+          <ScoreFunction name="hard_ele" weights="talaris2013_cst" symmetric="1">
+               <Reweight scoretype="coordinate_constraint" weight="0.5" />
+          </ScoreFunction>
+          <ScoreFunction name="hard_bb" weights="/work/sboyken/weights/bb_only" symmetric="1">
+                  <Reweight scoretype="coordinate_constraint" weight="2." />
+                  <Reweight scoretype="cart_bonded" weight="0.5" />
+          </ScoreFunction>
+	  <ScoreFunction name="hard_symm_no_cst" weights="talaris2013" symmetric="1"/>
+   </SCOREFXNS>
+   <TASKOPERATIONS>
+          ReadResfile name=resfile filename="../resfile_pro40" />
+          <IncludeCurrent name="current"/>
+          <LimitAromaChi2 name="arochi" />
+          <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+          <ExtraRotamersGeneric name="ex1" ex1="1"/>
+          <RestrictAbsentCanonicalAAS name="ala_only" resnum="0" keep_aas="A" />
+	  Careful! initial helical bundle inputs are Poly-GLY!
+          RestrictIdentities name=progly identities=PRO,GLY/>
+	  <LayerDesign name="init_layers" layer="other" make_pymol_script="0">
+            <TaskLayer>
+                <SelectBySASA name="symmetric_inteface_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                <all copy_layer="core" />
+                <Helix append="MHNQYST"/>
+            </TaskLayer>
+            <TaskLayer>
+                <SelectBySASA name="symmetric_inteface_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                <all copy_layer="surface" />
+            </TaskLayer>
+            <TaskLayer>
+                <SelectBySASA name="symmetric_inteface_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                <all copy_layer="core" />
+                <Helix exclude="D"/>
+            </TaskLayer>
+          </LayerDesign>
+          <SelectBySASA name="select_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          <SelectBySASA name="select_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          <SelectBySASA name="select_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          <SelectBySASA name="select_all" state="bound" mode="mc" core="1" boundary="1" surface="1" probe_radius="2.2" core_asa="35" surface_asa="45" verbose="1"/>
+          SelectBySASA name=core mode="mc" state="bound" probe_radius=2.0 core_asa=36 surface_asa=80 core=1 boundary=0 surface=0 verbose=1 />
+   </TASKOPERATIONS>
+   <FILTERS>
+   </FILTERS>
+   <MOVERS>
+          SymDofMover name=gen_config symm_file="C2_Z.sym" sym_dof_names="JUMP0_to_subunit" angles=0 radial_disps=0/>
+          <SetupForSymmetry name="setup_symm" definition="/work/sboyken/shared/DavidB/C3_Z.sym"/>
+          <SymPackRotamersMover name="transform_sc" scorefxn="hard_symm" task_operations="ala_only" />
+	  SymPackRotamersMover name=add_pro scorefxn=hard_symm task_operations=resfile />
+          <AddConstraintsToCurrentConformationMover name="add_cst" use_distance_cst="0" max_distance="12." coord_dev="2.5" min_seq_sep="8" />
+          <ClearConstraintsMover name="clearconstraints"/>
+          <SymMinMover name="hardmin_bb" scorefxn="hard_bb" type="lbfgs_armijo_nonmonotone" tolerance="0.0001"  chi="1" bb="1" bondangle="1" bondlength="1" jump="all" cartesian="1"/>
+    </MOVERS>
+<PROTOCOLS>
+  <Add mover="setup_symm"/>
+          <Add mover="transform_sc"/>
+          <Add mover="add_cst"/>
+          <Add mover="hardmin_bb"/>
+          <Add mover="clearconstraints"/>
+</PROTOCOLS>
+</ROSETTASCRIPTS>

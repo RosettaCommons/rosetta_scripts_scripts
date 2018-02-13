@@ -1,0 +1,158 @@
+<ROSETTASCRIPTS>
+<SCOREFXNS>
+  <ScoreFunction name="SFXN7" weights="talaris2013.wts" >
+  </ScoreFunction>
+    <ScoreFunction name="TotalHydrophobic" weights="/work/grocklin/miniproteins/EEHEE/bigger1/bps/total_hydrophobic_weights.wts"/>
+</SCOREFXNS>
+<TASKOPERATIONS>
+    <LayerDesign name="layer_core_SCN" layer="core" pore_radius="2.0" verbose="true" use_sidechain_neighbors="True" core="4" />
+    <LayerDesign name="layer_core_SASA" layer="core" core="20" pore_radius="2.0" verbose="true" />
+    <NoRepackDisulfides name="exemptdisulf" />
+    <OperateOnCertainResidues name="no_ala_disulf" >
+      <ResidueName3Is name3="ALA,CYS,CYD" />
+      <RestrictToRepackingRLT />
+    </OperateOnCertainResidues>
+</TASKOPERATIONS>
+
+<FILTERS>
+  ###############################################
+  # These are the actual filters which score things
+  ###############################################
+    <AverageDegree name="degree_core_SCN" task_operations="layer_core_SCN" confidence="0" threshold="9.4" />
+    <AverageDegree name="degree_core_SASA" task_operations="layer_core_SASA" confidence="0" threshold="9.4" />
+    <AverageDegree name="degree" confidence="0" threshold="9.5"/>
+    <ResidueCount name="res_count_all" max_residue_count="9999" confidence="0"/>
+    <ResidueCount name="res_count_core_SCN" task_operations="layer_core_SCN,no_ala_disulf" max_residue_count="9999" confidence="0"/>
+    <ResidueCount name="res_count_core_SASA" task_operations="layer_core_SASA,no_ala_disulf" max_residue_count="9999" confidence="0"/>
+    <ResidueCount name="res_count_CYS_CYD" residue_types="CYS,CYD" max_residue_count="9999" confidence="0"/>
+    <ResidueCount name="res_count_CYD" residue_types="CYD" max_residue_count="9999" confidence="0"/>
+    <ResidueCount name="AlaCount" residue_types="ALA" max_residue_count="9999" confidence="0"/>
+        <ScoreType name="dslffa13"  score_type="dslf_fa13" threshold="0" confidence="0"/>
+  <ResidueCount name="cyd4" residue_types="CYD" confidence="1" min_residue_count="4" max_residue_count="4"/>
+    <DisulfideEntropy name="entropy12" lower_bound="11.8" tightness="1000" />
+    <CompoundStatement name="2ds" >
+        <AND filter_name="entropy12" />
+        <AND filter_name="cyd4" />
+    </CompoundStatement>
+  <TotalSasa name="total_sasa" threshold="1" upper_threshold="1000000000000000" report_per_residue_sasa="False" confidence="0" />
+    <CalculatorFilter name="mean_sasa" equation="Tsasa / (rescount2 + 0.01)" threshold="-0.30" confidence="0" >
+        <Var name="Tsasa" filter="total_sasa"/>
+        <Var name="rescount2" filter="res_count_all"/>
+    </CalculatorFilter>
+    <CalculatorFilter name="percent_core_SCN" equation="rescount_coreSCN / (rescount3 + 0.01)" threshold="-0.35" confidence="0" >
+        <Var name="rescount3" filter="res_count_all"/>
+        <Var name="rescount_coreSCN" filter="res_count_core_SCN"/>
+    </CalculatorFilter>
+    <CalculatorFilter name="percent_core_SASA" equation="rescount_coreSASA / (rescount4 + 0.01)" threshold="-0.35" confidence="0" >
+        <Var name="rescount4" filter="res_count_all"/>
+        <Var name="rescount_coreSASA" filter="res_count_core_SASA"/>
+    </CalculatorFilter>
+  <AtomicContactCount name="contact_all" confidence="0" />
+    <AtomicContactCount name="contact_core_SCN" task_operations="layer_core_SCN" confidence="0" />
+    <AtomicContactCount name="contact_core_SASA" task_operations="layer_core_SASA" confidence="0" />
+  <ResidueCount name="cyd6" residue_types="CYD" confidence="1" min_residue_count="6" max_residue_count="6"/>
+    <DisulfideEntropy name="entropy16" lower_bound="16" tightness="1000" />
+    <CompoundStatement name="3ds" >
+        <AND filter_name="entropy16" />
+        <AND filter_name="cyd6" />
+    </CompoundStatement>
+
+  <ResidueCount name="4ds" residue_types="CYD" confidence="1" min_residue_count="8" max_residue_count="8"/>
+    <CompoundStatement name="ds_entropy" >
+        <OR filter_name="2ds" />
+        <OR filter_name="3ds" />
+        <OR filter_name="4ds" />
+    </CompoundStatement>
+
+  <AveragePathLength name="apl" confidence="0" />
+  <DisulfideEntropy name="entropy" confidence="0" />
+  <ResidueCount name="nres_cys" residue_types="CYD" confidence="0" />
+  <ResidueCount name="nres" confidence="0" />
+  <ScoreType name="dslf_fa13" scorefxn="SFXN7" score_type="dslf_fa13" threshold="0"/>
+  <ScoreType name="hbond_sfn" scorefxn="SFXN7" score_type="hbond_lr_bb" threshold="0"/>
+
+
+  <SSShapeComplementarity name="ss_sc" verbose="0" confidence="0" />
+  <TotalSasa name="exposed_hydrophobics" confidence="0" hydrophobic="True" />
+
+  <ScoreType name="total_hydrophobic" scorefxn="TotalHydrophobic" threshold="0"/>
+
+  <CalculatorFilter name="buried_np" equation="total - exposed" threshold="1" confidence="0">
+      <Var name="total" filter="total_hydrophobic"/>
+      <Var name="exposed" filter="exposed_hydrophobics"/>
+  </CalculatorFilter>
+
+  <CalculatorFilter name="buried_over_exposed" equation="buried / (exposed+0.01)" threshold="1" confidence="0">
+      <Var name="buried" filter="buried_np"/>
+      <Var name="exposed" filter="exposed_hydrophobics"/>
+  </CalculatorFilter>
+
+  <CalculatorFilter name="buried_minus_exposed" equation="buried - exposed" threshold="1" confidence="0">
+      <Var name="buried" filter="buried_np"/>
+      <Var name="exposed" filter="exposed_hydrophobics"/>
+  </CalculatorFilter>
+
+  <CalculatorFilter name="bb" equation="hbond / (rescount+0.01)" threshold="-0.23" confidence="0">
+      <Var name="hbond" filter="hbond_sfn"/>
+      <Var name="rescount" filter="nres"/>
+  </CalculatorFilter>
+
+  <CalculatorFilter name="mean_dslf" equation="dslf / (cyscount+0.01)" threshold="-0.35" confidence="0">
+      <Var name="dslf" filter="dslf_fa13"/>
+      <Var name="cyscount" filter="nres_cys"/>
+  </CalculatorFilter>
+
+  <CavityVolume name="cavity_volume" />
+  <PackStat name="pack" confidence="0"/>
+  <Holes name="holes" confidence="0"/>
+
+    <Ddg name="ddg"  scorefxn="SFXN7" threshold="-10" jump="1" repeats="1" repack="0" confidence="0"/>
+
+  <SSPrediction name="mismatch_probability" confidence="0" cmd="/work/tlinsky/Rosetta/tools/fragment_tools/psipred/runpsipred_single" use_probability="1" mismatch_probability="1" use_svm="0" />
+    <BuriedUnsatHbonds name="unsat_hbond" confidence="0" jump_number="0"/>
+
+    <SecondaryStructureHasResidue name="one_core_each" secstruct_fraction_threshold="1.0" res_check_task_operations="layer_core_SCN" required_restypes="VILMFYW" nres_required_per_secstruct="1" filter_helix="1" filter_sheet="1" filter_loop="0" min_helix_length="4" min_sheet_length="3" min_loop_length="1" confidence="0" />
+    <SecondaryStructureHasResidue name="two_core_each" secstruct_fraction_threshold="1.0" res_check_task_operations="layer_core_SCN" required_restypes="VILMFYW" nres_required_per_secstruct="2" filter_helix="1" filter_sheet="1" filter_loop="0" min_helix_length="4" min_sheet_length="3" min_loop_length="1" confidence="0" />
+
+
+</FILTERS>
+
+<MOVERS>
+  # DSSP
+<SwitchChainOrder name="remove" chain_order="2"/>
+</MOVERS>
+
+<PROTOCOLS>
+  # optimize pose
+
+  # then score/filter
+  Add mover_name="remove" />
+  <Add filter_name="res_count_core_SCN" />
+  <Add filter_name="res_count_core_SASA" />
+  <Add filter_name="percent_core_SCN" />
+  <Add filter_name="percent_core_SASA" />
+    <Add filter_name="contact_all" />
+    <Add filter_name="contact_core_SCN" />
+    <Add filter_name="contact_core_SASA" />
+  <Add filter_name="degree" />
+  Add filter_name="entropy" />
+  <Add filter_name="cavity_volume" />
+  <Add filter_name="ss_sc" />
+  <Add filter_name="exposed_hydrophobics" />
+  <Add filter_name="holes" />
+  <Add filter_name="bb" />
+  Add filter_name="mean_dslf" />
+  <Add filter_name="buried_np" />
+  <Add filter_name="buried_over_exposed" />
+  <Add filter_name="buried_minus_exposed" />
+  <Add filter_name="pack" />
+  <Add filter_name="mismatch_probability" />
+    <Add filter_name="degree_core_SCN" />
+    <Add filter_name="degree_core_SASA" />
+    <Add filter_name="unsat_hbond" />
+    <Add filter_name="one_core_each" />
+    <Add filter_name="two_core_each" />
+    <Add filter_name="AlaCount" />
+
+</PROTOCOLS>
+</ROSETTASCRIPTS>

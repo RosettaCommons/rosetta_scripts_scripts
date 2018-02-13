@@ -1,0 +1,66 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+	  	<ScoreFunction name="beta" weights="beta_cst" />
+   	</SCOREFXNS>
+	<RESIDUE_SELECTORS>
+                Index name=his_from_dock resnums="45,46,52,53,59,60,66,67" />
+                <Layer name="core_or_boundary" select_core="true" select_boundary="true" />
+        </RESIDUE_SELECTORS>
+   	<TASKOPERATIONS>
+          	<InitializeFromCommandline name="init"/>
+                ReadResfile name=resfile filename=resfile.txt />
+          	<IncludeCurrent name="current"/>
+          	<LimitAromaChi2 name="arochi" />
+          	<ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+          	<ExtraRotamersGeneric name="ex1" ex1="1"/>
+          	<RestrictAbsentCanonicalAAS name="ala_only" resnum="0" keep_aas="A" />
+		<LayerDesign name="init_layers" layer="Nterm_core_boundary_surface_Cterm" make_pymol_script="0" use_sidechain_neighbors="True">
+            		<core>
+                		<Helix append="HNQYSTD"/>
+            		</core>
+            		<boundary>
+                		<Helix exclude="EKRW"/>
+            		</boundary>
+          	</LayerDesign>
+   	</TASKOPERATIONS>
+   	<FILTERS>
+   	</FILTERS>
+   	<MOVERS>
+		define symmetry of homo-oligomer; in this example, it's C3 symmetry
+       		SetupForSymmetry name=setup_symm definition="/work/sboyken/Rosetta/main/database/symmetry/cyclic/C3_Z.sym"/>
+	  	SymPackRotamersMover name=transform_sc scorefxn=hard_symm task_operations=ala_only />
+          	AddConstraintsToCurrentConformationMover name=add_cst use_distance_cst=0 max_distance=12. coord_dev=2.5 min_seq_sep=8 />
+          	ClearConstraintsMover name="clearconstraints"/>
+          	SymMinMover name=hardmin_bb scorefxn=hard_bb type=lbfgs_armijo_nonmonotone tolerance=0.0001  chi=1 bb=1 bondangle=1 bondlength=1 jump=all cartesian=1/>
+		<BundleGridSampler name="bgs1" use_degrees="true" helix_length="7" reset="true" scorefxn="hard" crick_params_file="alpha_helix_100" set_bondlengths="true" set_bondangles="true" set_dihedrals="true" dump_pdbs="false" max_samples="1000000000" nstruct_mode="true">
+                        Helix r0=6.6 omega0=-2.6 delta_omega0=0 delta_omega1=-160.3 />
+                        Helix r0=12.3 omega0=-2.6 delta_omega0=60 delta_omega1=-186.67 z0_offset=-2.5  />
+                        <Helix r0_min="17.5" r0_max="19" r0_samples="10"  delta_omega0_min="14" delta_omega0_max="16" delta_omega0_samples="10" omega0_min="-2.3" omega0_max="-1.5" omega0_samples="10" invert="true" delta_omega1_min="0" delta_omega1_max="60" delta_omega1_samples="10" delta_t="-21" />
+                        Helix r0_min=16.5 r0_max=19 r0_samples=20 omega0=-2.6 delta_omega0=30 invert=true delta_omega1_min=0 delta_omega1_max=180 delta_omega1_samples=50 z0_offset_min=-1.5 z0_offset_max=0 z0_offset_samples=10 delta_t=-22 />
+		</BundleGridSampler>
+                <DeclareBond name="add_termini1" add_termini="true" atom1="C" atom2="N" res1="1" res2="2" />
+                <DeclareBond name="add_termini2" add_termini="true" atom1="C" atom2="N" res1="6" res2="7" />
+		<DeclareBond name="add_termini3" add_termini="true" atom1="C" atom2="N" res1="8" res2="9" />
+                <DeclareBond name="add_termini4" add_termini="true" atom1="C" atom2="N" res1="13" res2="14" />
+		<DeclareBond name="add_termini5" add_termini="true" atom1="C" atom2="N" res1="15" res2="16" />
+                <DeclareBond name="add_termini6" add_termini="true" atom1="C" atom2="N" res1="20" res2="21" />
+		<DeclareBond name="add_termini7" add_termini="true" atom1="C" atom2="N" res1="22" res2="23" />
+                <DeclareBond name="add_termini8" add_termini="true" atom1="C" atom2="N" res1="27" res2="28" />
+		#HBNet Mover definition	
+		<HBNetStapleInterface scorefxn="beta" name="hbnet_interf" hb_threshold="-0.5" core_selector="core_or_boundary" min_helices_contacted_by_network="3" show_task="0" store_subnetworks="0" verbose="0" no_heavy_unsats_allowed="1" write_network_pdbs="0" pore_radius="2.5" minimize="0" min_network_size="4" max_unsat="1" task_operations="arochi,init_layers" />
+	</MOVERS>
+	<PROTOCOLS>
+		#SETUP THE POSE
+		<Add mover="bgs1"/>
+		#CLASH CHECK HERE
+                <Add mover="add_termini1" />
+                <Add mover="add_termini2" />
+		<Add mover="add_termini3" />
+                <Add mover="add_termini4" />
+		<Add mover="add_termini5" />
+                <Add mover="add_termini6" />
+		<Add mover="add_termini7" />
+                <Add mover="add_termini8" />
+		<Add mover="hbnet_inerf"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

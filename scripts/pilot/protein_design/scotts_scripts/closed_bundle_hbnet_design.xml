@@ -1,0 +1,163 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+		#why does this have coordinate_constraint??? this sfxn is never called when csts are on
+	  	hard_from_sci_paper weights=talaris2013_cst>
+          		Reweight scoretype=coordinate_constraint weight=0.5 />
+          	/hard>
+          	<ScoreFunction name="hard_bb" weights="/work/sboyken/weights/bb_only_cst">
+                	<Reweight scoretype="coordinate_constraint" weight="2." />
+                	<Reweight scoretype="cart_bonded" weight="0.5" />
+          	</ScoreFunction>
+		#need to update to 2014 and eventually beta-july
+		<ScoreFunction name="hard_cst" weights="talaris2013_cst" />
+	 	<ScoreFunction name="hard_no_cst" weights="talaris2013" />
+	</SCOREFXNS>
+	<TASKOPERATIONS>
+		<InitializeFromCommandline name="init"/>
+          	<IncludeCurrent name="current"/>
+          	<ConsensusLoopDesign name="disallow_non_abego_aas"/>
+		<LimitAromaChi2 name="arochi" />
+          	<ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+          	<ExtraRotamersGeneric name="ex1" ex1="1"/>
+          	<RestrictAbsentCanonicalAAS name="ala_only" resnum="0" keep_aas="A" />
+	  	<LayerDesign name="init_layers" layer="other" make_pymol_script="0">
+            		<TaskLayer>
+                		<SelectBySASA name="inteface_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                		<all copy_layer="core" />
+                		<Helix append="MHNQYST"/>
+            		</TaskLayer>
+            		<TaskLayer>
+                		<SelectBySASA name="inteface_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                		<all copy_layer="surface" />
+            		</TaskLayer>
+            		<TaskLayer>
+                		<SelectBySASA name="inteface_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                		<all copy_layer="boundary" />
+                		<Helix exclude="DEKRW"/>
+            		</TaskLayer>
+    		</LayerDesign>
+          	<SelectBySASA name="select_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          	<SelectBySASA name="select_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          	<SelectBySASA name="select_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          	SelectBySASA name=select_all state=bound mode=mc core=1 boundary=1 surface=1 probe_radius=2.2 core_asa=35 surface_asa=45 verbose=1/>
+  	</TASKOPERATIONS>
+   	<FILTERS>
+		<EnzScore name="cst_score" score_type="cstE" scorefxn="hard_cst" whole_pose="1" energy_cutoff="1"/>
+	  	<BuriedUnsatHbonds name="uhb" scorefxn="hard_no_cst" task_operations="init_layers" confidence="0"/>
+	  	<Holes name="holes" threshold="1.8" confidence="0"/>
+          	<PackStat name="packstat" threshold="0.65" confidence="0"/>
+          	<PackStat name="init_pstat" threshold="0.575" confidence="0"/>
+          	<Geometry name="geo" omega="165" cart_bonded="35" confidence="1"/>
+		<PreProline name="prepro" use_statistical_potential="0" />
+   	</FILTERS>
+   	<MOVERS>
+	  	<PackRotamersMover name="transform_sc" scorefxn="hard_no_cst" task_operations="ala_only" />
+          	<AddConstraintsToCurrentConformationMover name="add_cst" use_distance_cst="0" max_distance="12." coord_dev="2.5" min_seq_sep="8" />
+          	<ClearConstraintsMover name="clearconstraints"/>
+          	<MinMover name="hardmin_bb" scorefxn="hard_bb" type="lbfgs_armijo_nonmonotone" tolerance="0.0001"  chi="1" bb="1" bondangle="1" bondlength="1" jump="all" cartesian="1"/>
+          	
+      		<HBNetStapleInterface name="hbnet_monomer_bundle" show_task="1" write_network_pdbs="1" hb_threshold="-0.5" max_unsat="2" min_network_size="3" verbose="0" min_staples_per_interface="1" max_staples_per_interface="4" combos="2" all_helical_interfaces="1" task_operations="arochi,init_layers" />
+
+		<MultiplePoseMover name="MPM_design" max_input_poses="100">
+        	   <SELECT>
+        	   </SELECT>
+		   <ROSETTASCRIPTS>
+        		<SCOREFXNS>
+        			<ScoreFunction name="hard_cst" weights="talaris2013_cst" />
+        			<ScoreFunction name="soft" weights="/work/sboyken/weights/soft_rep_trp_ala_cst"/>
+				<ScoreFunction name="up_ele" weights="talaris2013" >
+                			<Reweight scoretype="fa_elec" weight="1.4" />
+               				<Reweight scoretype="hbond_sc" weight="2.0" />
+          			</ScoreFunction>
+			</SCOREFXNS>
+        		<TASKOPERATIONS>
+	  			<InitializeFromCommandline name="init"/>
+          			<ConsensusLoopDesign name="disallow_non_abego_aas"/>
+				#this task operation should be added to all design movers downstream of HBNet;
+					it acts as a safeguard to ensure network residues are not designed away and csts calculated incorrectly
+				<ConstrainHBondNetwork name="hbnet_task" />
+          			<IncludeCurrent name="current"/>
+          			<LimitAromaChi2 name="arochi" />
+          			<ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+          			<ExtraRotamersGeneric name="ex1" ex1="1"/>
+           			<LayerDesign name="all_layers" layer="other" make_pymol_script="0">
+            				<TaskLayer>
+                				<SelectBySASA name="inteface_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                				<all copy_layer="core" />
+                				<Helix append="M"/>
+            				</TaskLayer>
+            				<TaskLayer>
+                				<SelectBySASA name="inteface_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                				<all copy_layer="surface" />
+            				</TaskLayer>
+            				<TaskLayer>
+             		   			<SelectBySASA name="inteface_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+             		   			<all copy_layer="boundary" />
+                				<Helix exclude="D"/>
+            				</TaskLayer>
+          			</LayerDesign>
+          			<SelectBySASA name="select_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          			<SelectBySASA name="select_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          			<SelectBySASA name="select_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          			SelectBySASA name=select_all state=bound mode=mc core=1 boundary=1 surface=1 probe_radius=2.2 core_asa=35 surface_asa=45 verbose=1/> 
+			</TASKOPERATIONS>
+			<MOVERS>
+          			<PackRotamersMover name="softpack_core" scorefxn="soft" task_operations="init,all_layers,disallow_non_abego_aas,select_core,current,arochi,hbnet_task"/>
+				<PackRotamersMover name="softpack_boundary" scorefxn="soft" task_operations="init,all_layers,disallow_non_abego_aas,select_boundary,current,arochi,hbnet_task"/>
+				<PackRotamersMover name="softpack_surface" scorefxn="soft" task_operations="init,all_layers,disallow_non_abego_aas,select_surface,current,arochi,hbnet_task"/>
+          			<PackRotamersMover name="hardpack_core" scorefxn="hard_cst" task_operations="init,all_layers,disallow_non_abego_aas,select_core,current,arochi,ex1_ex2,hbnet_task"/>
+          			<PackRotamersMover name="hardpack_boundary"  scorefxn="hard_cst" task_operations="init,all_layers,disallow_non_abego_aas,select_boundary,current,arochi,ex1_ex2,hbnet_task"/>
+          			<PackRotamersMover name="hardpack_surface" scorefxn="up_ele" task_operations="init,all_layers,disallow_non_abego_aas,select_surface,current,arochi,ex1,hbnet_task"/>
+				<MinMover name="hardmin_sconly" scorefxn="hard_cst" chi="1" bb="0" bondangle="0" bondlength="0" />
+        		</MOVERS>
+        		<APPLY_TO_POSE>
+        		</APPLY_TO_POSE>
+        		<PROTOCOLS>
+          			<Add mover="softpack_core"/>
+	  			<Add mover="softpack_boundary"/>
+	  			<Add mover="softpack_surface"/>
+          			<Add mover="hardmin_sconly"/>
+          			<Add mover="hardpack_core"/>
+          			<Add mover="hardpack_boundary"/>
+          			<Add mover="hardpack_surface"/>
+        		</PROTOCOLS>
+      		   </ROSETTASCRIPTS>
+   		</MultiplePoseMover>
+    		<MultiplePoseMover name="MPM_min_repack" max_input_poses="100">
+      		   <ROSETTASCRIPTS>
+			<SCOREFXNS>
+				<ScoreFunction name="hard_no_cst" weights="talaris2013" />
+ 	        		<ScoreFunction name="talaris_cart" weights="talaris2013_cart" />
+			</SCOREFXNS>
+			<TASKOPERATIONS>
+				<RestrictToRepacking name="repack_only" />
+			</TASKOPERATIONS>
+			<MOVERS>
+				<MinMover name="hardmin_cart" scorefxn="talaris_cart" type="lbfgs_armijo_nonmonotone" tolerance="0.0001" chi="1" bb="1" bondangle="1" bondlength="1" jump="ALL" cartesian="1"/>
+				<PackRotamersMover name="repack" scorefxn="hard_no_cst" task_operations="repack_only" />
+			</MOVERS>
+			<APPLY_TO_POSE>
+        		</APPLY_TO_POSE>
+			<PROTOCOLS>
+				<Add mover="hardmin_cart" />
+				<Add mover="repack" />
+			</PROTOCOLS>
+      		   </ROSETTASCRIPTS>
+    		</MultiplePoseMover>
+    		<MultiplePoseMover name="MPM_filters" max_input_poses="100">
+        	   <SELECT>
+			<AndSelector>
+				<Filter filter="uhb"/>
+				<Filter filter="holes"/>
+				<Filter filter="prepro"/>
+        		</AndSelector>
+		   </SELECT>
+    		</MultiplePoseMover>
+	</MOVERS>
+	<PROTOCOLS>
+  		<Add mover_name="hbnet_monomer_bundle" />
+  		<Add mover_name="MPM_design"/>
+  		<Add mover_name="MPM_min_repack"/>
+  		<Add mover_name="MPM_filters"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

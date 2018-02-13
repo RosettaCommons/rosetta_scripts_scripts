@@ -1,0 +1,157 @@
+<ROSETTASCRIPTS>
+
+
+  <SCOREFXNS>
+
+    ############# default score function #############
+    <ScoreFunction name="SFXN_STD" weights="talaris2014" />
+    
+    #### backbone building centroid score function ###
+    <ScoreFunction name="SFXN_CEN" weights="fldsgn_cen">
+      <Reweight scoretype="cenpack" weight="1.0" />
+      <Reweight scoretype="hbond_sr_bb" weight="1.0" />
+      <Reweight scoretype="hbond_lr_bb" weight="1.0" />
+      <Reweight scoretype="atom_pair_constraint" weight="1.0" />
+      <Reweight scoretype="angle_constraint" weight="1.0" />
+      <Reweight scoretype="dihedral_constraint" weight="1.0" />
+    </ScoreFunction>
+
+  </SCOREFXNS>
+
+
+  <TASKOPERATIONS>
+
+    ######### layer selection for assessment #########
+    <LayerDesign name="layer_core_boundary_SCN" layer="core_boundary" pore_radius="2.0" verbose="true" use_sidechain_neighbors="True" />
+
+    ############## select CYS residues ###############
+    <OperateOnCertainResidues name="no_repack_non-disulf" >
+      <ResidueName3Isnt name3="CYS,CYD" />
+      <PreventRepackingRLT/>
+    </OperateOnCertainResidues>
+
+    ############ miscellaneous for design ############
+    <LimitAromaChi2 name="limitchi2" include_trp="1" />
+    <OperateOnCertainResidues name="no_design_disulf" >
+      <ResidueName3Is name3="CYS,CYD" />
+      <RestrictToRepackingRLT />
+    </OperateOnCertainResidues>
+
+    ########### layer selection for design ###########
+    <LayerDesign name="layer_all_noALA" layer="core_boundary_surface_Nterm_Cterm" verbose="True" use_sidechain_neighbors="True" >
+      <core>
+        <all append="M" exclude="A" />
+      </core>
+      <boundary>
+        <all exclude="A" />
+      </boundary>
+      <surface>
+        <all exclude="A" />
+      </surface>
+    </LayerDesign>
+    <LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" verbose="True" use_sidechain_neighbors="True" >
+      <core>
+        <all append="M" />
+      </core>
+      <boundary>
+      </boundary>
+      <surface>
+      </surface>
+    </LayerDesign>
+
+  </TASKOPERATIONS>
+
+
+  <FILTERS>
+
+
+    ##### Build the backbone #####
+    <HelixPairing name="hp1" helix_pairings="1-2.A;2-3.A;1-3.P" blueprint="../HHH.blueprint" />
+    <SecondaryStructure name="ss1" blueprint="../HHH.blueprint" />
+    <CompoundStatement name="cs1" >
+      <AND filter_name="hp1" />
+      <AND filter_name="ss1" />
+    </CompoundStatement>
+
+
+    ##################################################
+    ############# quality control filters ############
+    ##################################################
+
+    ############### core assessment ###############
+    <SecondaryStructureHasResidue name="ss_contributes_core" secstruct_fraction_threshold="1.0" res_check_task_operations="layer_core_boundary_SCN" required_restypes="VILMFYW" nres_required_per_secstruct="1" filter_helix="1" filter_sheet="1" filter_loop="0" min_helix_length="4" min_sheet_length="3" min_loop_length="1" confidence="0" />
+
+    ############### fragment assessment ##############
+    <FragmentLookupFilter name="faulty_fragments" lookup_name="source_fragments_4_mer" store_path="/lab/databases/VALL_clustered/backbone_profiler_database_06032014" lookup_mode="first" chain="1" threshold="9999999999999999999" confidence="1" />
+
+    #### disulfide counting and quality assessment ###
+    <ResidueCount name="confirm_dslf_min_1" min_residue_count="2" residue_types="CYD,CYS" confidence="1" />    
+    <ResidueCount name="confirm_dslf_min_2" min_residue_count="4" residue_types="CYD,CYS" confidence="1" />    
+    <ResidueCount name="confirm_dslf_min_3" min_residue_count="6" residue_types="CYD,CYS" confidence="1" />
+    <TaskAwareScoreType name="dslf_quality_check" task_operations="no_repack_non-disulf" scorefxn="SFXN_STD" score_type="dslf_fa13"  mode="individual" threshold="-0.27" confidence="0" />
+
+  </FILTERS>
+
+
+  <MOVERS>
+
+    ####### assign secondary structure to pose #######
+    <Dssp name="dssp" />
+
+    ################# output pdb file ################
+    <DumpPdb name="dump" fname="pass" tag_time="True" />
+
+
+
+    ##### Build the protein backbone #####
+    <SetSecStructEnergies name="sse1" scorefxn="SFXN1" blueprint="../HHH.blueprint" />
+    <BluePrintBDR name="bdr1" scorefxn="SFXN_CEN" use_abego_bias="1" blueprint="../HHH.blueprint" />
+    <LoopOver name="lover1" mover_name="bdr1" filter_name="cs1" iterations="100" drift="0" ms_whenfail="FAIL_DO_NOT_RETRY" />
+    <ParsedProtocol name="build_backbone">
+      <Add mover_name="dssp"/>
+      <Add mover_name="sse1" />
+      <Add mover_name="lover1"/>
+    </ParsedProtocol>
+
+
+    ######## place disulfide bonds in backbone #######
+    <RemodelMover name="build_disulfide" build_disulf="True" use_match_rt="False" use_disulf_fa_score="True" disulf_fa_max="-0.25" relax_bb_for_disulf="False" quick_and_dirty="True" bypass_fragments="True" min_disulfides="2" max_disulfides="3" min_loop="6" fast_disulf="True" keep_current_disulfides="False" include_current_disulfides="False"/>
+
+    ####### design sequence and relax structure ######
+    <FastDesign name="fastdesign1_no_ala" task_operations="limitchi2,layer_all_noALA,no_design_disulf" scorefxn="SFXN_STD" clear_designable_residues="0" repeats="1" ramp_down_constraints="0" />
+    <FastDesign name="fastdesign5" task_operations="limitchi2,layer_all,no_design_disulf" scorefxn="SFXN_STD" clear_designable_residues="0" repeats="5" ramp_down_constraints="0" />
+
+    <ParsedProtocol name="disulfidizer">
+      <Add mover_name="build_disulfide"/>
+      <Add filter_name="confirm_dslf_min_2" />
+      <Add mover_name="fastdesign1_no_ala" />
+      <Add mover_name="fastdesign5" />
+      <Add filter_name="dslf_quality_check" />
+      <Add filter_name="ss_contributes_core" />
+      <Add filter_name="faulty_fragments"/>
+      <Add mover_name="dump" />
+    </ParsedProtocol>
+
+    <LoopOver name="disulfide_loop" mover_name="disulfidizer" iterations="5" drift="0" ms_whenfail="FAIL_DO_NOT_RETRY" />
+
+  </MOVERS>
+
+
+  <PROTOCOLS>
+
+    ##################################################
+    ################# design protocol ################ 
+    ##################################################
+
+    <Add mover_name="build_backbone" />
+
+    ####### assign secondary structure to pose #######
+    <Add mover_name="dssp" />
+
+    ######## place disulfide bonds in backbone #######
+    <Add mover_name="disulfide_loop" />
+
+  </PROTOCOLS>
+
+
+</ROSETTASCRIPTS>
