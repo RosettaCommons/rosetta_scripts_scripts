@@ -1,0 +1,116 @@
+<ROSETTASCRIPTS>
+<SCOREFXNS>
+  <ScoreFunction name="NOV16" weights="beta" >
+	<Reweight scoretype="coordinate_constraint" weight="1" />
+  </ScoreFunction>
+</SCOREFXNS>
+<RESIDUE_SELECTORS>
+	<Chain name="chA" chains="A"/>
+	<ResidueName name="GPY" residue_name3="GLY,PRO,TYR" />
+	<ResidueName name="GPYW" residue_name3="GLY,PRO,TYR,TRP" />
+
+	<Not name="iface13">
+		<Or>
+			<Neighborhood distance="13" include_focus_in_subset="false">
+				<Chain chains="A"/>
+			</Neighborhood>
+			<And>
+				<Neighborhood distance="13" include_focus_in_subset="false">
+					<Chain chains="B,C"/>
+				</Neighborhood>
+				<Chain chains="A"/>
+			</And>
+		</Or>
+	</Not>
+
+	<ResiduePDBInfoHasLabel name="hbnet" property="HBNet"/>
+	
+</RESIDUE_SELECTORS>
+<TASKOPERATIONS>
+
+	<InitializeFromCommandline name="init"/>
+	<LimitAromaChi2 name="arochi2"/>
+	<IncludeCurrent name="inclcur"/>
+	<ExtraRotamersGeneric name="exrot" ex1="1" ex2="1" extrachi_cutoff="1"/>
+	<RestrictToRepacking name="repack_only"/>
+	<OperateOnCertainResidues name="rtr_hotspots"> <ResiduePDBInfoHasLabel property="HOTSPOT"/> <RestrictToRepackingRLT/> </OperateOnCertainResidues>
+
+	<OperateOnResidueSubset name="restrict_chA" selector="chA"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+	<OperateOnResidueSubset name="PR_iface13" selector="iface13"><PreventRepackingRLT/></OperateOnResidueSubset>
+	<OperateOnResidueSubset name="PR_hbnet" selector="hbnet"><PreventRepackingRLT/></OperateOnResidueSubset>
+
+	<DisallowIfNonnative name="disallow_CPGW" disallow_aas="CPGW" />
+	<OperateOnResidueSubset name="restrict_native_GPYW" selector="GPYW"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+
+	<RestrictToInterfaceVector name="iface6" chain1_num="1" chain2_num="2,3" CB_dist_cutoff="6" nearby_atom_cutoff="5.5" vector_angle_cutoff="75.0" vector_dist_cutoff="9.0"/>
+	<RestrictToInterfaceVector name="iface10" chain1_num="1" chain2_num="2,3" CB_dist_cutoff="10" nearby_atom_cutoff="9" vector_angle_cutoff="75.0" vector_dist_cutoff="12.0"/>
+
+	<SelectBySASA name="surface" mode="sc" state="monomer" probe_radius="2.2" core_asa="30" surface_asa="30" core="0" boundary="1" surface="1" verbose="0" />
+
+	<OperateOnCertainResidues name="find_hphobs"> <ResidueName3Isnt name3="GLY,ALA,VAL,LEU,ILE,MET,PHE"/> <RestrictToRepackingRLT/> </OperateOnCertainResidues>
+	<DisallowIfNonnative name="disallow_hphobs" disallow_aas="GAVLIMF" />
+	<SelectBySASA name="non_iface_surf" mode="sc" state="bound" probe_radius="2.2" core_asa="30" surface_asa="30" core="0" boundary="1" surface="1" verbose="0" />
+
+</TASKOPERATIONS>
+<MOVERS>
+	<AddConstraintsToCurrentConformationMover name="constrainCA"  task_operations="inclcur" CA_only="1" cst_weight="1" />
+	
+        ### Min-repack-min at 15A interface
+	<TaskAwareMinMover name="min_bb_15" scorefxn="NOV16" bb="1" chi="1" jump="1" task_operations="init,inclcur,arochi2,exrot,PR_iface13"/>
+        <TaskAwareMinMover name="min_nobb_norb_15" scorefxn="NOV16" bb="0" chi="1" jump="0" task_operations="init,inclcur,arochi2,exrot,PR_iface13,PR_hbnet"/>
+        <PackRotamersMover name="repack_15" scorefxn="NOV16" task_operations="init,inclcur,arochi2,exrot,repack_only,PR_iface13,PR_hbnet"/>
+        <ParsedProtocol name="MRM_bb_15"> <Add mover="min_bb_15" /> <Add mover="repack_15" /> <Add mover="min_bb_15" /> </ParsedProtocol>
+        <ParsedProtocol name="MRM_nobb_norb_15"> <Add mover="min_nobb_norb_15" /> <Add mover="repack_15" /> <Add mover="min_nobb_norb_15" /> </ParsedProtocol>
+
+	<FastDesign name="FD_shell_1" repeats="1" scorefxn="NOV16" clear_designable_residues="false" ramp_down_constraints="true" task_operations="init,arochi2,inclcur,exrot,iface6,restrict_chA,disallow_CPGW,surface,PR_iface13,restrict_native_GPYW,PR_hbnet">
+		<MoveMap>
+			<Chain number="1" chi="1" bb="0"/>
+			<Chain number="2" chi="1" bb="0"/>
+			<Chain number="3" chi="1" bb="0"/>
+			<Jump number="1" setting="1"/>
+			<Jump number="2" setting="0"/>
+		</MoveMap>
+	 </FastDesign>
+	<FastDesign name="FD_shell_2" repeats="1" scorefxn="NOV16" clear_designable_residues="false" ramp_down_constraints="true" task_operations="init,arochi2,inclcur,exrot,iface10,restrict_chA,disallow_CPGW,surface,PR_iface13,restrict_native_GPYW,PR_hbnet">
+		<MoveMap>
+			<Chain number="1" chi="1" bb="0"/>
+			<Chain number="2" chi="1" bb="0"/>
+			<Chain number="3" chi="1" bb="0"/>
+			<Jump number="1" setting="1"/>
+			<Jump number="2" setting="0"/>
+		</MoveMap>
+	</FastDesign>
+
+	<PackRotamersMover name="fix_surf_hphobs" scorefxn="NOV16" task_operations="restrict_chA,rtr_hotspots,non_iface_surf,find_hphobs,disallow_hphobs,PR_hbnet" />
+        DumpPdb name="dump_pdb_after_revert" fname="tmp/after_revert.pdb" tag_time="1" />
+        DumpPdb name="dump_pdb_after_design1" fname="tmp/after_design1.pdb" tag_time="1" />
+        DumpPdb name="dump_pdb_after_design2" fname="tmp/after_design2.pdb" tag_time="1" />
+</MOVERS>
+<FILTERS>
+        <Ddg name="ddg" scorefxn="NOV16" threshold="1000000" jump="1" repeats="3" repack="true" relax_mover="MRM_nobb_norb_15" repack_bound="true" relax_bound="true" extreme_value_removal="true" confidence="0" />
+        <ShapeComplementarity name="Sc" confidence="0" />
+        <Sasa name="sasa" confidence="0" />
+	<BuriedUnsatHbonds2 name="unsat" confidence="0" jump_number="1"/>
+</FILTERS>
+<APPLY_TO_POSE>
+</APPLY_TO_POSE>
+<PROTOCOLS>
+	<Add mover_name="constrainCA"/>
+	Add mover_name="dump_pdb_after_revert"/>
+	<Add mover_name="FD_shell_1"/>
+	<Add mover_name="MRM_nobb_norb_15" />
+	Add mover_name="dump_pdb_after_design1"/>
+	<Add mover_name="FD_shell_2"/>
+	Add mover_name="fix_surf_hphobs" />
+	<Add mover_name="MRM_nobb_norb_15" />
+	Add mover_name="dump_pdb_after_design2"/>
+	<Add filter_name="ddg" />
+	<Add filter_name="Sc" />
+	<Add filter_name="sasa" />
+	<Add filter_name="unsat" />
+
+	### troubleshooting
+	Add filter_name="test_des" />
+	Add filter_name="test_MRM" />
+</PROTOCOLS>
+</ROSETTASCRIPTS>
