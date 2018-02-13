@@ -1,0 +1,66 @@
+<ROSETTASCRIPTS>
+<SCOREFXNS>
+	<ScoreFunction name="NOV16" weights="beta" >
+		<Reweight scoretype="coordinate_constraint" weight="1" />
+	</ScoreFunction>
+</SCOREFXNS>
+<RESIDUE_SELECTORS>
+	<Chain name="chA" chains="A"/>
+	<Chain name="chB" chains="B"/>
+	### Residue selectors to select only specificity residues on chain A and all residues on chain B ###
+	<Index name="specificity_resis" resnums="%%resnums%%"/>
+	<Not name="contacts_sele">
+		<And selectors="chB,specificity_resis"/>
+	</Not>
+</RESIDUE_SELECTORS>
+<TASKOPERATIONS>
+	<InitializeFromCommandline name="init"/>
+	<LimitAromaChi2 name="arochi2"/>
+	<IncludeCurrent name="inclcur"/>
+	<ExtraRotamersGeneric name="exrot" ex1="1" ex2="1" extrachi_cutoff="1"/>
+	<DisallowIfNonnative name="only_nativeGP" disallow_aas="GP"/>
+	<RestrictIdentities name="dont_design_GPC" identities="PRO,GLY,CYS" prevent_repacking="0" />
+	<RestrictToInterface name="interface_design_long" jump="1" distance="12.0"/>
+	<RestrictToInterface name="interface_design_short" jump="1" distance="8.0"/>
+	<RestrictToRepacking name="repack_only" />
+
+	<OperateOnResidueSubset name="restrict_chA" selector="chA"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+	<OperateOnResidueSubset name="rtr_all_but_contacts" selector="contacts_sele"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+
+	<RestrictToInterfaceVector name="inter_vec" chain1_num="1" chain2_num="2" CB_dist_cutoff="8.0" nearby_atom_cutoff="5.5" vector_angle_cutoff="75.0" vector_dist_cutoff="9.0"/>
+	
+</TASKOPERATIONS>
+<FILTERS>
+	<Geometry name="omega" omega="150" cart_bonded="30" start="145" confidence="1"/>
+	<ResInInterface name="resis_in_iface" residues="32" jump_number="1" confidence="1"/>
+	<AverageDegree name="av_deg" threshold="0" distance_threshold="10.0" task_operations="inter_vec" confidence="0"/>
+	<Sasa name="sasa" threshold="0" upper_threshold="1000000" hydrophobic="0" polar="0" jump="1" confidence="0"/>
+
+	
+	<Sasa name="sasa_ala" threshold="0" upper_threshold="1000000" hydrophobic="0" polar="0" jump="1" confidence="0"/>
+	<ResInInterface name="rii_ala" residues="0" jump_number="1" confidence="0"/>
+	<AtomicContactCount name="contacts" partition="chain" task_operations="rtr_all_but_contacts"  distance="4.5" normalize_by_sasa="0"/>
+
+
+</FILTERS>
+<MOVERS>
+	<MotifGraft name="motif_grafting" context_structure="%%context%%" motif_structure="%%motif%%" RMSD_tolerance="2.0" NC_points_RMSD_tolerance="2.0" hotspots="4" clash_score_cutoff="0" clash_test_residue="GLY" combinatory_fragment_size_delta="2:2" max_fragment_replacement_size_delta="0:0"  full_motif_bb_alignment="1"  allow_independent_alignment_per_fragment="0" graft_only_hotspots_by_replacement="0" only_allow_if_N_point_match_aa_identity="0" only_allow_if_C_point_match_aa_identity="0" revert_graft_to_native_sequence="0" allow_repeat_same_graft_output="0"/>
+
+	<build_Ala_pose name="strip_scaffold" partner1="0" partner2="1" interface_cutoff_distance="8"/>
+</MOVERS>
+<APPLY_TO_POSE>
+</APPLY_TO_POSE>
+<PROTOCOLS>
+	<Add mover_name="motif_grafting"/>
+	<Add filter_name="omega"/>
+	<Add filter_name="resis_in_iface"/>
+	<Add filter_name="av_deg"/>
+	<Add filter_name="sasa"/>
+
+	### If dock passes resis_in_iface filter, strip scaffold to ala and determine if key residues are contacted ###
+	<Add mover_name="strip_scaffold"/>
+	<Add filter_name="contacts"/>
+	<Add filter_name="sasa_ala"/>
+	<Add filter_name="rii_ala"/>
+</PROTOCOLS>
+</ROSETTASCRIPTS>
