@@ -1,0 +1,193 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+		<ScoreFunction name="sfx" weights="beta" symmetric="1" >
+			<Reweight scoretype="aa_composition" weight="1.0" />
+			<Reweight scoretype="res_type_constraint" weight="1.0" />
+			<Reweight scoretype="fa_elec" weight="1.4" />
+			<Reweight scoretype="hbond_sc" weight="2.0" />
+		</ScoreFunction >
+
+		<ScoreFunction name="sfx_clean" weights="beta" symmetric="1" />
+	</SCOREFXNS>
+
+	<TASKOPERATIONS> //legacy interface detection code that does not work with ResidueSelectors. See RESIDUE_SELECTORS section.
+		<BuildingBlockInterface name="design_bbi" multicomp="1" sym_dof_names="%%symdof1%%,%%symdof2%%" fa_rep_cut="3.0" contact_dist="10" bblock_dist="5.0" />	//detects residues between building blocks
+		<SelectBySASA name="bb_surf" mode="sc" state="monomer" core_asa="0" surface_asa="0" core="0" boundary="1" surface="1" verbose="0" />						//selects surface and boundary residues of BUILDING BLOCK
+		<RestrictNativeResidues name="nonnative" prevent_repacking="1" invert="0" />
+
+		// Added to read resfile
+                <ReadResfile name="designed_identities" filename="%%resfile%%" />
+	</TASKOPERATIONS>
+
+	<RESIDUE_SELECTORS>		
+		<Task name="design_bbi_selector" designable="true" task_operations="design_bbi" />
+		<Task name="bb_surf_selector" designable="true" task_operations="bb_surf" />		
+		<Task name="nonnative_selector" designable="true" task_operations="nonnative" />
+		<Task name="resfile_muts" designable="true" task_operations="designed_identities" /> // added for mutalyze script
+	
+		<ResidueName name="CPG" residue_name3="CYS,PRO,GLY" /> //selects CPG residues
+			<Not name="not_CPG" selector="CPG" />
+
+		<And name="design_int_no_nonnative" selectors="design_bbi_selector,bb_surf_selector,not_CPG" />
+
+		<Or name="design_int" selectors="design_int_no_nonnative,nonnative_selector" /> //selects full interface, including preserved residues
+		Not name="not_design_int" selector="design_int" /> // modified later
+
+		<Neighborhood name="mutant_neighbor" selector="nonnative_selector" distance="5" include_focus_in_subset="false" />
+		<Or name="mutant_plus_neighbor" selectors="nonnative_selector,mutant_neighbor" />
+			<Not name="not_mutant_plus_neighbor" selector="mutant_plus_neighbor" />
+
+		<Layer name="surf" select_surface="true" />
+		<Layer name="bdry" select_boundary="true" />
+		<Layer name="core" select_core="true" />
+
+		<And name="design_surf" selectors="surf,design_int" />
+		<And name="design_bdry" selectors="bdry,design_int" />
+		<And name="design_core" selectors="core,design_int" />
+
+		<Chain name="chainA" chains="A" />
+		<Chain name="chainB" chains="B" />
+
+		<And name= "design_int_A" selectors="design_int,chainA" />
+		<And name= "design_int_B" selectors="design_int,chainB" />
+
+		 <Or name="int_or_resfile" selectors="design_int,nonnative_selector,resfile_muts" /> // used for DDG, should only select residues that are part of interface or any other non-native
+			<Not name="not_design_int" selector="int_or_resfile" />
+	</RESIDUE_SELECTORS>		
+
+	<TASKOPERATIONS>
+		<IncludeCurrent name="ic" />								//includes input pdb's rotamers
+		<LimitAromaChi2 name="limitaro" chi2max="110" chi2min="70" />	//disallow extreme aromatic rotamers
+		<RestrictToRepacking name="repack_only" />					//for minimize/repack
+		<ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1" />		//use ex1 ex2 rotamers
+
+		<OperateOnResidueSubset name="lock_rem_resis" selector="not_design_int" >
+			<PreventRepackingRLT/> </OperateOnResidueSubset>
+		<OperateOnResidueSubset name="design_int_full" selector="design_int" >
+			<RestrictAbsentCanonicalAASRLT aas="ILVA" /> </OperateOnResidueSubset> 			//disallow: FW,YH,CPG,DENQKR,M,   ,ST
+		<OperateOnResidueSubset name="design_int_core" selector="design_core" >
+			<RestrictAbsentCanonicalAASRLT aas="ILVAMFW" /> </OperateOnResidueSubset> 		//disallow:   ,YH,CPG,DENQKR, ,   ,ST
+		<OperateOnResidueSubset name="design_int_bdry" selector="design_bdry" >
+			<RestrictAbsentCanonicalAASRLT aas="ILVASTM" /> </OperateOnResidueSubset> 	    //disallow: FW,YH,CPG,DENQKR, ,   ,
+		<OperateOnResidueSubset name="design_int_surf" selector="design_surf" >
+			<RestrictAbsentCanonicalAASRLT aas="ASTDENQKR" /> </OperateOnResidueSubset>		//disallow: FW,YH,CPG,      ,M,ILV,
+	
+		<OperateOnResidueSubset name="lock_native" selector="not_mutant_plus_neighbor" >
+			<PreventRepackingRLT/> </OperateOnResidueSubset>
+		<OperateOnResidueSubset name="repack_neighbor" selector="mutant_neighbor" >
+			<RestrictToRepackingRLT/> </OperateOnResidueSubset>
+
+		<JointSequence name="revert" use_current="true" use_native="true" use_natro="true" />
+		// Added to read resfile
+		ReadResfile name="designed_identities" filename="%%resfile%%" />
+	
+		<OperateOnResidueSubset name="design_int_plus_resfile" selector="int_or_resfile" > // added for mutalyze
+			<RestrictAbsentCanonicalAASRLT aas="ASTDENQKRILVMFYWHC" /> </OperateOnResidueSubset>
+
+	</TASKOPERATIONS>
+
+	<MOVERS>
+		// Set to 0,0 to not sample gaussian range
+		<SymDofMover name="gen_docked_config" symm_file="%%sym%%" sym_dof_names="%%symdof1%%,%%symdof2%%" /> 
+			
+		<AddCompositionConstraintMover name="add_aa_comp" filename="input/aa_comp.comp" selector="design_int" />
+		<FavorSequenceProfile name="favNative" scaling="prob" weight="0.5" chain="0" use_starting="1" matrix="MATCH" scorefxns="sfx" />
+		// Added to design resfile mutations
+		<SymPackRotamersMover name="design_from_resfile" scorefxn="sfx" task_operations="designed_identities,lock_rem_resis,limitaro,ic,ex1_ex2" /> //lock_rem_resis removed here then re-added
+		// Both modified to not mutate residues to anything else
+		<TaskAwareSymMinMover name="rb_min_design_int_hard" scorefxn="sfx_clean" bb="0" chi="1" rb="1" task_operations="design_int_plus_resfile,lock_rem_resis" /> //lrm added back in
+		<SymPackRotamersMover name="repack_design_int_hard" scorefxn="sfx" task_operations="design_int_plus_resfile,lock_rem_resis,limitaro,ic,ex1_ex2,repack_only" /> // designed_identities added here, lock_rem_resis was removed then readded
+
+		<ParsedProtocol name="rb_min_repack_rb_min_hard" >
+			<Add mover="rb_min_design_int_hard" />
+			<Add mover="repack_design_int_hard" />
+			<Add mover="rb_min_design_int_hard" /> </ParsedProtocol>
+		
+		// modified to only be from resfile
+		<TaskAwareSymMinMover name="min_full_int" scorefxn="sfx_clean" bb="0" chi="1" rb="0" task_operations="design_int_plus_resfile,lock_rem_resis" /> //this is for ddG, modified to include both design int and resfile mutations. lrm was removed then readded
+
+		SavePoseMover name="save_cage_pose" restore_pose="0" reference_name="cage_pose" />
+		SavePoseMover name="restore_cage_pose" restore_pose="1" reference_name="cage_pose" />
+		ExtractAsymmetricUnit name="extract_asu" keep_virtual="0" keep_unknown_aas="0" />
+		DumpPdb name="dump_asu" fname="%%outpath%%tmp_asu.pdb" />
+	</MOVERS>
+
+	<FILTERS>
+
+                <ClashCheck name="clash_check" sym_dof_names="%%symdof1%%,%%symdof2%%" verbose="1" write2pdb="1" cutoff="20" confidence="1" /> // high cutoff to prevent initial errors
+
+                <ShapeComplementarity name="sc1" multicomp="1" verbose="0" min_sc="0.55" sym_dof_name="%%symdof1%%" confidence="0" />
+                <ShapeComplementarity name="sc2" multicomp="1" verbose="0" min_sc="0.55" sym_dof_name="%%symdof2%%" confidence="0" />
+                <AtomicContactCount name="acc_tot"      partition="chain" task_operations="design_int_full,lock_rem_resis"      distance="4.5" normalize_by_sasa="0" confidence="0" />
+
+                <SymUnsatHbonds name="uhb" cutoff="5" verbose="1" write2pdb="1" confidence="0" />
+
+                <Sasa name="sasa" threshold="0" upper_threshold="9000" sym_dof_names="%%symdof1%%,%%symdof2%%" hydrophobic="0" polar="0" confidence="0" />
+                <Ddg name="ddG" translate_by="1000" scorefxn="sfx" task_operations="design_int_plus_resfile,lock_rem_resis,limitaro,ic,repack_only" repack="1" repeats="3" threshold="-0.01" relax_mover="min_full_int" repack_bound="1" relax_bound="1" confidence="0" /> // modified to only focus on design int and resfile mutations. NOTE: confidence set to zero for trouble-shooting
+                InterfaceBindingEnergyDensityFilter name="ddG_sasa" sasa_filter="sasa"  ddG_filter="ddG" threshold="-0.02" confidence="0" /> //requires both sasa and ddg filters to be set confidence=1 // turned off for trouble-shooting
+
+
+                <OligomericAverageDegree name="avg_deg" threshold="0" multicomp="1" sym_dof_names="%%symdof1%%,%%symdof2%%" distance_threshold="10" task_operations="design_int_full,lock_rem_resis" confidence="0" />
+
+                <Mutations name="mutations" rate_threshold="0.0" mutation_threshold="60" report_mutations="1" verbose="1" write2pdb="1" task_operations="design_int_plus_resfile" confidence="0" />
+                <ResidueCount name="AlaCount" residue_types="ALA"                               residue_selector="design_int" confidence="0" />
+                <ResidueCount name="MetCount" residue_types="MET"                               residue_selector="design_int" confidence="0" />
+                <ResidueCount name="HPcCount" residue_types="VAL,LEU,ILE"               residue_selector="design_int" confidence="0" />
+                <ResidueCount name="AroCount" residue_types="TRP,PHE,TYR,HIS"   residue_selector="design_int" confidence="0" />
+
+                <ResidueCount name="AlaCount_A" residue_types="ALA"                     residue_selector="design_int_A" confidence="0" />
+                <ResidueCount name="AlaCount_B" residue_types="ALA"                     residue_selector="design_int_B" confidence="0" />
+
+                //cage regeneration terms
+                <GetRBDOFValues name="%%symdof1%%_disp"  sym_dof_name="%%symdof1%%" get_disp="1"  get_init_value="1" />
+                <GetRBDOFValues name="%%symdof1%%_angle" sym_dof_name="%%symdof1%%" get_angle="1" get_init_value="1" />
+                <GetRBDOFValues name="%%symdof2%%_disp"  sym_dof_name="%%symdof2%%" get_disp="1"  get_init_value="1" />
+                <GetRBDOFValues name="%%symdof2%%_angle" sym_dof_name="%%symdof2%%" get_angle="1" get_init_value="1" />
+
+                <SaveResfileToDisk name="save_resfile" task_operations="nonnative" designable_only="1" resfile_prefix="%%outpath%%" resfile_suffix="" resfile_name="" resfile_general_property="NATRO" selected_resis_property="" renumber_pdb="0" />
+
+	</FILTERS>
+
+	<PROTOCOLS>
+		//generate docked configuration
+		<Add mover_name="gen_docked_config" />
+		<Add filter_name="clash_check" />
+		
+		//might help run?
+		<Add mover_name="add_aa_comp" />
+
+		//design mutations, then min-repack-min
+		<Add mover_name="design_from_resfile" />
+		<Add mover_name="rb_min_repack_rb_min_hard" />
+
+		//filters - sc filters were removed for time
+		
+		<Add filter_name="acc_tot" />    	
+		<Add filter_name="avg_deg" />
+		<Add filter_name="uhb" />
+		Add filter_name="sasa" />
+		Add filter_name="ddG" />
+		Add filter_name="ddG_sasa" />
+		<Add filter_name="mutations" />
+		Add filter_name="AlaCount_A" />
+		Add filter_name="AlaCount_B" />
+		Add filter_name="AlaCount" />
+		Add filter_name="MetCount" />
+		Add filter_name="HPcCount" />
+		Add filter_name="AroCount" />
+
+		//recalculate angle and displacement, output resfile
+		Add filter_name="%%symdof1%%_disp" />
+		Add filter_name="%%symdof1%%_angle" />
+		Add filter_name="%%symdof2%%_disp" />
+		Add filter_name="%%symdof2%%_angle" />
+		<Add filter_name="save_resfile" />
+
+		//save asu
+		Add mover_name="save_cage_pose" />
+		Add mover_name="extract_asu" />
+		Add mover_name="dump_asu" />
+		Add mover_name="restore_cage_pose" />
+	</PROTOCOLS>
+
+</ROSETTASCRIPTS>
