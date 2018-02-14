@@ -59,8 +59,8 @@ scripts_to_be_validated = [
     "scripts/pilot/cyclic_peptide_design/membrane_permeable_peptide_design/cyclic_aromatic_permeable_design.xml",
     "scripts/pilot/homology_modeling/hybridize/cm.xml",
     "scripts/pilot/mutation_scanning/singlemutation_symrescore/mutalyze.xml",
-    "scripts/pilot/mutation_scanning/singlemutation_symrescore/1c_mutalyze.xml"
-
+    "scripts/pilot/mutation_scanning/singlemutation_symrescore/1c_mutalyze.xml",
+    "scripts/pilot/protein_design/membrane_design_3helical_tetramer/design.xml"
 ]
 
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world

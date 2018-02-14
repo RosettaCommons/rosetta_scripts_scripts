@@ -1,0 +1,274 @@
+<ROSETTASCRIPTS>
+##############################################
+# ScoreFunctions
+# Be sure to use this flag:-use_bicubic_interpolation
+##############################################
+<SCOREFXNS>
+    <ScoreFunction name="sfxn_cstWt1" weights="beta" symmetric="0">
+        <Reweight scoretype="res_type_constraint" weight="2"/>
+        <Reweight scoretype="aa_composition" weight="1.0" />
+        <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+        <Set aa_composition_setup_file="disfavor_polyala.comp" />
+    </ScoreFunction>
+    <ScoreFunction name="sfxn_cstWt1_symm" weights="beta" symmetric="1">
+        <Reweight scoretype="res_type_constraint" weight="2"/>
+        <Reweight scoretype="aa_composition" weight="1.0" />
+        <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+        <Set aa_composition_setup_file="disfavor_polyala.comp" />
+    </ScoreFunction>
+</SCOREFXNS>
+##############################################
+# RESIDUE_SELECTORS
+##############################################
+<RESIDUE_SELECTORS>
+    <ResidueName name="designable_res_selector" residue_name3="PHE" />
+    <Not name="not_designable_res_selector" selector="designable_res_selector"/>
+    <ResiduePDBInfoHasLabel name="interface_selector" property="INTERFACE"/>
+    <Layer name="core" select_core="true" core_cutoff="3.6" />  # select core using sidechain neighbors (don’t use SASA because of potential voids!)
+</RESIDUE_SELECTORS>
+##############################################
+# Task Operations
+##############################################
+<TASKOPERATIONS>
+    <InitializeFromCommandline name="IFC"/>
+    <IncludeCurrent name="IC"/>
+    <LimitAromaChi2 name="aroChi"/>
+    <ReadResfile name="readTmpResFile" filename="restrictRandom.resfile"/> #Be sure to create restrictRandom.resfile
+    <LayerDesign name="layerCBS" layer="core_boundary_surface_Nterm_Cterm">
+        <boundary>
+            <all exclude="W" />
+            <Loop append="GM" />
+            <Helix append="GM" />
+        </boundary>
+        <surface>
+            <all exclude="W" />
+        </surface>
+        <core>
+            <all exclude="W" />
+            <Loop append="GM" />
+            <Helix append="GM" />
+        </core>
+    </LayerDesign>
+    <OperateOnResidueSubset name="restrict_to_pack" selector="interface_selector">
+      <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+  </TASKOPERATIONS>
+###############################################
+# Filters
+###############################################
+<FILTERS>
+    <worst9mer name="worst9mer_a" threshold="0.4"/>
+    <worst9mer name="worst9mer_h" threshold="0.2" only_helices="true"/>
+    #for digs
+    <SSPrediction name="psipred_conf" confidence="0" cmd="/home/brunette/src/psipred3.21/runpsipred_single" use_probability="1" use_svm="false"/>
+    #for hyak
+    SSPrediction name="psipred_conf" confidence="0" cmd="/home/brunette/src/psipred3.21/runpsipred_single" use_probability="1" use_svm="false"/>
+
+    <ResidueCount name="ALAResCount" residue_types="ALA"/>
+    <ResidueCount name="ALLResCount" />
+    <Holes name="holes_loose" confidence="1" threshold="3" residue_selector="core" normalize_per_atom="true" exclude_bb_atoms="true"/>  remember: -holes:dalphaball ~/scripts/DAlphaBall.gcc   NEW hole, threshold need to talk with TJ
+    <Holes name="holes_tight" confidence="1" threshold="2" residue_selector="core" normalize_per_atom="true" exclude_bb_atoms="true"/>  remember: -holes:dalphaball ~/scripts/DAlphaBall.gcc
+    <ResidueCount name="nres" confidence="0" />
+    <ScoreType name="total_score" scorefxn="sfxn_cstWt1_symm" score_type="total_score" threshold="0.0" confidence="0"/>
+    <CalculatorFilter name="score_norm" confidence="0" equation="SCORE/NRES" threshold="3" >
+        <Var name="SCORE" filter_name="total_score" />
+        <Var name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+    <CalculatorFilter name="ala_norm" confidence="0" equation="ALA/NRES" threshold="3" >
+        <Var name="ALA" filter_name="ALAResCount" />
+        <Var name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+    <Sasa name="Sasa" threshold="1500" upper_threshold="1000000" jump="1" confidence="1"/>
+</FILTERS>
+ ##############################################
+  # Underlying relax/repack/min/pack movers
+  ##############################################
+  <MOVERS>
+    <FixAllLoopsMover name="fix_loops" RMSthreshold="0.4" reject_failed_loops="false" ideal="false"/>
+    <AddResidueLabel name="interface_label" label="INTERFACE" residue_selector="not_designable_res_selector"/>
+    <AddConstraintsToCurrentConformationMover name="constrainCA" cst_weight="1.0" use_distance_cst="False" coord_dev="1.0" bound_width="0.5" CA_only="True" bb_only="False"/> #
+    <StructProfileMover name="genProfile" RMSthreshold="0.40"/>
+    <SymPackRotamersMover name="pack" scorefxn="sfxn_cstWt1_symm" task_operations="IFC,IC,aroChi,layerCBS,restrict_to_pack"/>
+    <FastRelax name="frelax" scorefxn="sfxn_cstWt1_symm" repeats="1" />
+    <DetectSymmetry name="detect"/>
+    <SymMinMover name="min" scorefxn="sfxn_cstWt1_symm" bb="1" chi="1" jump="ALL" />
+    <ExtractAsymmetricUnit name="asymm_pose" keep_virtual="False" keep_unknown_aas="False" />
+    <SetupForSymmetry name="symm_pose" definition="C4_Z.sym" preserve_datacache="False" />
+    <ParsedProtocol name="combo_min">
+        <Add mover_name="pack"/>
+        <Add mover_name="min"/>
+    </ParsedProtocol>
+##############################################
+#  Looped Movers
+##############################################
+<GenericSimulatedAnnealer name="refine_all" mover_name="combo_min" trials="15" periodic_mover="frelax" eval_period="5" history="10"  bolz_rank="1" recover_low="1" preapply="0" drift="1" checkpoint_file="mc" keep_checkpoint_file="0" filter_name="score_norm" temperature="0.02" sample_type="low" >
+    <Filters>
+      <AND filter_name="psipred_conf" temperature="0.0005" />
+    </Filters>
+</GenericSimulatedAnnealer>
+
+<HBNetStapleInterface scorefxn="sfxn_cstWt1_symm" name="hbnet_mover" hb_threshold="-0.5" design_residues="NSTQHYW" write_network_pdbs="true" min_networks_per_pose="1" max_networks_per_pose="2" use_aa_dependent_weights="true" min_core_res="2" min_network_size="3" max_unsat_Hpol="1" onebody_hb_threshold="-0.3" task_operations="IFC,IC,aroChi,restrict_to_pack" />
+
+  <MultiplePoseMover name="MPM_design" max_input_poses="100">
+      <ROSETTASCRIPTS>
+          PASTE YOUR ENTIRE CURRENT DESIGN XML HERE
+              ##############################################
+              # ScoreFunctions
+              # Be sure to use this flag:-use_bicubic_interpolation
+              ##############################################
+              # only use _cst scorefxn during design to make sure the constraints automatically turned on by HBNet are respected
+              # residue selector and taskop to ensure network residues aren't designed away
+              # residue selector will automatically detect all HBNet residues
+              <SCOREFXNS>
+                  <ScoreFunction name="sfxn_cstWt1" weights="beta" symmetric="0">
+                      <Reweight scoretype="res_type_constraint" weight="2"/>
+                      <Reweight scoretype="aa_composition" weight="1.0" />
+                      <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+                      <Set aa_composition_setup_file="disfavor_polyala.comp" />
+                  </ScoreFunction>
+                  <ScoreFunction name="sfxn_cstWt1_symm" weights="beta" symmetric="1">
+                      <Reweight scoretype="res_type_constraint" weight="2"/>
+                      <Reweight scoretype="aa_composition" weight="1.0" />
+                      <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+                      <Set aa_composition_setup_file="disfavor_polyala.comp" />
+                  </ScoreFunction>
+                  <ScoreFunction name="sfxn_CST_cstWt1_symm" weights="beta_cst" symmetric="1">
+                      <Reweight scoretype="res_type_constraint" weight="2"/>
+                      <Reweight scoretype="aa_composition" weight="1.0" />
+                      <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+                      <Set aa_composition_setup_file="disfavor_polyala.comp" />
+                  </ScoreFunction>
+              </SCOREFXNS>
+              ##############################################
+              # RESIDUE_SELECTORS
+              ##############################################
+              <RESIDUE_SELECTORS>
+                  <ResidueName name="designable_res_selector" residue_name3="PHE" />
+                  <Not name="not_designable_res_selector" selector="designable_res_selector"/>
+                  <ResiduePDBInfoHasLabel name="interface_selector" property="INTERFACE"/>
+                  <Not name="not_interface_selector" selector="interface_selector"/>
+                  <Layer name="core" select_core="true" core_cutoff="3.6" />  # select core using sidechain neighbors (don’t use SASA because of potential voids!)
+                  <ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet" />
+              </RESIDUE_SELECTORS>
+              ##############################################
+              # Task Operations
+              ##############################################
+              <TASKOPERATIONS>
+                  <InitializeFromCommandline name="IFC"/>
+                  <IncludeCurrent name="IC"/>
+                  <LimitAromaChi2 name="aroChi"/>
+                  <ReadResfile name="readTmpResFile" filename="restrictRandom.resfile"/> #Be sure to create restrictRandom.resfile
+                  <LayerDesign name="layerCBS" layer="core_boundary_surface_Nterm_Cterm">
+                      <boundary>
+                          <all exclude="W" />
+                          <Loop append="GM" />
+                          <Helix append="GM" />
+                      </boundary>
+                      <surface>
+                          <all exclude="W" />
+                      </surface>
+                      <core>
+                          <all exclude="W" />
+                          <Loop append="GM" />
+                          <Helix append="GM" />
+                      </core>
+                  </LayerDesign>
+                  <OperateOnResidueSubset name="restrict_to_pack" selector="interface_selector">
+                      <RestrictToRepackingRLT/>
+                  </OperateOnResidueSubset>
+                  <OperateOnResidueSubset name="hbnet_task" selector="hbnet_residues">
+                      <RestrictToRepackingRLT/> # can also use PreventRepackingRLT here, but I find that repack only works best, because it allows some wiggle room, and the csts applied automatically by h-bond keep the h-bonds in place
+                  </OperateOnResidueSubset>
+              </TASKOPERATIONS>
+              ###############################################
+              # Filters
+              ###############################################
+              <FILTERS>
+                  <worst9mer name="worst9mer_a" threshold="0.4"/>
+                  <worst9mer name="worst9mer_h" threshold="0.15" only_helices="true"/>
+                  #for digs
+                  <SSPrediction name="psipred_conf" confidence="0" cmd="/home/brunette/src/psipred3.21/runpsipred_single" use_probability="1" use_svm="false"/>
+                  #for hyak
+                  SSPrediction name="psipred_conf" confidence="0" cmd="/home/brunette/src/psipred3.21/runpsipred_single" use_probability="1" use_svm="false"/>
+                  
+                  <ResidueCount name="ALAResCount" residue_types="ALA"/>
+                  <ResidueCount name="ALLResCount" />
+                  <Holes name="holes_loose" confidence="1" threshold="3" residue_selector="core" normalize_per_atom="true" exclude_bb_atoms="true"/>  remember: -holes:dalphaball ~/scripts/DAlphaBall.gcc   NEW hole, threshold need to talk with TJ
+                  <Holes name="holes_tight" confidence="0" threshold="2" residue_selector="core" normalize_per_atom="true" exclude_bb_atoms="true"/>  remember: -holes:dalphaball ~/scripts/DAlphaBall.gcc
+                  <ResidueCount name="nres" confidence="1" />
+                  <ScoreType name="total_score" scorefxn="sfxn_cstWt1_symm" score_type="total_score" threshold="0.0" confidence="0"/>
+                  <CalculatorFilter name="score_norm" confidence="0" equation="SCORE/NRES" threshold="3" >
+                      <Var name="SCORE" filter_name="total_score" />
+                      <Var name="NRES" filter_name="nres" />
+                  </CalculatorFilter>
+                  <CalculatorFilter name="ala_norm" confidence="0" equation="ALA/NRES" threshold="3" >
+                      <Var name="ALA" filter_name="ALAResCount" />
+                      <Var name="NRES" filter_name="nres" />
+                  </CalculatorFilter>
+                  <BuriedUnsatHbonds name="new_buns_sc_heavy" residue_selector="not_interface_selector" report_sc_heavy_atom_unsats="true" scorefxn="sfxn_cstWt1_symm" cutoff="0" residue_surface_cutoff="20.0" ignore_surface_res="true" print_out_info_to_pdb="true" />
+                  <Sasa name="Sasa" threshold="1500" upper_threshold="1000000" jump="1" confidence="1"/>
+              </FILTERS>
+              ##############################################
+              # Underlying relax/repack/min/pack movers
+              ##############################################
+              <MOVERS>
+                  <FixAllLoopsMover name="fix_loops" RMSthreshold="0.4" reject_failed_loops="false" ideal="false"/>
+                  <AddResidueLabel name="interface_label" label="INTERFACE" residue_selector="not_designable_res_selector"/>
+                  <AddConstraintsToCurrentConformationMover name="constrainCA" cst_weight="1.0" use_distance_cst="False" coord_dev="1.0" bound_width="0.5" CA_only="True" bb_only="False"/> #
+                  <StructProfileMover name="genProfile" RMSthreshold="0.40"/>
+                  <SymPackRotamersMover name="pack" scorefxn="sfxn_CST_cstWt1_symm" task_operations="IFC,IC,aroChi,layerCBS,restrict_to_pack,hbnet_task"/>
+                  <FastRelax name="frelax" scorefxn="sfxn_CST_cstWt1_symm" repeats="1" />
+                  <DetectSymmetry name="detect"/>
+                  <SymMinMover name="min" scorefxn="sfxn_CST_cstWt1_symm" bb="1" chi="1" jump="ALL" />
+                  <ExtractAsymmetricUnit name="asymm_pose" keep_virtual="False" keep_unknown_aas="False" />
+                  <SetupForSymmetry name="symm_pose" definition="C4_Z.sym" preserve_datacache="False" />
+                  <ParsedProtocol name="combo_min">
+                      <Add mover_name="pack"/>
+                      <Add mover_name="min"/>
+                  </ParsedProtocol>
+              </MOVERS>
+                  <APPLY_TO_POSE>
+                  </APPLY_TO_POSE>
+                  ##############################################
+                  #  main
+                  ##############################################
+                  <PROTOCOLS>
+                      <Add mover_name="pack"/>
+                      <Add mover_name="frelax"/>
+                      <Add filter_name="holes_tight"/>
+                      <Add filter_name="ala_norm"/>
+                      <Add filter_name="Sasa"/>
+                      <Add filter_name="new_buns_sc_heavy"/>
+                  </PROTOCOLS>
+
+      </ROSETTASCRIPTS>
+  </MultiplePoseMover>
+
+      </MOVERS>
+<APPLY_TO_POSE>
+</APPLY_TO_POSE>
+##############################################
+#  main
+##############################################
+<PROTOCOLS>
+    Add mover_name="detect"/>
+    <Add mover_name="asymm_pose"/>
+    <Add mover_name="fix_loops"/>
+    <Add filter_name="worst9mer_a"/>
+    <Add mover_name="symm_pose"/>
+    <Add mover_name="interface_label"/>
+    <Add mover_name="genProfile"/>
+    <Add mover_name="constrainCA"/>
+    <Add mover_name="pack"/>
+    <Add mover_name="frelax"/>
+    <Add filter_name="holes_loose"/>
+    <Add mover_name="refine_all"/>
+    <Add mover_name="hbnet_mover"/>
+    <Add mover_name="MPM_design"/>
+    <Add filter_name="holes_tight"/>
+    <Add filter_name="ala_norm"/>
+    <Add filter_name="Sasa"/>
+    <Add filter_name="worst9mer_h"/>
+</PROTOCOLS>
+<OUTPUT scorefxn="sfxn_cstWt1_symm" />
+</ROSETTASCRIPTS>
