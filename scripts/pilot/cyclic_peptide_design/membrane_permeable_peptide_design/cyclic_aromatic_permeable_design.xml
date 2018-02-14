@@ -1,0 +1,109 @@
+<ROSETTASCRIPTS>
+    <SCOREFXNS>
+        <ScoreFunction name="ref" weights="ref2015"/>
+        ## this has the constraint weights on as well as the composition weights. This way you can use Vikram's aa_compostions to define the overall properties of your design
+        <ScoreFunction name="ref_high_hbond" weights="ref2015">
+            <Reweight scoretype="coordinate_constraint" weight="1" />
+            <Reweight scoretype="atom_pair_constraint" weight="1" />
+            <Reweight scoretype="dihedral_constraint" weight="1" />
+            <Reweight scoretype="angle_constraint" weight="1" />
+            <Reweight scoretype="aa_composition" weight="1.0" />
+            <Reweight scoretype="hbond_lr_bb" weight="5.0" />
+            <Reweight scoretype="hbond_sr_bb" weight="5.0" />
+            <Reweight scoretype="aspartimide_penalty" weight="1.0" />
+        </ScoreFunction>    
+        
+    </SCOREFXNS>
+
+    <RESIDUE_SELECTORS>
+
+        ##selects chain A
+        <Chain name="sel_A" chains="1"/>
+        ## these are choosing regions in D or L space and making sure that during design you put D_amino acids in D space and L-amino acids in L space
+        <Phi name="posPhi" select_positive_phi="true" />
+        <Phi name="negPhi" select_positive_phi="false" />
+        <Index name="aro_motif" resnums="5" />
+
+        <Unsat name="unsatsel" consider_mainchain_only="true" check_acceptors="false" hbond_energy_cutoff="-0.75" scorefxn="ref_high_hbond" />
+
+        <PrimarySequenceNeighborhood name="pro_neighbor" lower="1" upper="1" >
+            <ResidueName residue_name3="PRO,DPR"/>
+        </PrimarySequenceNeighborhood>
+
+        <ResidueName name="pro" residue_name3="PRO,DPR"/>
+        <And name="pro_lres" selectors="pro,negPhi"/>
+        <And name="pro_dres" selectors="pro,posPhi"/>
+        <Not name="not_pro_neighbor" selector="pro_neighbor"/>
+        <Not name="not_aro_motif" selector="aro_motif" />
+        <Not name="not_pro" selector="pro" />
+        
+        <And name="pro_neighbors_lres" selectors="negPhi,pro_neighbor,not_aro_motif,not_pro"/>
+        <And name="pro_neighbors_dres" selectors="posPhi,pro_neighbor,not_aro_motif,not_pro"/>
+        <And name="not_pro_neighbors_lres" selectors="negPhi,not_pro_neighbor,not_aro_motif,not_pro"/>
+        <And name="not_pro_neighbors_dres" selectors="posPhi,not_pro_neighbor,not_aro_motif,not_pro"/>
+    </RESIDUE_SELECTORS>
+
+    <TASKOPERATIONS>
+
+        ## telling Rosetta what files we want to use for D amino acids or L amino acids
+        <ReadResfile name="neighbor_l_res" filename="../input/neighbor_l_res.txt" selector="pro_neighbors_lres"/>
+        <ReadResfile name="neighbor_d_res" filename="../input/neighbor_d_res.txt" selector="pro_neighbors_dres"/>
+        <ReadResfile name="no_neighbor_l_res" filename="../input/not_neighbor_l_res.txt" selector="not_pro_neighbors_lres"/>
+        <ReadResfile name="no_neighbor_d_res" filename="../input/not_neighbor_d_res.txt" selector="not_pro_neighbors_dres"/>
+        <ReadResfile name="l_res" filename="../input/l_res.txt" selector="negPhi"/>
+        <ReadResfile name="d_res" filename="../input/d_res.txt" selector="posPhi"/>
+        ## Telling Rosetta to only try PHE and TYR at this location
+        <ReadResfile name="aro_motif_res" filename="../input/aro_res_l.txt" selector="aro_motif"/>
+        ##Only try prolines
+        <ReadResfile name="pro_gly_dres" filename="../input/pro_gly_dres.txt" selector="negPhi"/>
+        <ReadResfile name="pro_gly_lres" filename="../input/pro_gly_lres.txt" selector="posPhi"/>
+        ## what residues you DO NOT want to design. You need to change the number for your own purposes
+        <RestrictResiduesToRepacking name="no_motif_design" residues="6"/>
+
+    </TASKOPERATIONS>
+
+    <FILTERS>
+        
+        ##This filter makes sure we do not have a bizarre case in which a carbonyl is hbonded by three amines
+        <OversaturatedHbondAcceptorFilter name="oversat" scorefxn="ref" max_allowed_oversaturated="0" consider_mainchain_only="false"/>
+
+    </FILTERS>
+    <MOVERS>
+
+        #here is a cyclic peptide loop clsoer needed due to an update in how simple_cyc_predict since my original designs
+        <PeptideCyclizeMover name="cyclize" residue_selector="sel_A"/>
+        ## here I am adding a composition part, forcing some Pro, a + charge and a hydrophobic. A good documentation is written about the composition files by Vikram
+        <AddCompositionConstraintMover name="Pro" filename="../comp/Pro.comp" selector="sel_A" />
+        <AddCompositionConstraintMover name="global" filename="../comp/global_preferences.comp" selector="sel_A" />
+        ## this is the design part where you design. you need to have a score function that: a) have constraints on and b) have composition on. To keep the constraints, I turned off the ramp_down_constraints. for complicated stupid reasons you need to have d_res first and then l_res.
+        <FastDesign name="design_pro" repeats="3" task_operations="pro_gly_dres,pro_gly_lres,no_motif_design,aro_motif_res" scorefxn="ref_high_hbond" ramp_down_constraints="false"/>
+        FastDesign name="design_hydrophobic" repeats="5" task_operations="d_res,l_res,no_motif_design,aro_motif_res" scorefxn="ref_high_hbond" ramp_down_constraints="false"/>
+        <FastDesign name="design_hydrophobic" repeats="5" task_operations="neighbor_d_res,neighbor_l_res,no_neighbor_l_res,no_neighbor_d_res,no_motif_design,aro_motif_res" scorefxn="ref_high_hbond" ramp_down_constraints="false"/>
+	
+        ## this is a relaxation part where we let things wiggle around after Nmethylation
+        <FastRelax name="relax" scorefxn="ref_high_hbond" ramp_down_constraints="false"/>
+        ## this is here to Nmethylate unsaturated N methylpositions
+        <ModifyVariantType name="nmethylate" add_type="N_METHYLATION" residue_selector="unsatsel" />
+
+        <ClearConstraintsMover name="clear" />
+
+    </MOVERS>
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+        ##defining the order in which things happen. If you use PeptideCyclizeMover instead of the torsion and bond movers, just add that. 
+        <Add mover="cyclize"/>
+        <Add mover="Pro"/>
+        <Add mover="design_pro"/>
+        <Add mover="cyclize"/>
+        <Add mover="global"/>
+        <Add mover="design_hydrophobic"/>
+        <Add mover="clear"/>
+        <Add mover="cyclize"/>
+        <Add mover="nmethylate"/>
+        <Add mover="relax"/>
+        <Add filter="oversat"/>
+        <Add mover="cyclize"/>
+    </PROTOCOLS>
+    <OUTPUT />
+</ROSETTASCRIPTS>
