@@ -1,0 +1,204 @@
+<ROSETTASCRIPTS>
+    ## if you want to use this score function, please make sure to use -beta_nov15 tag in the run script
+    <SCOREFXNS>
+        <beta weights=beta_nov15/>
+        
+        ##this has the constraint weights on. You need this to force the two ends to stay closed
+        <beta_cst weights=beta_nov15 >
+            <Reweight scoretype=coordinate_constraint weight=1 />
+            <Reweight scoretype=atom_pair_constraint weight=1 />
+            <Reweight scoretype=dihedral_constraint weight=1 />
+            <Reweight scoretype=angle_constraint weight=1 />
+            Reweight scoretype=aspartimide_penalty weight=1.0 />
+            Reweight scoretype=aa_repeat weight=1/>
+        </beta_cst>
+
+        ## this has the constraint weights on as well as the composition weights. This way you can use Vikram's aa_compostions to define the overall properties of your design
+        <beta_comp weights=beta_nov15 >
+            <Reweight scoretype=coordinate_constraint weight=1 />
+            <Reweight scoretype=atom_pair_constraint weight=1 />
+            <Reweight scoretype=dihedral_constraint weight=1 />
+            <Reweight scoretype=angle_constraint weight=1 />
+            <Reweight scoretype=aa_composition weight=1.0 />
+        </beta_comp>
+        
+        ## high hydrogen bond weigths to keep the structure compact
+        <high_hbond weights=beta_nov15 >
+            <Reweight scoretype=coordinate_constraint weight=1 />
+            <Reweight scoretype=atom_pair_constraint weight=1 />
+            <Reweight scoretype=dihedral_constraint weight=1 />
+            <Reweight scoretype=angle_constraint weight=1 />
+            <Reweight scoretype=hbond_lr_bb weight=11.7 />
+            <Reweight scoretype=hbond_sr_bb weight=11.7 />
+        </high_hbond>
+
+    </SCOREFXNS>
+
+    <RESIDUE_SELECTORS>
+
+        ##selects chain A
+        <Chain name=sel_A chains=1/>
+        ## these are choosing regions in D or L space and making sure that during design you put D_amino acids in D space and L-amino acids in L space
+        Phi name=posPhi select_positive_phi=true />
+        And name=posPhi_B selectors=sel_A,posPhi/>
+        Phi name=negPhi select_positive_phi=false />
+        And name=negPhi_B selectors=sel_A,negPhi/>
+	Bin name="L_Alpha" bin="Aprime" bin_params_file="ABBA" />
+	Bin name="D_Alpha" bin="A" bin_params_file="ABBA" />
+	Bin name="L_Beta" bin="Bprime" bin_params_file="ABBA" />
+	Bin name="D_Beta" bin="B" bin_params_file="ABBA" />
+        <Index name="res1hbond" resnums=4,5,6,7 />
+        <Index name="res2hbond" resnums=5,6,7,8 />
+        <Index name="res3hbond" resnums=6,7,8,9 />
+	<Index name="res4hbond" resnums = 1,7,8,9 />
+	<Index name="res5hbond" resnums =1,2,8,9 />
+  	<Index name="res6hbond" resnums =1,2,3,9 />
+	<Index name="res7hbond" resnums =1,2,3,4 />
+	<Index name="res8hbond" resnums =2,3,4,5 />
+	<Index name="res9hbond" resnums =3,4,5,6 />
+
+    </RESIDUE_SELECTORS>
+
+    <TASKOPERATIONS>
+
+        ## telling Rosetta what files we want to use for D amino acids or L amino acids
+        ReadResfile name="l_res" filename="input/l_res.txt" selector=negPhi_B/>
+        ReadResfile name="d_res" filename="input/d_res.txt" selector=posPhi_B/>
+        
+        ## what residues you DO NOT want to design. You need to change the number for your own purposes
+        RestrictResiduesToRepacking name="no_design" residues=5,6 />
+
+    </TASKOPERATIONS>
+
+    <FILTERS>
+        
+        ## Telling Rosetta what residues to consider for countin hbonds. You need to change accordingly
+        <HbondsToResidue name=hbonds1 partners=0 energy_cutoff=-0.25 backbone=1 bb_bb=1 sidechain=0 residue=1 residue_selector=res1hbond/>
+        <HbondsToResidue name=hbonds2 partners=0 energy_cutoff=-0.25 backbone=1 bb_bb=1 sidechain=0 residue=2 residue_selector=res2hbond/>
+        <HbondsToResidue name=hbonds3 partners=0 energy_cutoff=-0.25 backbone=1 bb_bb=1 sidechain=0 residue=3 residue_selector=res3hbond/>
+        <HbondsToResidue name=hbonds4 partners=0 energy_cutoff=-0.25 backbone=1 bb_bb=1 sidechain=0 residue=4 residue_selector=res4hbond/>
+        <HbondsToResidue name=hbonds5 partners=0 energy_cutoff=-0.25 backbone=1 bb_bb=1 sidechain=0 residue=5 residue_selector=res5hbond/>
+        <HbondsToResidue name=hbonds6 partners=0 energy_cutoff=-0.25 backbone=1 bb_bb=1 sidechain=0 residue=6 residue_selector=res6hbond/>
+        <HbondsToResidue name=hbonds7 partners=0 energy_cutoff=-0.25 backbone=1 bb_bb=1 sidechain=0 residue=7 residue_selector=res7hbond/>
+        <HbondsToResidue name=hbonds8 partners=0 energy_cutoff=-0.25 backbone=1 bb_bb=1 sidechain=0 residue=8 residue_selector=res8hbond/>
+        <HbondsToResidue name=hbonds9 partners=0 energy_cutoff=-0.25 backbone=1 bb_bb=1 sidechain=0 residue=9 residue_selector=res9hbond/>
+
+        ## adds up the values of the hbonds. basically is defining how many bb to bb hbond you are requiring. For example here the threshold is -3.0 meaning you need at least 3 hbond. The threshold should be changed in a case by case manner
+        <CombinedValue name=total_hbonds threshold=-3.0>
+            <Add filter_name=hbonds1 factor=-0.5 />
+            <Add filter_name=hbonds2 factor=-0.5 />
+            <Add filter_name=hbonds3 factor=-0.5 />
+            <Add filter_name=hbonds4 factor=-0.5 />
+            <Add filter_name=hbonds5 factor=-0.5 />
+            <Add filter_name=hbonds6 factor=-0.5 />
+            <Add filter_name=hbonds7 factor=-0.5 />
+            <Add filter_name=hbonds8 factor=-0.5 />
+            <Add filter_name=hbonds9 factor=-0.5 />
+       </CombinedValue>
+        
+        ##This filter makes sure we do not have a bizarre case in which a carbonyl is hbonded by three amines
+        <OversaturatedHbondAcceptorFilter name=oversat scorefxn=beta max_allowed_oversaturated=0 consider_mainchain_only=false/>
+        ## overal total score check. makes sure to change it based on your size
+        <ScoreType name=checkscore scorefxn=beta score_type=total_score threshold=0 />
+
+
+    </FILTERS>
+    <MOVERS>
+
+        ##this is where you add new residues. I am adding 4 more now to my peptide. I use Gly to remove bias to L or D
+        <PeptideStubMover name="extend" reset=0>
+            <Append resname="GLY" repeat=3/>
+            <Prepend resname="GLY" anchor_rsd=1 repeat=4/>
+        </PeptideStubMover>
+        
+        ## makes sure all the new ones are trans and not cis peptide bond
+        <SetTorsion name="torsions">
+            <Torsion residue=1,2,3,4,6,7,8,9 torsion_name="omega" angle=180 />
+        </SetTorsion>
+
+        ### here you define constraints required for peptide bond formation. in your script you need to have this flag -script_vars Nres=(whatever number you will have after adding the extend). Note that if you have the latest Rosetta installed with PeptideCyclizeMover you can instead of all these 4 add this line: PeptideCyclizeMover name"cyclize" residue_selector=sel_A and it does all the trick
+        <CreateTorsionConstraint name=peptide_torsion_constraint>
+            <Add res1=%%Nres%% res2=%%Nres%% res3=1 res4=1 atom1="CA" atom2="C" atom3="N" atom4="CA" cst_func="CIRCULARHARMONIC 3.141592654 0.005" />
+        </CreateTorsionConstraint>
+        <CreateAngleConstraint name=peptide_angle_constraints>
+            <Add res1=%%Nres%% atom1="CA" res_center=%%Nres%% atom_center="C" res2=1 atom2="N" cst_func="CIRCULARHARMONIC 1.98967535 0.01" />
+            <Add res1=%%Nres%% atom1="C" res_center=1 atom_center="N" res2=1 atom2="CA" cst_func="CIRCULARHARMONIC 2.14675498 0.01" />
+        </CreateAngleConstraint>
+        <CreateDistanceConstraint name=peptide_distance_constraint>
+            <Add res1=%%Nres%% res2=1 atom1="C" atom2="N" cst_func="HARMONIC 1.32865 0.01" />
+        </CreateDistanceConstraint>
+        <DeclareBond name=terminal_bond res1=%%Nres%% res2=1 atom1=C atom2=N add_termini=false />
+       
+	PeptideCyclizeMover name="cyclize" residue_selector=sel_A /> 
+        #I am now defining what criteria I want to have when I am trying to close the structure
+        <ParsedProtocol name=preselection_pp>
+            <Add filter=total_hbonds />
+            <Add filter=oversat />
+        </ParsedProtocol>
+
+        ## this is where we actually close things. Please do read the genKIC documentation because it is very helpful in understanding what is going on here and what you might need to change for your case. Of course all the numbers and a bunc of other things. I will be happy to talk if you wanted more explanation.
+        <GeneralizedKIC name="genkic" closure_attempts=1000 stop_when_n_solutions_found=1 selector="lowest_energy_selector" selector_scorefunction="beta" pre_selection_mover=preselection_pp >
+            AddResidue res_index=5 />
+            AddResidue res_index=6 />
+            <AddResidue res_index=7 />
+            <AddResidue res_index=8 />
+	    <AddResidue res_index=9 />
+            <AddResidue res_index=1 />
+            <AddResidue res_index=2 />
+            <AddResidue res_index=3 />
+            <AddResidue res_index=4 />
+            <CloseBond res1=9 atom1="C" res2=1 atom2="N" bondlength=1.32 angle1=114 angle2=123 torsion=180/>
+            <SetPivots res1=7 res2=9 res3=3 atom1=CA atom2=CA atom3=CA />
+            <AddPerturber effect="randomize_alpha_backbone_by_rama" custom_rama_table="flat_symm_dl_aa_ramatable">
+                <AddResidue index=1/>
+                <AddResidue index=2/>
+                <AddResidue index=4/>
+                <AddResidue index=8/>
+            </AddPerturber>
+            <AddFilter type="loop_bump_check"/>
+        </GeneralizedKIC>
+        
+        ## here I am adding a composition part, forcing some Pro, a + charge and a hydrophobic. A good documentation is written about the composition files by Vikram
+        AddCompositionConstraintMover name="D_alpha" filename="comp/D_alpha_preferences.comp" selector=D_Alpha />
+        AddCompositionConstraintMover name="L_alpha" filename="comp/L_alpha_preferences.comp" selector=L_Alpha />
+        AddCompositionConstraintMover name="D_beta" filename="comp/D_beta_preferences.comp" selector=D_Beta />
+        AddCompositionConstraintMover name="L_beta" filename="comp/L_beta_preferences.comp" selector=L_Beta />
+        AddCompositionConstraintMover name="global" filename="comp/global_preferences.comp" selector=sel_A />
+
+        ## this is the design part where you design. you need to have a score function that: a) have constraints on and b) have composition on. To keep the constraints, I turned off the ramp_down_constraints. for complicated stupid reasons you need to have d_res first and then l_res.
+        FastDesign name="design" repeats=3 task_operations=d_res,l_res,no_design scorefxn=beta_comp ramp_down_constraints=false/>
+        
+
+	FastRelax name="relax" scorefxn=beta repeats=5>
+	    MoveMap>
+	      Span begin=1 end=2 chi=1 bb=0/>
+            /MoveMap>
+        /FastRelax> 
+
+    </MOVERS>
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+        ##defining the order in which things happen. If you use PeptideCyclizeMover instead of the torsion and bond movers, just add that. 
+        <Add mover=extend/>
+        <Add mover=torsions/>
+	Add mover=relax/>
+        <Add mover=terminal_bond/>
+        Add mover=cyclize/>
+        <Add mover=genkic/>
+        <Add mover=peptide_angle_constraints/>
+        <Add mover=peptide_torsion_constraint/>
+        <Add mover=peptide_distance_constraint/>
+        <Add mover=terminal_bond/>
+        Add mover=D_alpha/>
+        Add mover=L_alpha/>
+	Add mover=D_beta/>
+	Add mover=L_beta/>
+	Add mover=global/>
+        Add mover=design/>
+        Add mover=terminal_bond/>
+        Add filter=checkscore/>
+        <Add filter=oversat/>
+    </PROTOCOLS>
+    <OUTPUT />
+</ROSETTASCRIPTS>
