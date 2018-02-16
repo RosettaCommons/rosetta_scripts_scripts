@@ -1,0 +1,109 @@
+<ROSETTASCRIPTS>
+<SCOREFXNS>
+    <sfxn_std  weights=beta/>
+	<SFXN1 weights="fldsgn_cen">
+		#Reweight scoretype="cenpack" weight="1.0" />
+		<Reweight scoretype="hbond_sr_bb" weight="1.0" />
+		<Reweight scoretype="hbond_lr_bb" weight="1.0" />
+		<Reweight scoretype="atom_pair_constraint" weight="1.0" />
+		<Reweight scoretype="angle_constraint" weight="1.0" />
+		<Reweight scoretype="dihedral_constraint" weight="1.0" />
+	</SFXN1>
+          
+	<SFXN2 weights="fldsgn_cen">
+		#Reweight scoretype="cenpack" weight="1.0" />
+		<Reweight scoretype="hbond_sr_bb" weight="1.0" />
+		<Reweight scoretype="hbond_lr_bb" weight="1.0" />
+		<Reweight scoretype="atom_pair_constraint" weight="1.0" />
+		<Reweight scoretype="angle_constraint" weight="1.0" />
+		<Reweight scoretype="dihedral_constraint" weight="1.0" />
+	</SFXN2>
+
+
+</SCOREFXNS>
+<FILTERS>
+
+    <ScoreType name="hbond_sfn" scorefxn=sfxn_std score_type=hbond_lr_bb threshold=0/>
+
+  <ResidueCount name="res_count" confidence="0" />
+
+    <CalculatorFilter name=bb equation="hbond / rescount" threshold="-0.23" confidence=1>
+        <VAR name="hbond" filter="hbond_sfn"/>
+        <VAR name="rescount" filter="res_count"/>
+    </CalculatorFilter>
+
+    <ScoreType name="dslf_fa13" scorefxn=sfxn_std score_type=dslf_fa13 threshold=0/>
+
+	<HelixKink name="hk1" bend="45" blueprint="%%blueprint%%" />
+	<SheetTopology name="sf1" blueprint="%%blueprint%%" />
+	<SecondaryStructure name="ss1" blueprint="%%blueprint%%.ss" />
+	<CompoundStatement name="cs1">
+		<AND filter_name="ss1" />
+		<AND filter_name="hk1" />
+		<AND filter_name="sf1" />
+	</CompoundStatement>
+
+        Holes name="holes" threshold="6.0" confidence="0" />
+
+
+	<ScoreType name="total_score_cen" score_type="total_score" scorefxn="SFXN2" confidence="0" threshold="0" />
+
+    <AveragePathLength name="apl" max_path_length="999999" path_tightness="5"/> /change max_path_length to 8 (or lower)
+    <AverageDegree name=degree confidence=1 threshold=9.5/>
+    <PackStat name=pack confidence=0/>
+    <ExposedHydrophobics name=exposed confidence=0/>
+    <AtomicContactCount name=contact confidence=0/>
+    <CavityVolume name=cavity confidence=0/>
+
+</FILTERS>
+<TASKOPERATIONS>
+    <LimitAromaChi2 name="limitchi2" include_trp="1" />
+    <LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" use_sidechain_neighbors=True pore_radius="2.0" verbose="true" />
+    <NoRepackDisulfides name="exemptdisulf" />
+  <OperateOnCertainResidues name="keep_pd1">
+    <PreventRepackingRLT/>   all plus 297
+    <ResidueIndexIs indices=31,32,33,34,35,36/>
+  </OperateOnCertainResidues>
+</TASKOPERATIONS>
+<MOVERS>
+	<Dssp name="dssp" />
+
+	<SheetCstGenerator name="sheet_new1" cacb_dihedral_tolerance="0.6" blueprint="%%blueprint%%" />
+	<SetSecStructEnergies name="set_ssene1" scorefxn="SFXN1" blueprint="%%blueprint%%" />     
+	<BluePrintBDR name="bdr1" use_abego_bias="1" scorefxn="SFXN1" constraint_generators="sheet_new1" constraints_NtoC="-1.0" blueprint="%%blueprint%%" />
+	<DumpPdb name="dump0" fname="%%blueprint%%pass_ss" tag_time=True/>
+	<DumpPdb name="dump" fname="%%blueprint%%pass_cs" tag_time=True/>
+	<DumpPdb name="dump2" fname="%%blueprint%%pass_degree" tag_time=True/>
+
+
+	<ParsedProtocol name="build_dssp1" >
+		<Add mover_name="bdr1" />
+		<Add mover_name="dssp" />
+		<Add filter_name="ss1" />
+		<Add mover_name="dump0" />
+		<Add filter_name="hk1" />
+		<Add filter_name="sf1" />
+		<Add mover_name="dump" />
+		<Add filter_name="degree" />
+	<Add mover_name="dump2" />
+	</ParsedProtocol>
+
+
+	<LoopOver name="lover1" mover_name="build_dssp1" iterations="20" drift="0" ms_whenfail="FAIL_DO_NOT_RETRY" />
+	<ParsedProtocol name="phase1" >
+		<Add mover_name="set_ssene1" />
+		<Add mover_name="lover1" />
+	</ParsedProtocol>
+
+</MOVERS>
+
+<PROTOCOLS>
+	<Add mover_name="phase1" />
+	<Add mover_name="dssp" />
+	<Add filter_name="total_score_cen" />
+	<Add filter_name="cs1" />
+</PROTOCOLS>
+
+
+
+</ROSETTASCRIPTS>

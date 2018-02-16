@@ -122,6 +122,11 @@ scripts_not_tested = [
     "scripts/pilot/protein_design/scotts_scripts/MC_hbnet_2layer_para_full.xml",
     "scripts/pilot/protein_design/pH_responsive_cages/his_scan.cheat.xml",
     "scripts/pilot/protein_design/pH_responsive_cages/his_scan.xml",
-    "scripts/pilot/protein_design/pH_responsive_cages/revert.xml"
+    "scripts/pilot/protein_design/pH_responsive_cages/revert.xml",
+    "scripts/pilot/protein_design/RGD_loop_remodeling/Hyak_scripts_blueprint_builder_original.xml",
+    "scripts/pilot/protein_design/RGD_loop_remodeling/blueprint_builder.xml",
+    "scripts/pilot/protein_design/RGD_loop_remodeling/Test_Top7_blueprint_builder.xml",
+    "scripts/pilot/protein_design/RGD_loop_remodeling/Hyak_scripts_blueprint_builder3.xml",
+    "scripts/pilot/protein_design/RGD_loop_remodeling/Test_ub_out_blueprint_builder.xml"
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world
