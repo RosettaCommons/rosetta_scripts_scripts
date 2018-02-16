@@ -1,0 +1,89 @@
+<ROSETTASCRIPTS>
+
+	<SCOREFXNS>
+		<sfx_hard_symm weights=talaris2013 symmetric=1 />
+	</SCOREFXNS>
+
+	<TASKOPERATIONS>
+		<InitializeFromCommandline name=init /> <IncludeCurrent name=ic /> <RestrictIdentities name=pgr identities=PRO,GLY prevent_repacking=0 /> <RestrictIdentities name=vrt identities=XXX prevent_repacking=1 /> <LimitAromaChi2 name=limitaro chi2max=110 chi2min=70 /> <RestrictToRepacking name=repack_only />
+                <BuildingBlockInterface name=full_bbi sym_dof_names=%%symdofs%% fa_rep_cut=3.0 contact_dist=10.0 bblock_dist=5.0 nsub_bblock=3 multicomp=%%multicomp%% /> 
+                <SelectBySASA name=rtns mode="sc" state="monomer" core_asa=0 surface_asa=0 core=0 boundary=1 surface=1 verbose=0 />
+		<OperateOnCertainResidues name=nopack> <PreventRepackingRLT/> <ResidueHasProperty property=PROTEIN/> </OperateOnCertainResidues>
+		<RestrictIdentities name=freeze_nat_his identities=HIS prevent_repacking=1 />
+		<RestrictIdentities name=repack_only_nat_his identities=HIS prevent_repacking=0 />
+		<ReadResfile filename="input/his.resfile" name=his_only />
+		<ReadResfile filename="input/histidines.resfile" name=histidines />
+		<RetrieveStoredTask name=get_pre_greedy task_name="task_pre_scan" />
+		<RestrictNativeResidues name=diff2native stored_task="task_pre_scan" prevent_repacking=1 verbose=0 />
+		<DesignAround name=near_histidines stored_task="introduced_histidines" resnums="" design_shell=10.0 repack_shell=10.0 resnums_allow_design=0 intermolecular_only=1 />
+		<DisallowIfNonnative name=only_RK_or_native disallow_aas=ACDEFGHILMNPQSTVWY />
+	</TASKOPERATIONS>
+
+	# General movers
+	<MOVERS>
+		*SymDofMover name=gen_docked_config symm_file="input/%%symfile%%" sym_dof_names=%%symdofs%% angles=%%a1a2%% radial_disps=%%r1r2%% flip_about_axis=%%flip_axis%% />
+		<SetupForSymmetry name=setup_for_symmetry definition="input/%%symfile%%" />
+		<SymPackRotamersMover name=repack scorefxn=sfx_hard_symm task_operations=init,ic,vrt,limitaro,full_bbi,rtns,repack_only />
+		<SymPackRotamersMover name=design_histidines scorefxn=sfx_hard_symm task_operations=init,ic,vrt,limitaro,histidines />
+		<SymPackRotamersMover name=design_pos_charges scorefxn=sfx_hard_symm task_operations=init,ic,vrt,limitaro,rtns,near_histidines,repack_only_nat_his,only_RK_or_native />
+		<TaskAwareSymMinMover name=min scorefxn=sfx_hard_symm bb=0 chi=1 rb=0 task_operations=init,vrt,full_bbi,rtns />
+		<ParsedProtocol name=min_repack_min> <Add mover=min /> <Add mover=repack /> <Add mover=min /> </ParsedProtocol>
+		<StoreTaskMover name=store_task_pre_scan task_name="task_pre_scan" task_operations=repack_only />
+		<StoreTaskMover name=store_task_post_scan task_name="introduced_histidines" task_operations=diff2native />
+		<SavePoseMover name=save_pose_pre_scan restore_pose=0 reference_name="pose_pre_scan" />
+	</MOVERS>
+
+	# General filters
+	<FILTERS>
+		<Ddg name=filt_ddG translate_by=1000 scorefxn=sfx_hard_symm task_operations=nopack repack=1 repeats=1 threshold=0 relax_mover=min repack_bound=0 relax_bound=1 confidence=0 />
+		<SaveResfileToDisk name=save_resfile task_operations=init,ic,vrt,limitaro,rtns,near_histidines,only_RK_or_native designable_only=1 resfile_prefix="%%path%%" resfile_suffix="" resfile_general_property="NATRO" />
+
+	# GreedyOpt filters
+		<Ddg name=scan_ddG translate_by=1000 scorefxn=sfx_hard_symm task_operations=nopack repack=1 repeats=2 threshold=-10 relax_mover=min_repack_min repack_bound=0 relax_bound=1 confidence=1 />
+		<TaskAwareSASA name=scan_sasa designable_only=1 sc_only=1 upper_threshold=10 task_operations=diff2native />
+		<SymUnsatHbonds name=scan_uhb sym_dof_names=%%symdofs%% cutoff=1000 verbose=1 write2pdb=1 />
+		<ScoreType name=total_score scorefxn=sfx_hard_symm score_type=total_score threshold=0 confidence=0 />
+		<Mutations name=scan_mutations reference_name="pose_pre_scan" mutation_threshold=3 report_mutations=1 verbose=0 write2pdb=0 task_operations=full_bbi,rtns confidence=1 />
+		<Delta name=delta_scan_uhb upper=1 range=0.1 filter=scan_uhb reference_name="pose_pre_scan" confidence=1 />
+                <Delta name=delta_scan_ddG upper=1 range=10.0 filter=scan_ddG reference_name="pose_pre_scan" confidence=1 />
+		<Delta name=delta_e_scan upper=1 range=5.0 filter=total_score reference_name="pose_pre_scan" confidence=1 />
+		<Delta name=delta_e_combine upper=1 range=12.0 filter=total_score reference_name="pose_pre_scan" confidence=1 />
+                <CompoundStatement name=scan_uhb_sasa_check >
+			<AND filter_name=delta_e_scan />
+                        <AND filter_name=scan_sasa />
+                        <AND filter_name=delta_scan_uhb />
+                </CompoundStatement>
+		# Filter used during scanning stage of greedy_opt
+                <IfThenFilter name=scan_ddG_opt threshold=2.0 confidence=1>
+                        <IF testfilter=scan_uhb_sasa_check valuefilter=delta_scan_ddG weight=1 />
+                        <ELSE value=10 />
+                </IfThenFilter>
+		# Stopping condition for combining stage of greedy_opt
+                <CompoundStatement name=stop_condition_ddG_mutations invert=1 >
+			<AND filter_name=delta_e_combine />
+                        <AND filter_name=delta_scan_ddG />
+                        <AND filter_name=scan_mutations />
+                </CompoundStatement>
+	</FILTERS>
+
+	# GreedyOpt
+	<MOVERS>
+		<GreedyOptMutationMover name=his_scan task_operations=full_bbi,rtns,his_only,pgr,freeze_nat_his filter=scan_ddG_opt scorefxn=sfx_hard_symm relax_mover=min_repack_min sample_type=low stopping_condition=stop_condition_ddG_mutations stop_before_condition=1 skip_best_check=1 sample_type=low />
+	</MOVERS>
+
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+
+	<PROTOCOLS>
+		<Add mover_name=setup_for_symmetry />
+                <Add mover_name=min_repack_min />
+		<Add mover_name=store_task_pre_scan />
+		<Add mover_name=save_pose_pre_scan />
+		*Add mover_name=his_scan />
+		<Add mover_name=design_histidines />
+		<Add mover_name=store_task_post_scan />
+		<Add filter_name=save_resfile />
+		<Add mover_name=design_pos_charges />
+	</PROTOCOLS>
+
+</ROSETTASCRIPTS>
