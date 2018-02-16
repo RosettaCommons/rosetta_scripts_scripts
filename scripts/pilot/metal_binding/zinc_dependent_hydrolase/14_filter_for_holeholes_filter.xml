@@ -1,0 +1,28 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="bnv16_symm" weights="beta_nov16" symmetric="true"/>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <Index name="below_histidine" resnums="35A,36A,35B,36B,35C,36C,40A,40B,40C"/>
+    <Layer name="hbnet_core" select_core="true" core_cutoff="3.6" />
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+  </TASKOPERATIONS>
+  <FILTERS>
+    <Holes name="active_site_holes_normalize" threshold="1.8" residue_selector="below_histidine" normalize_per_atom="true" exclude_bb_atoms="true" confidence="0"/>
+    <Holes name="active_site_holes" threshold="1.8" residue_selector="below_histidine" normalize_per_atom="false" exclude_bb_atoms="true" confidence="0"/>
+    <Holes name="core_holes" threshold="1.8" residue_selector="hbnet_core" normalize_per_atom="true" confidence="0"/>
+    <Holes name="full_holes" threshold="1.8" confidence="0"/>
+  </FILTERS>
+  <MOVERS>
+  </MOVERS>
+  <APPLY_TO_POSE>
+  </APPLY_TO_POSE>
+  <PROTOCOLS>
+    <Add filter_name="active_site_holes_normalize"/>
+    <Add filter_name="active_site_holes"/>
+    <Add filter_name="core_holes"/>
+    <Add filter_name="full_holes"/>
+  </PROTOCOLS>
+  <OUTPUT/>
+</ROSETTASCRIPTS>

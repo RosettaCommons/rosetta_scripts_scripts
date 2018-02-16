@@ -1,0 +1,36 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="bnv_16_cst" weights="beta_nov16_cst"/>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <Index name="res39" resnums="39"/>
+    <Neighborhood name="near_res39" selector="res39" distance="10.0"/>
+    <ResidueName name="ligand" residue_name3="ZNO"/>
+    <Or name="active_site_res" selectors="res39,ligand"/>
+    <Not name="not_active_site_res" selector="active_site_res"/>
+    <And name="hbnet_shell" selectors="not_active_site_res,near_res39"/>
+    <Not name="not_hbnet_shell" selector="hbnet_shell"/>
+    <Layer name="core" select_core="true" select_boundary="false" select_surface="false"
+	              use_sidechain_neighbors="true" core_cutoff="3.6" surface_cutoff="2.0"/>
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS> 
+    <OperateOnResidueSubset name="fix_ligand" selector="ligand"> <PreventRepackingRLT/> </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="fix_active_site" selector="active_site_res"> <PreventRepackingRLT/> </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="no_design_or_pack" selector="not_hbnet_shell"> <PreventRepackingRLT/> </OperateOnResidueSubset>
+    <IncludeCurrent name="ic" />
+    
+  </TASKOPERATIONS>
+  <FILTERS>
+  </FILTERS>
+  <MOVERS>
+    <SwitchChainOrder name="take_monomer" chain_order="14"/>
+    <HBNet name="hbnet_ligand" scorefxn="bnv_16_cst"  hb_threshold="-0.5" min_network_size="2" max_unsat="1" write_network_pdbs="1" design_residues="STNQHYW" core_selector="core" start_selector="active_site_res" use_only_input_rot_for_start_res="True" task_operations="ic,fix_active_site"/>
+  </MOVERS>
+  <APPLY_TO_POSE>
+  </APPLY_TO_POSE>
+  <PROTOCOLS>
+    <Add mover_name="take_monomer"/>
+    <Add mover_name="hbnet_ligand"/>
+  </PROTOCOLS>
+  <OUTPUT />
+</ROSETTASCRIPTS>

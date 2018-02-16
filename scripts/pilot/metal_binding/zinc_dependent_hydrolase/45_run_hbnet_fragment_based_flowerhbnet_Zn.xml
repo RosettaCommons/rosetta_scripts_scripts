@@ -1,0 +1,56 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="bnv_2016_cst" weights="beta_nov16_cst" symmetric="1">
+      <Reweight scoretype="atom_pair_constraint" weight="1" />
+      <Reweight scoretype="dihedral_constraint" weight="1" />
+      <Reweight scoretype="angle_constraint" weight="1" />
+      <Reweight scoretype="coordinate_constraint" weight="1"/>
+      # Prevent too many Gly's from being inserted by adding aa_composition score term
+      <Reweight scoretype="aa_composition" weight="1.0" />
+    </ScoreFunction>
+    <ScoreFunction name="soft_cst" weights="/home/sboyken/weights/beta_soft_rep_cst.wts" symmetric="1">
+      <Reweight scoretype="atom_pair_constraint" weight="2" />
+      <Reweight scoretype="dihedral_constraint" weight="1" />
+      <Reweight scoretype="angle_constraint" weight="1" />
+      <Reweight scoretype="coordinate_constraint" weight="1"/>
+      <Reweight scoretype="aa_composition" weight="1.0" />
+    </ScoreFunction>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <Layer name="surface" select_surface="True" use_sidechain_neighbors="False"
+	   core_cutoff="20" surface_cutoff="40" />
+    <Layer name="boundary" select_boundary="True" use_sidechain_neighbors="False"
+	   core_cutoff="20" surface_cutoff="40" />
+    <Layer name="core" select_core="True" use_sidechain_neighbors="False"
+	   core_cutoff="20" surface_cutoff="40" />
+    <Not name="not_surface" selector="surface"/>
+    <ResidueName name="active_site_res" residue_name3="HID"/>
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+    <InitializeFromCommandline name="init" />
+    <IncludeCurrent name="current"/>
+    # Disallows CA-CB-CG-CD1 dihedrals close to zero (bad for design).
+    <LimitAromaChi2 name="limitarochi2" include_trp="1"/>
+    # Only allow amino acids with the correct phi-psi torsion bins in the loop.
+    <ConsensusLoopDesign name="disallow_nonnative_loop_sequences"
+			 include_adjacent_residues="true"
+			 enrichment_threshold="0.4"
+			 use_dssp="true" />
+    <OperateOnResidueSubset name="rtr_active_site" selector="active_site_res" >
+      <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+  </TASKOPERATIONS>
+  <MOVERS>
+    <SwitchChainOrder name="extract_asymm" chain_order="1"/>
+    <SetupForSymmetry name="setup_symmetry" definition="../C3_Z.sym" />
+    <HBNet name="hbnet_ligand" scorefxn="bnv_2016_cst"  hb_threshold="-0.5" min_network_size="2" max_unsat="3" write_network_pdbs="1" design_residues="STNQHYWKR" core_selector="core" start_selector="active_site_res"
+	   task_operations="current,init,limitarochi2,rtr_active_site" />
+    <ConstraintSetMover name="add_coord_his_cst" add_constraints="true" cst_file="../Zn_symm_38.cst"/>
+  </MOVERS>
+  <PROTOCOLS>
+    <Add mover="extract_asymm"/>
+    <Add mover="setup_symmetry"/>
+    <Add mover="add_coord_his_cst"/>
+    <Add mover="hbnet_ligand"/>
+  </PROTOCOLS>
+</ROSETTASCRIPTS>

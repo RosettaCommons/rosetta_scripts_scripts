@@ -66,7 +66,32 @@ scripts_to_be_validated = [
     "scripts/pilot/protein_design/membrane_design_3helical_tetramer/filter.xml",
     "scripts/pilot/protein_design/RGD_loop_remodeling/Hyak_scripts_blueprint_builder.xml",
     "scripts/pilot/protein_design/RGD_loop_remodeling/Hyak_scripts_blueprint_builder_unformatted.xml",
-    "scripts/pilot/protein_design/RGD_loop_remodeling/Hyak_scripts_blueprint_builder_fixed.xml"
+    "scripts/pilot/protein_design/RGD_loop_remodeling/Hyak_scripts_blueprint_builder_fixed.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/14_filter_for_holeholes_filter.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/21_remove_thsymm_design.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/17_strong_cst_NCS_relafrelax.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/22_design_w_zn_after_thr_removaZn_rb_min.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/12_close_looclose_loop.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/13_design_loosymm_design_loop.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/17_NCS_relafrelax.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/13_design_loosymm_design_loop_new.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/12_close_loosymm_design.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/09_minimize_matcheZn_rb_min.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/55_break_symmetrhbnet_only.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/05_symmetrize_matchechi_min_match.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/49_filter_parametric_bundleworst9mer_filter.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/22_design_w_zn_after_thr_removaNCS_design.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/36_new_scaffolds_from_remodel_filtering_steworst9mer_filter.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/35_NCS_design_fragment_flowerNCS_design.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/15_relax_w_zZn_rb_min.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/39_alternative_sitZn_cst_score.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/15_relax_w_zadd_zn.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/55_break_symmetrasymm_design.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/12_close_loosymm_design_after_loop.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/10_symmetric_desigsymm_design.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/05_symmetrize_matcheZn_rb_min.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/16_design_w_zNCS_design.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/30_script_for_HH_blueprinworst9mer_filter.xml"
 ]
 
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world

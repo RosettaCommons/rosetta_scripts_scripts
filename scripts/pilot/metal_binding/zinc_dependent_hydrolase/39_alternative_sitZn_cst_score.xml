@@ -1,0 +1,58 @@
+<ROSETTASCRIPTS>
+        <TASKOPERATIONS>
+          <InitializeFromCommandline name="init"/>
+          <LimitAromaChi2 name="limchi2"/>
+          <RestrictToRepacking name="repack_only"/>
+          <IncludeCurrent name="ic"/>
+          <DetectProteinLigandInterface name="dpli_cata" design="0" catres_interface="1" cut1="6.0" cut2="8.0" cut3="10.0" cut4="12.0"/>
+          <SetCatalyticResPackBehavior name="fixcat" fix_catalytic_aa="1"/> 
+        </TASKOPERATIONS>
+	<RESIDUE_SELECTORS>
+	</RESIDUE_SELECTORS>
+	<SCOREFXNS>
+          <ScoreFunction name="enzdes" weights="beta_nov16_cst">
+	    <Reweight scoretype="fa_rep" weight="0.0008"/>
+	    <Reweight scoretype="atom_pair_constraint" weight="1"/>
+	    <Reweight scoretype="angle_constraint" weight="1"/>
+	    <Reweight scoretype="dihedral_constraint" weight="1"/>
+	  </ScoreFunction>
+        </SCOREFXNS>
+
+      <FILTERS>
+
+        <EnzScore name="cst_score" scorefxn="enzdes" whole_pose="1" score_type="cstE" energy_cutoff="20.0" confidence="0"/>
+
+      </FILTERS>
+
+    <MOVERS>
+      <RigidBodyTransMover name="rb_transform" jump="3" distance="0.5" x="0.0" y="0.0" z="0.5" />
+      <ConstraintSetMover name="addcst" add_constraints="true" cst_file="./Zn_3_min2.cst"/>
+      <Translate name="move_ligand" distribution="gaussian" chain="D" angstroms="2" cycles="10" />
+      <MinMover name="rb_body_min" scorefxn="enzdes" chi="0" bb="0" jump="3" cartesian="false" type="lbfgs_armijo_nonmonotone" tolerance="0.01" max_iter="200" >
+	<MoveMap>
+	  <Chain number="1" chi="0" bb="0"/>
+	  <Chain number="2" chi="0" bb="0"/>
+	  <Chain number="3" chi="0" bb="0"/>
+	  <Jump number="1" setting="0"/>
+	  <Jump number="2" setting="0"/>
+	  <Jump number="3" setting="1"/>
+	</MoveMap>
+      </MinMover>
+      <ParsedProtocol name="translate_rb_body_min">
+	<Add mover="rb_transform"/>
+	<Add mover="rb_body_min"/>
+      </ParsedProtocol>
+      <GenericMonteCarlo name="gmc_cstopt_catalytic" mover_name="translate_rb_body_min" filter_name="cst_score" trials="20" sample_type="low" temperature="3" drift="1"/>
+      <AddChain name="add_zn" file_name="./Zn_OH.pdb" new_chain="1" scorefxn="enzdes" random_access="0" swap_chain_number="0"/>
+    </MOVERS>
+    
+
+    <PROTOCOLS>
+      <!--Add mover="add_zn"/-->
+      <Add mover="addcst"/>
+      <!--Add mover="gmc_cstopt_catalytic"/-->
+      <Add filter="cst_score"/>
+   </PROTOCOLS>
+
+
+</ROSETTASCRIPTS>

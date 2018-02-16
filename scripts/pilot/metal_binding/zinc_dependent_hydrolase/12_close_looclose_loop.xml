@@ -1,0 +1,136 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="hard" weights="beta_nov16"/>
+    <ScoreFunction name="hard_symm" weights="beta_nov16" symmetric="true"/>
+    <ScoreFunction name="hard_cst_aa" weights="beta_nov16_cst" symmetric="true">
+      <Reweight scoretype="aa_composition" weight="1.0"/>
+      <Reweight scoretype="coordinate_constraint" weight="10.0"/>
+      <Set aa_composition_setup_file="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/disfavor_polyala.comp" />
+    </ScoreFunction>
+    <ScoreFunction name="hard_aa" weights="beta_nov16" symmetric="true">
+      <Reweight scoretype="aa_composition" weight="1.0"/>
+      <Set aa_composition_setup_file="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/disfavor_polyala.comp" />
+    </ScoreFunction>
+    <ScoreFunction name="ramp_rep1" weights="beta_nov16_cst" symmetric="1">
+      <Reweight scoretype="fa_rep" weight="0.0088"/>
+    </ScoreFunction>
+    <ScoreFunction name="ramp_rep2" weights="beta_nov16_cst" symmetric="1">
+      <Reweight scoretype="fa_rep" weight="0.11"/>
+    </ScoreFunction>
+    <ScoreFunction name="ramp_rep3" weights="beta_nov16_cst" symmetric="1">
+      <Reweight scoretype="fa_rep" weight="0.22"/>
+    </ScoreFunction>
+    <ScoreFunction name="ramp_rep4" weights="beta_nov16_cst" symmetric="1"/>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+     <ResidueName name="sele_VAL" residue_name3="VAL"/>
+     <SecondaryStructure name="loops" ss="L"/>
+     <Index name="coordinating_his" resnums="39"/>
+     <Not name="not_coordinating_his" selector="coordinating_his"/>
+     <Index name="variable_helix_residues_w_HID" resnums="21-73,112-164,203-255"/>
+     <And name="variable_helix_residues" selectors="variable_helix_residues_w_HID,not_coordinating_his"/>
+     <Not name="invariant_residues" selector="variable_helix_residues"/>
+     <Layer name="core" select_core="true" select_boundary="false" select_surface="false"
+	    use_sidechain_neighbors="true" core_cutoff="3.6" surface_cutoff="2.0"/>
+     <And name="variable_helix_core" selectors="variable_helix_residues,core"/>
+     <Layer name="boundary" select_core="false" select_boundary="true" select_surface="false"
+	    use_sidechain_neighbors="true" core_cutoff="3.6" surface_cutoff="2.0"/>
+     <And name="variable_helix_boundary" selectors="variable_helix_residues,boundary"/>
+     <Layer name="surface" select_core="false" select_boundary="false" select_surface="true"
+	    use_sidechain_neighbors="true" core_cutoff="3.6" surface_cutoff="2.0"/>
+     <And name="variable_helix_surface" selectors="variable_helix_residues,surface"/>
+         <Chain name="dummy_ligand" chains="C,F,I"/>
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+     <InitializeFromCommandline name="init"/>
+     <RestrictToRepacking name="restrict"/>
+     <IncludeCurrent name="keep_curr"/>
+     
+     <ReadResfile name="readresf" filename="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/resfileNIL.txt"/>
+     <ReadResfile name="readresf2" filename="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/resfileNIL2.txt"/>
+     <ConsensusLoopDesign name="disallow_non_abego_aas"/>
+     <ExtraRotamersGeneric name="ex1_2"
+			   ex1="1" ex2="1" ex3="0" ex4="0"
+			   ex1aro="0" ex2aro="0" ex1aro_exposed="0" ex2aro_exposed="0"
+			   ex1_sample_level="1" ex2_sample_level="1" ex3_sample_level="0" ex4_sample_level="0"
+			   ex1aro_sample_level="1" ex2aro_sample_level="1" ex1aro_exposed_sample_level="0" ex2aro_exposed_sample_level="0"/>
+     <LimitAromaChi2 name="limitarochi2" include_trp="1"/>
+     <LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="3.6" use_symmetry="true">
+       <core>
+	 <Helix append="MSAQN" />
+	 <Helix exclude="G" />
+       </core>
+       <boundary>
+	 <Helix exclude="DG" />
+       </boundary>
+     </LayerDesign>
+     <OperateOnResidueSubset name="design_core" selector="variable_helix_core"><RestrictAbsentCanonicalAASRLT aas="AFILVWYMST"/></OperateOnResidueSubset>
+     <OperateOnResidueSubset name="design_boundary" selector="variable_helix_boundary"><RestrictAbsentCanonicalAASRLT aas="AEIKLQRSTVWY"/></OperateOnResidueSubset>
+     <OperateOnResidueSubset name="design_surface" selector="variable_helix_surface"><RestrictAbsentCanonicalAASRLT aas="DEHKNQRST"/></OperateOnResidueSubset>
+     <OperateOnResidueSubset name="repack_invariant" selector="invariant_residues"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+     <OperateOnResidueSubset name="fix_coord_his" selector="coordinating_his"><PreventRepackingRLT/></OperateOnResidueSubset>
+     <OperateOnResidueSubset name="fix_ligand" selector="dummy_ligand"><PreventRepackingRLT/></OperateOnResidueSubset>
+  </TASKOPERATIONS>
+  <FILTERS>
+     <SSPrediction name="psipred_conf" confidence="1" cmd="/work/lpl15/bin/psipred2.5/runpsipred_single" use_probability="True" mismatch_probability="True" use_svm="0" threshold="0.10"/>
+     <ResidueCount name="nres" confidence="1" />
+     <ScoreType name="total_score" scorefxn="hard_aa" score_type="total_score" threshold="-600" confidence="1" />
+     <CalculatorFilter name="score_norm" confidence="0" equation="SCORE/NRES" threshold="-3.0" >
+       <VAR name="SCORE" filter_name="total_score"/>
+       <VAR name="NRES" filter_name="nres" />
+     </CalculatorFilter>
+     <CalculatorFilter name="score_norm_conf" confidence="1" equation="SCORE/NRES" threshold="-3.0" >
+       <VAR name="SCORE" filter_name="total_score"/>
+       <VAR name="NRES" filter_name="nres" />
+     </CalculatorFilter>
+     <CalculatorFilter name="score_norm_conf2" confidence="1" equation="SCORE/NRES" threshold="-3.5" >
+       <VAR name="SCORE" filter_name="total_score"/>
+       <VAR name="NRES" filter_name="nres" />
+     </CalculatorFilter>
+     
+  </FILTERS>
+  <MOVERS>
+     <MakePolyX name="polyA" aa="VAL" keep_pro="0"  keep_gly="0" keep_disulfide_cys="0"/>
+     <ConnectChainsMover name="connectbyloop" chain_connections="[A+B]" loopLengthRange="4,9"/>
+     <DetectSymmetry  name="detect_symmetry" subunit_tolerance="0.05" plane_tolerance="0.001"/>
+     <SetupForSymmetry name="setup_symm" definition="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/C3_Z.sym"/>
+     <ConnectChainsMover name="closer" chain_connections="[A+B]" loopLengthRange="2,5"/>
+     <PackRotamersMover name="only_design_loops" scorefxn="hard_symm" task_operations="layer_all"/>
+     <SymPackRotamersMover name="pack" scorefxn="hard_cst_aa" task_operations="layer_all,readresf"/>
+     <SymPackRotamersMover name="pack_binding_half" scorefxn="hard_cst_aa" task_operations="design_core,design_boundary,design_surface,fix_coord_his,fix_ligand,readresf2,limitarochi2"/>
+     <FastRelax name="frelax" scorefxn="hard_cst_aa" repeats="1" task_operations="fix_coord_his,limitarochi2"/>
+     <SymMinMover name="min" scorefxn="hard_cst_aa" bb="1" chi="1" jump="ALL">
+     </SymMinMover>
+     <ParsedProtocol name="combo_min">
+       <Add mover_name="pack_binding_half"/>
+       <Add mover_name="min"/>
+     </ParsedProtocol>
+     <SymPackRotamersMover name="repack1" scorefxn="ramp_rep1" task_operations="init,readresf,keep_curr"/>
+     <SymPackRotamersMover name="repack2" scorefxn="ramp_rep2" task_operations="init,readresf,keep_curr"/>
+     <SymPackRotamersMover name="repack3" scorefxn="ramp_rep3" task_operations="init,readresf,keep_curr"/>
+     <SymPackRotamersMover name="repack4" scorefxn="ramp_rep4" task_operations="init,readresf,keep_curr"/>
+     <SymMinMover name="min1" scorefxn="ramp_rep1" type="lbfgs_armijo_nonmonotone" tolerance="0.01" bb="1" chi="1" jump="ALL"/>
+     <SymMinMover name="min2" scorefxn="ramp_rep2" type="lbfgs_armijo_nonmonotone" tolerance="0.01" bb="1" chi="1" jump="ALL"/>
+     <SymMinMover name="min3" scorefxn="ramp_rep3" type="lbfgs_armijo_nonmonotone" tolerance="0.01" bb="1" chi="1" jump="ALL"/>
+     <SymMinMover name="min4" scorefxn="ramp_rep4" type="lbfgs_armijo_nonmonotone" tolerance="0.00001" bb="1" chi="1" jump="ALL"/>
+     <ParsedProtocol name="ramp_rep_cycle">
+       <Add mover="repack1"/>
+       <Add mover="min1"/>
+       <Add mover="repack2"/>
+       <Add mover="min2"/>
+       <Add mover="repack3"/>
+       <Add mover="min3"/>
+       <Add mover="repack4"/>
+       <Add mover="min4"/>
+     </ParsedProtocol>
+     <SwitchChainOrder name="take_chain_A_B" chain_order="12"/>
+     <ConstraintSetMover name="add_coord_his_cst" add_constraints="true" cst_file="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/Zn_symm2.cst"/>
+  </MOVERS>
+  <PROTOCOLS>
+     <Add mover="take_chain_A_B"/>
+     <Add mover="closer"/>
+     <Add mover="setup_symm"/>
+  </PROTOCOLS>
+  <OUTPUT scorefxn="hard"/>
+</ROSETTASCRIPTS>
+     

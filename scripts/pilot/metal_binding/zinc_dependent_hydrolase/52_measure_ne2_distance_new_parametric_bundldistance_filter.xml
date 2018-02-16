@@ -1,0 +1,27 @@
+<ROSETTASCRIPTS>
+    <SCOREFXNS>
+        <ScoreFunction name="scorefxn1" weights="beta_cst"> 
+	  <Reweight scoretype="atom_pair_constraint" weight="1.0"/>
+	</ScoreFunction>
+
+    </SCOREFXNS>
+    <RESIDUE_SELECTORS>
+    
+    </RESIDUE_SELECTORS>
+    <TASKOPERATIONS>
+    
+    </TASKOPERATIONS>
+    <FILTERS>
+      <ScoreType name="scoretype" scorefxn="scorefxn1" score_type="fa_rep" threshold="0.0" confidence="0"/>
+      <AtomicDistance name="ne2_to_ne2" residue1="%%resA%%" atomname1="NE2" residue2="%%resB%%" atomname2="NE2" distance="5.1" confidence="0"/>
+    </FILTERS>
+    <MOVERS>
+         
+    </MOVERS>
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+	<Add filter="ne2_to_ne2"/>
+    </PROTOCOLS>
+    <OUTPUT scorefxn="scorefxn1"/>
+</ROSETTASCRIPTS>

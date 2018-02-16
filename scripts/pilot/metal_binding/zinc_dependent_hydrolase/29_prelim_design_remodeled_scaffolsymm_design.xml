@@ -1,0 +1,104 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="hard" weights="beta_nov16"/>
+    <ScoreFunction name="hard_symm" weights="beta_nov16" symmetric="true"/>
+    <ScoreFunction name="hard_cst_aa" weights="beta_nov16_cst" symmetric="true">
+      <Reweight scoretype="aa_composition" weight="1.0"/>
+    </ScoreFunction>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <Index name="variable_region" resnums="%%var_region%%"/>
+    <Not name="invariant_region" selector="variable_region"/>
+    <ResidueName name="sele_VAL" residue_name3="VAL"/>
+    <SecondaryStructure name="loops" ss="L"/>
+    <SecondaryStructure name="helix" ss="H"/>
+    <Chain name="chA" chains="A"/>
+    <And name="new_loop" selectors="loops,variable_region"/>
+    <And name="new_loop_A" selectors="new_loop,chA"/>
+    <And name="variable_helix_residues" selectors="variable_region,helix"/>
+    <Layer name="core" select_core="true" select_boundary="false" select_surface="false"
+	   use_sidechain_neighbors="true" core_cutoff="3.6" surface_cutoff="2.0"/>
+    <And name="variable_helix_core" selectors="variable_helix_residues,core"/>
+    <Layer name="boundary" select_core="false" select_boundary="true" select_surface="false"
+	   use_sidechain_neighbors="true" core_cutoff="3.6" surface_cutoff="2.0"/>
+    <And name="variable_helix_boundary" selectors="variable_helix_residues,boundary"/>
+    <Layer name="surface" select_core="false" select_boundary="false" select_surface="true"
+	   use_sidechain_neighbors="true" core_cutoff="3.6" surface_cutoff="2.0"/>
+    <And name="variable_helix_surface" selectors="variable_helix_residues,surface"/>
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+    <InitializeFromCommandline name="init" />
+    <IncludeCurrent name="ic" />
+    <ConsensusLoopDesign name="disallow_non_abego_aas"/>
+    <ExtraRotamersGeneric name="ex1_2"
+			  ex1="1" ex2="1" ex3="0" ex4="0"
+			  ex1aro="0" ex2aro="0" ex1aro_exposed="0" ex2aro_exposed="0"
+			  ex1_sample_level="1" ex2_sample_level="1" ex3_sample_level="0" ex4_sample_level="0"
+			  ex1aro_sample_level="1" ex2aro_sample_level="1" ex1aro_exposed_sample_level="0" ex2aro_exposed_sample_level="0"/>
+    <LimitAromaChi2 name="limitarochi2" include_trp="1"/>
+    <LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="3.6" use_symmetry="true">
+      <core>
+	<Helix append="MSAQN" />
+	<Helix exclude="G" />
+      </core>
+      <boundary>
+	<Helix exclude="DG" />
+      </boundary>
+    </LayerDesign>
+    <OperateOnResidueSubset name="design_core" selector="variable_helix_core"><RestrictAbsentCanonicalAASRLT aas="AFILVWYMQ"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_boundary" selector="variable_helix_boundary"><RestrictAbsentCanonicalAASRLT aas="AEIKLQRSTVWY"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_surface" selector="variable_helix_surface"><RestrictAbsentCanonicalAASRLT aas="DEHKNQRST"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="repack_invariant" selector="invariant_region"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="repack_variant" selector="variable_region"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="fix_invariant_region" selector="invariant_region"><PreventRepackingRLT/></OperateOnResidueSubset>
+  
+  </TASKOPERATIONS>
+  <FILTERS>
+    <SSPrediction name="psipred_conf" confidence="1" cmd="/work/lpl15/bin/psipred2.5/runpsipred_single" use_probability="1" use_svm="false"/>
+    <SSPrediction name="psipred" confidence="0" cmd="/work/lpl15/bin/psipred2.5/runpsipred_single" use_probability="1" use_svm="false"/>
+    <PackStat name="packstat" threshold="0.50" chain="0" repeats="1" confidence="0"/>
+    <SSShapeComplementarity name="ss_sc" verbose="0" loops="0" helices="1" confidence="0" min_sc="0.65"/>
+    <AverageDegree name="ave_deg" threshold="0" distance_threshold="10.0" task_operations="repack_variant,fix_invariant_region" confidence="0"/>
+    <ResidueCount name="nres" confidence="1" />
+    <ScoreType name="total_score" scorefxn="hard_cst_aa" score_type="total_score" threshold="0" confidence="1" />
+    <CalculatorFilter name="score_norm" confidence="0" equation="SCORE/NRES" threshold="3" >
+      <VAR name="SCORE" filter_name="total_score"/>
+      <VAR name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+  </FILTERS>
+  <MOVERS>
+    <MakePolyX name="polyA" aa="VAL" keep_pro="0"  keep_gly="0" keep_disulfide_cys="0"/>
+    <DetectSymmetry  name="detect_symmetry" subunit_tolerance="0.05" plane_tolerance="0.001"/>
+    <SetupForSymmetry name="setup_symm" definition="../C3_Z.sym"/>
+
+    <SymPackRotamersMover name="pack_all" scorefxn="hard_cst_aa" task_operations="init,design_core,design_boundary,design_surface,repack_invariant,disallow_non_abego_aas,ic,limitarochi2"/>
+    <FastRelax name="frelax" scorefxn="hard_cst_aa" repeats="1"/>
+    <SymMinMover name="min" scorefxn="hard_cst_aa" bb="0" chi="1" jump="0">
+    </SymMinMover>
+    <ParsedProtocol name="combo_min">
+      <Add mover_name="pack_all"/>
+      <Add mover_name="min"/>
+    </ParsedProtocol>
+    <GenericSimulatedAnnealer name="refine_all" mover_name="combo_min" trials="10"
+			      eval_period="10" history="10" bolz_rank="1" recover_low="1" preapply="0" drift="1" checkpoint_file="mc" keep_checkpoint_file="0" filter_name="score_norm" temperature="0.02" sample_type="low" >
+      <Filters>
+	<AND filter_name="psipred_conf" temperature="0.0005" />
+      </Filters>
+    </GenericSimulatedAnnealer>
+    <SwitchChainOrder name="take_chain_A" chain_order="1"/>
+    <AddHelixSequenceConstraints name="addcomps"/>
+  </MOVERS>
+  <PROTOCOLS>
+    <Add mover="take_chain_A"/>
+    <Add mover="setup_symm"/>
+    <Add mover="addcomps"/>
+    <Add mover="pack_all"/>
+    <Add mover="refine_all"/>
+    <Add filter="psipred"/>
+    <Add filter="score_norm"/>
+    <Add filter="ss_sc"/>
+    <Add filter="packstat"/>
+    <Add filter="ave_deg"/>
+  </PROTOCOLS>
+  <OUTPUT scorefxn="hard"/>
+</ROSETTASCRIPTS>

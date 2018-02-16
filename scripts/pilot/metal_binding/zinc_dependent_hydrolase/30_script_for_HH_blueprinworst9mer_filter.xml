@@ -1,0 +1,37 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="bnv_2016" weights="beta_nov16"/>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <ResidueName name="Cterm_ARG" residue_names="ARG:CtermProteinFull" />
+    <PrimarySequenceNeighborhood name="Cterm_stub" selector="Cterm_ARG" lower="15" upper="0" />
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+  </TASKOPERATIONS>
+  <MOVERS>
+    <!--KeepRegionMover name="chop_chop" start_res_num="1" end_res_num="%%endres%%"/-->
+    <DeleteRegionMover name="chop_stub" residue_selector="Cterm_stub"/>
+    <SwitchChainOrder name="get_chainA" chain_order="1"/>
+  </MOVERS>
+  <FILTERS>
+    <worst9mer name="worst9mer_a" threshold="0.4" confidence="1"/>
+    <worst9mer name="worst9mer_h" threshold="0.13" only_helices="true" confidence="1"/>
+    <MoveBeforeFilter name="worst9mer_a_new_region" mover_name="chop_stub"
+		      filter_name="worst9mer_a" confidence="0" />
+    <MoveBeforeFilter name="worst9mer_h_new_region" mover_name="chop_stub"
+		      filter_name="worst9mer_h" confidence="0" />
+  </FILTERS>
+  <MOVERS>
+  </MOVERS>
+  <APPLY_TO_POSE>
+  </APPLY_TO_POSE>
+  <PROTOCOLS>
+    <Add mover_name="get_chainA"/>
+    <Add mover_name="chop_stub"/>
+    <!--Add mover_name="chop_chop"/-->
+    <!--Add filter_name="worst9mer_a_new_region"/-->
+    <!--Add filter_name="worst9mer_h_new_region"/-->
+  </PROTOCOLS>
+ <OUTPUT />
+</ROSETTASCRIPTS>
+

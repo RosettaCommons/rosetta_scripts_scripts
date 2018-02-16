@@ -1,0 +1,167 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="soft_cst" weights="/home/sboyken/weights/beta_soft_rep_cst.wts" symmetric="1">
+      <Reweight scoretype="aa_composition" weight="1.0" />
+    </ScoreFunction>
+    <ScoreFunction name="hard" weights="beta_nov16"/>
+    <ScoreFunction name="hard_symm" weights="beta_nov16" symmetric="true"/>
+    <ScoreFunction name="hard_cst_aa" weights="beta_nov16_cst" symmetric="true">
+      <Reweight scoretype="aa_composition" weight="1.0"/>
+      <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+    </ScoreFunction>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <ResidueName name="sele_VAL" residue_name3="VAL"/>
+    <Index name="orig_hbnet" resnums="10,13"/>
+    <Index name="new_residues" resnums="%%new_res%%"/>
+    <SecondaryStructure name="loops" ss="L"/>
+    <SecondaryStructure name="helix" ss="H"/>
+    <Chain name="chA" chains="A"/>
+    <And name="new_loop" selectors="loops,new_residues"/>
+    <PrimarySequenceNeighborhood name="around_loops" selector="new_loop" lower="1" upper="1"/>
+    <Not name="not_around_loops" selector="around_loops"/>
+    <Index name="coordinating_his" resnums="38"/>
+    <Not name="not_coordinating_his" selector="coordinating_his"/>
+    <Neighborhood name="histidine_interface" selector="coordinating_his" distance="6.8"/>
+    <And name="helical_residues_in_interface" selectors="helix,coordinating_his"/>
+    <!--ResidueName name="coordinating_his" residue_name3="HID"/-->
+    <Not name="not_coordinating_his" selector="coordinating_his"/>
+    <And name="variable_helix_residues" selectors="new_residues,helix,not_around_loops"/>
+    <Not name="invariant_residues" selector="new_residues"/>
+    <Layer name="core" select_core="true" select_boundary="false" select_surface="false"
+	   use_sidechain_neighbors="true" core_cutoff="3.6" surface_cutoff="2.0"/>
+    <And name="variable_helix_core" selectors="variable_helix_residues,core"/>
+    <Layer name="core_SASA" select_core="true" select_boundary="false" select_surface="false"
+           use_sidechain_neighbors="false" core_cutoff="35"/>
+    <And name="variable_helix_core_SASA" selectors="variable_helix_residues,core_SASA"/>
+    <Layer name="boundary" select_core="false" select_boundary="true" select_surface="false"
+	   use_sidechain_neighbors="true" core_cutoff="3.6" surface_cutoff="2.0"/>
+    <Layer name="boundary_SASA" select_core="false" select_boundary="true" select_surface="false"
+	   use_sidechain_neighbors="false" core_cutoff="32" surface_cutoff="48"/>
+    <And name="variable_helix_boundary_SASA" selectors="variable_helix_residues,boundary_SASA"/>
+    <And name="variable_helix_boundary" selectors="variable_helix_residues,boundary"/>
+    <Layer name="surface" select_core="false" select_boundary="false" select_surface="true"
+	   use_sidechain_neighbors="true" core_cutoff="3.6" surface_cutoff="2.0"/>
+    <And name="variable_helix_surface" selectors="variable_helix_residues,surface"/>
+    <Layer name="surface_SASA" select_core="false" select_boundary="false" select_surface="true"
+	   use_sidechain_neighbors="false" core_cutoff="35" surface_cutoff="48"/>
+    <And name="variable_helix_surface_SASA" selectors="variable_helix_residues,surface_SASA"/>
+    <Layer name="pick_core_or_boundary" select_core="true" select_boundary="true" select_surface="0"
+	   use_sidechain_neighbors="true" core_cutoff="3.6" surface_cutoff="2.0"/>
+    <Layer name="pick_core_or_boundary_SASA" select_core="true" select_boundary="true" select_surface="false"
+	   core_cutoff="35" surface_cutoff="45" />
+    <And name="core_or_boundary_not_coord_his" selectors="pick_core_or_boundary,not_coordinating_his"/>
+    <ResidueName name="ala_met_phe" residue_name3="ALA,MET,PHE"/>
+    <ResidueName name="polar_AAs" residue_name3="GLU,SER,THR,GLN,LYS,ARG"/>
+    <And name="polar_in_core_or_boundary" selectors="polar_AAs,variable_helix_residues,pick_core_or_boundary"/>
+    <Or name="design_shell_fdesign" selectors="polar_in_core_or_boundary,ala_met_phe,helical_residues_in_interface"/>
+    <Not name="not_design_shell_fdesign" selector="design_shell_fdesign"/>
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+    <InitializeFromCommandline name="init" />
+    <IncludeCurrent name="current"/>
+    <ConsensusLoopDesign name="disallow_non_abego_aas" include_adjacent_residues="1"  enrichment_threshold="0.3" residue_selector="around_loops"/>
+    <ExtraRotamersGeneric name="ex1_2"
+			  ex1="1" ex2="1" ex3="0" ex4="0"
+			  ex1aro="0" ex2aro="0" ex1aro_exposed="0" ex2aro_exposed="0"
+			  ex1_sample_level="1" ex2_sample_level="1" ex3_sample_level="0" ex4_sample_level="0"
+			  ex1aro_sample_level="1" ex2aro_sample_level="1" ex1aro_exposed_sample_level="0" ex2aro_exposed_sample_level="0"/>
+    <LimitAromaChi2 name="limitarochi2" include_trp="1"/>
+    <LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="3.6" use_symmetry="true">
+      <core>
+	<Helix append="MSAQN" />
+	<Helix exclude="G" />
+      </core>
+      <boundary>
+	<Helix exclude="DG" />
+      </boundary>
+    </LayerDesign>
+    <OperateOnResidueSubset name="only_loops_designable" selector="not_around_loops">
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_interface" selector="helical_residues_in_interface"><RestrictAbsentCanonicalAASRLT aas="AEIKLMQRSTVWY"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_core" selector="variable_helix_core"><RestrictAbsentCanonicalAASRLT aas="AFILVM"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_boundary" selector="variable_helix_boundary"><RestrictAbsentCanonicalAASRLT aas="AEIKLMQRSTVWY"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_surface" selector="variable_helix_surface"><RestrictAbsentCanonicalAASRLT aas="DEHKNQRSTY"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="repack_invariant" selector="invariant_residues"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="fix_coord_his" selector="coordinating_his"><PreventRepackingRLT/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="fix_orig_hbnet" selector="orig_hbnet"><PreventRepackingRLT/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_core_SASA" selector="variable_helix_core_SASA"><RestrictAbsentCanonicalAASRLT aas="AFILVM"/></OperateOnResidueSubset>>
+    <OperateOnResidueSubset name="design_boundary_SASA" selector="variable_helix_boundary_SASA"><RestrictAbsentCanonicalAASRLT aas="AEIKLMQRSTVWY"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_surface_SASA" selector="variable_helix_surface_SASA"><RestrictAbsentCanonicalAASRLT aas="DEHKNQRSTY"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="repack_core_SASA" selector="variable_helix_core_SASA"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="repack_boundary_SASA" selector="variable_helix_boundary_SASA"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="repack_surface_SASA" selector="variable_helix_surface_SASA"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="redesign_ala_met_phe" selector="ala_met_phe"><RestrictAbsentCanonicalAASRLT aas="AFILVM"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="redesign_polar_aas_in_core_or_boundary" selector="polar_in_core_or_boundary"><RestrictAbsentCanonicalAASRLT aas="AFILQVMY"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="repack_non_design_shell" selector="not_design_shell_fdesign"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+  </TASKOPERATIONS>
+  <FILTERS>
+    <SSPrediction name="psipred_conf" confidence="1" cmd="/work/lpl15/bin/psipred2.5/runpsipred_single" use_probability="1" mismatch_probability="1" use_svm="false"/>
+    <SSPrediction name="psipred" confidence="0" cmd="/work/lpl15/bin/psipred2.5/runpsipred_single" use_probability="1" mismatch_probability="1" use_svm="false"/>
+    <ResidueCount name="nres" confidence="0" />
+    <ScoreType name="total_score" scorefxn="hard_cst_aa" score_type="total_score" threshold="0" confidence="0" />
+    <CalculatorFilter name="score_norm" confidence="0" equation="SCORE/NRES" threshold="3" >
+      <VAR name="SCORE" filter_name="total_score"/>
+      <VAR name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+    <SSShapeComplementarity name="SS_SC_confident" verbose="false" loops="true" helices="true" min_sc="0.60" confidence="1.0" />
+    <BuriedUnsatHbonds3 name="new_buns_sc_heavy_confident" scorefxn="hard" cutoff="0" use_reporter_behavior="true" report_sc_heavy_atom_unsats="true"
+			print_out_info_to_pdb="true" ignore_surface_res="true" residue_surface_cutoff="20.0" ignore_bb_heavy_unsats="true" confidence="1" residue_selector="core_or_boundary_not_coord_his"/>
+  </FILTERS>
+  <MOVERS>
+    <MakePolyX name="polyA" aa="VAL" keep_pro="0"  keep_gly="0" keep_disulfide_cys="0"/>
+    <AddHelixSequenceConstraints name="add_helix_comps" />
+    <ClearCompositionConstraintsMover name="clear_aa_comp_cst" />
+    <AddConstraintsToCurrentConformationMover name="add_CA_cst" use_distance_cst="0" coord_dev="2.0" CA_only="true" residue_selector="helix" />
+    <DetectSymmetry  name="detect_symmetry" subunit_tolerance="0.05" plane_tolerance="0.001"/>
+    <SetupForSymmetry name="setup_symm" definition="./C3_Z.sym"/>
+    <PackRotamersMover name="only_design_loops" scorefxn="hard_symm" task_operations="only_loops_designable"/>
+    <SymPackRotamersMover name="pack" scorefxn="hard_cst_aa" task_operations="layer_all,init"/>
+    <SymPackRotamersMover name="pack_binding_half" scorefxn="hard_cst_aa" task_operations="design_interface,design_core,design_boundary,design_surface,fix_coord_his,repack_invariant,limitarochi2,init,disallow_non_abego_aas,fix_orig_hbnet"/>
+    <SymPackRotamersMover name="soft_pack_binding_half" scorefxn="soft_cst" task_operations="design_interface,design_core,design_boundary,design_surface,fix_coord_his,repack_invariant,limitarochi2,init,disallow_non_abego_aas,fix_orig_hbnet,ex1_2"/>
+    <SymPackRotamersMover name="hard_pack_core" scorefxn="hard_cst_aa"
+			  task_operations="design_interface,design_core_SASA,repack_boundary_SASA,repack_surface_SASA,repack_invariant,limitarochi2,init,current,disallow_non_abego_aas,fix_orig_hbnet,ex1_2"/>
+    <SymPackRotamersMover name="hard_pack_boundary" scorefxn="hard_cst_aa"
+			  task_operations="design_interface,repack_core_SASA,design_boundary_SASA,repack_surface_SASA,repack_invariant,limitarochi2,init,current,disallow_non_abego_aas,fix_orig_hbnet,ex1_2"/>
+    <SymPackRotamersMover name="hard_pack_surface" scorefxn="hard_cst_aa"
+			  task_operations="design_interface,repack_core_SASA,repack_boundary_SASA,design_surface_SASA,repack_invariant,fix_coord_his,limitarochi2,init,current,disallow_non_abego_aas,fix_orig_hbnet,ex1_2"/>
+    <FastDesign name="fdesign_1" scorefxn="hard_cst_aa" repeats="1"
+		task_operations="design_interface,redesign_ala_met_phe,redesign_polar_aas_in_core_or_boundary,repack_non_design_shell,current,disallow_non_abego_aas,fix_orig_hbnet,ex1_2,fix_coord_his"/>
+    <FastRelax name="frelax" scorefxn="hard_cst_aa" repeats="1"/>
+    <SymMinMover name="chi_min" scorefxn="hard_cst_aa" chi="1" bb="0" jump="0"/>
+    <SymMinMover name="min" scorefxn="hard_cst_aa" bb="1" chi="1" jump="ALL"/>
+    
+    <ParsedProtocol name="combo_min">
+      <Add mover_name="pack_binding_half"/>
+      <Add mover_name="min"/>
+    </ParsedProtocol>
+    <GenericMonteCarlo  name="refine_all" mover_name="fdesign_1" trials="5" recover_low="1" preapply="0" drift="1" filter_name="new_buns_sc_heavy_confident" sample_type="low" >
+      <Filters>
+	<AND filter_name="psipred_conf" temperature="0.05" sample_type="low"/>
+	<AND filter_name="SS_SC_confident" temperature="0.05" sample_type="high"/>
+      </Filters>
+    </GenericMonteCarlo >
+    <SwitchChainOrder name="take_chain_A" chain_order="1"/>
+    <ConstraintSetMover name="add_coord_his_cst" add_constraints="true" cst_file="./Zn_symm_38.cst"/>
+    <AddCompositionConstraintMover name="add_comp_file_SC" filename="./bundle_constraint.comp" selector="pick_core_or_boundary" />
+    
+  </MOVERS>
+  <PROTOCOLS>
+    <Add mover="take_chain_A"/>
+    <Add mover="setup_symm"/>
+    <Add mover="add_coord_his_cst"/>
+    <Add mover="add_helix_comps"/>
+    <Add mover="soft_pack_binding_half"/>
+    <Add mover="chi_min"/>
+    <!--Add mover="add_comp_file_SC"/-->
+    <Add mover="hard_pack_core"/>
+    <Add mover="hard_pack_boundary"/>
+    <Add mover="chi_min"/>
+    <Add mover="add_CA_cst"/>
+    <!--Add mover="fdesign_1"/-->
+    <!--Add mover="hard_pack_surface"/-->
+    <Add mover="refine_all"/>
+  </PROTOCOLS>
+  <OUTPUT scorefxn="hard"/>
+</ROSETTASCRIPTS>

@@ -1,0 +1,180 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="hard_cst" weights="beta_nov16_cst" symmetric="false"/>
+    <ScoreFunction name="hard_elec" weights="beta_cst" >
+      <Reweight scoretype="fa_elec" weight="1.4"/>
+      <Reweight scoretype="hbond_sc" weight="2.0"/>
+      <Reweight scoretype="coordinate_constraint" weight="5.0"/>
+    </ScoreFunction>
+    <ScoreFunction name="hard_cst_aa" weights="beta_nov16_cst" symmetric="false">
+     <Reweight scoretype="aa_composition" weight="1.0"/>
+     <Reweight scoretype="coordinate_constraint" weight="5.0"/>
+     <Set aa_composition_setup_file="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/disfavor_polyala.comp" />
+    </ScoreFunction>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <Index name="variable_helix_residues_w_HID" resnums="31A-66A,31B-66B,31B-66C"/>
+    <Index name="coordinating_his" resnums="31"/>
+    <Index name="original_hbnet" resnums="10A,13A,84A,10B,13B,84B,10C,13C,84C"/>
+    <Not name="not_original_hbnet" selector="original_hbnet"/>
+    <Not name="not_coordinating_his" selector="coordinating_his"/>
+    <And name="variable_helix_residues" selectors="variable_helix_residues_w_HID,not_coordinating_his,not_original_hbnet"/>
+    <Not name="invariant_residues" selector="variable_helix_residues"/>
+    <Layer name="core_SC" select_core="true" select_boundary="false" select_surface="false"
+           use_sidechain_neighbors="true" core_cutoff="5.0" surface_cutoff="1.8"/>
+    <Layer name="core_sasa" select_core="true" select_boundary="false" select_surface="false"
+       ball_radius="2.0" use_sidechain_neighbors="false" core_cutoff="24.0" surface_cutoff="40.0" />
+    <Or name="combined_core" selectors="core_SC,core_sasa"/>
+    <Layer name="surface_SC" select_core="false" select_boundary="false" select_surface="true"
+           use_sidechain_neighbors="true" core_cutoff="5.0" surface_cutoff="1.8"/>
+    <Layer name="surface_sasa" select_core="false" select_boundary="false" select_surface="true"
+	   ball_radius="2.0" use_sidechain_neighbors="false" core_cutoff="24.0" surface_cutoff="40.0"/>
+    <And name="combined_surface" selectors="surface_SC,surface_sasa"/>
+    <Not name="not_surface" selector="combined_surface"/>
+    <Or name="not_boundary" selectors="combined_core,combined_surface"/>
+    <Not name="combined_boundary" selector="not_boundary"/>
+    <And name="variable_helix_core" selectors="variable_helix_residues,combined_core"/>
+    <And name="variable_helix_surface" selectors="variable_helix_residues,combined_surface"/>
+    <And name="variable_helix_boundary" selectors="variable_helix_residues,combined_boundary"/>
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+    <InitializeFromCommandline name="init"/>
+    <RestrictToRepacking name="restrict"/>
+    <IncludeCurrent name="keep_curr"/>
+    <ConsensusLoopDesign name="disallow_non_abego_aas"/>
+    <ExtraRotamersGeneric name="ex1_2"
+                          ex1="1" ex2="1" ex3="0" ex4="0"
+                          ex1aro="0" ex2aro="0" ex1aro_exposed="0" ex2aro_exposed="0"
+                          ex1_sample_level="1" ex2_sample_level="1" ex3_sample_level="1" ex4_sample_level="0"
+                          ex1aro_sample_level="1" ex2aro_sample_level="1" ex1aro_exposed_sample_level="0" ex2aro_exposed_sample_level="0"/>
+    <LimitAromaChi2 name="limitarochi2" include_trp="1"/>
+    <OperateOnResidueSubset name="design_core" selector="variable_helix_core"><RestrictAbsentCanonicalAASRLT aas="AFILVWYM"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_boundary" selector="variable_helix_boundary"><RestrictAbsentCanonicalAASRLT aas="ADNEIKLQRSTVWY"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_surface" selector="combined_surface"><RestrictAbsentCanonicalAASRLT aas="EKQR"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="fix_surface" selector="combined_surface"><PreventRepackingRLT/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="restrict_to_repack_not_surface" selector="not_surface"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="repack_invariant" selector="invariant_residues"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="fix_coord_his" selector="coordinating_his"><PreventRepackingRLT/></OperateOnResidueSubset>
+    
+  </TASKOPERATIONS>
+  <MOVERS>
+
+     <AddConstraintsToCurrentConformationMover name="add_coordinate_constraint" 
+					       use_distance_cst="0" coord_dev="1.0" bound_width="0" 
+					       min_seq_sep="8" max_distance="12.0" cst_weight="1.0" 
+					       CA_only="0" bb_only="1"/>
+     <!--ConstraintSetMover name="add_coord_his_cst" add_constraints="true" cst_file="/home/rcacho/Projects/zn_dependent_hydrolase/54_design_new_parametric_bundle/design_files/Zn_symm2.cst"/-->
+     <PackRotamersMover name="pack_surface" scorefxn="hard_elec" task_operations="design_surface,restrict_to_repack_not_surface,limitarochi2,ex1_2"/>
+     <MinMover name="hard_chi_min" scorefxn="hard_cst" chi="1" bb="0" bondangle="0" bondlength="0" />
+     <HBNetStapleInterface scorefxn="hard_cst" name="hbnet_interf" hb_threshold="-0.5" design_residues="NSTQHYW" write_network_pdbs="true" min_intermolecular_hbonds="3" min_networks_per_pose="1" max_networks_per_pose="4" use_aa_dependent_weights="true" min_core_res="2" min_network_size="3" max_unsat_Hpol="3" task_operations="limitarochi2,keep_curr,repack_invariant,fix_surface"/>
+     <MultiplePoseMover name="design_after_hbnet" >
+      <ROSETTASCRIPTS>
+       <SCOREFXNS>
+	 <ScoreFunction name="hard_cst" weights="beta_nov16_cst" symmetric="false"/>
+	 <ScoreFunction name="hard_elec" weights="beta_cst" >
+	   <Reweight scoretype="fa_elec" weight="1.4"/>
+	   <Reweight scoretype="hbond_sc" weight="2.0"/>
+	   <Reweight scoretype="coordinate_constraint" weight="5.0"/>
+	 </ScoreFunction>
+	 <ScoreFunction name="hard_cst_cart_aa" weights="beta_nov16_cart">
+	   <Reweight scoretype="aa_composition" weight="1.0"/>
+	   <Reweight scoretype="coordinate_constraint" weight="5.0"/>
+	   <Set aa_composition_setup_file="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/disfavor_polyala.comp" />
+	 </ScoreFunction>
+	 <ScoreFunction name="hard_cst_aa" weights="beta_nov16_cst" symmetric="false">
+	   <Reweight scoretype="aa_composition" weight="1.0"/>
+	   <Reweight scoretype="coordinate_constraint" weight="5.0"/>
+	   <Set aa_composition_setup_file="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/disfavor_polyala.comp" />
+	 </ScoreFunction>
+	 <ScoreFunction name="soft_nov16" weights="/home/sboyken/weights/beta_soft_rep_cst.wts" symmetric="false">
+	   <Reweight scoretype="coordinate_constraint" weight="10.0"/>
+	   <Set aa_composition_setup_file="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/disfavor_polyala.comp" />
+	 </ScoreFunction>
+       </SCOREFXNS>
+       <RESIDUE_SELECTORS>
+	 <Index name="variable_helix_residues_w_HID" resnums="31A-66A,31B-66B,31B-66C"/>
+	 <Index name="coordinating_his" resnums="31"/>
+	 <Index name="original_hbnet" resnums="10A,13A,84A,10B,13B,84B,10C,13C,84C"/>
+	 <ResiduePDBInfoHasLabel name="new_hbnet" property="HBNet"/>
+	 <Or name="combined_hbnet" selectors="original_hbnet,new_hbnet"/>
+	 <Not name="not_hbnet" selector="combined_hbnet"/>
+	 <Neighborhood name="near_hbnet_or_hbnet" selector="new_hbnet" distance="12.0"/>
+	 <And name="near_hb_only" selectors="not_hbnet,near_hbnet_or_hbnet"/>
+	 <Not name="not_near_new_hbnet" selector="near_hb_only"/>
+	 <Not name="not_original_hbnet" selector="original_hbnet"/>
+	 <Not name="not_coordinating_his" selector="coordinating_his"/>
+	 <And name="variable_helix_residues" selectors="variable_helix_residues_w_HID,not_coordinating_his,not_hbnet"/>
+	 <Not name="invariant_residues" selector="variable_helix_residues"/>
+	 <Layer name="core_SC" select_core="true" select_boundary="false" select_surface="false"
+		use_sidechain_neighbors="true" core_cutoff="5.0" surface_cutoff="1.8"/>
+	 <Layer name="core_sasa" select_core="true" select_boundary="false" select_surface="false"
+		ball_radius="2.0" use_sidechain_neighbors="false" core_cutoff="24.0" surface_cutoff="40.0" />
+	 <Or name="combined_core" selectors="core_SC,core_sasa"/>
+	 <Layer name="surface_SC" select_core="false" select_boundary="false" select_surface="true"
+		use_sidechain_neighbors="true" core_cutoff="5.0" surface_cutoff="1.8"/>
+	 <Layer name="surface_sasa" select_core="false" select_boundary="false" select_surface="true"
+		ball_radius="2.0" use_sidechain_neighbors="false" core_cutoff="24.0" surface_cutoff="40.0"/>
+	 <And name="combined_surface" selectors="surface_SC,surface_sasa"/>
+	 <Not name="not_surface" selector="combined_surface"/>
+	 <Or name="not_boundary" selectors="combined_core,combined_surface"/>
+	 <Not name="combined_boundary" selector="not_boundary"/>
+	 <And name="variable_helix_core" selectors="variable_helix_residues,combined_core"/>
+	 <And name="variable_helix_surface" selectors="variable_helix_residues,combined_surface"/>
+	 <And name="variable_helix_boundary" selectors="variable_helix_residues,combined_boundary"/>
+       </RESIDUE_SELECTORS>
+       <TASKOPERATIONS>
+	 <InitializeFromCommandline name="init"/>
+	 <RestrictToRepacking name="restrict"/>
+	 <IncludeCurrent name="keep_curr"/>
+	 <ConsensusLoopDesign name="disallow_non_abego_aas"/>
+	 <ExtraRotamersGeneric name="ex1_2"
+			       ex1="1" ex2="1" ex3="0" ex4="0"
+			       ex1aro="0" ex2aro="0" ex1aro_exposed="0" ex2aro_exposed="0"
+			       ex1_sample_level="1" ex2_sample_level="1" ex3_sample_level="1" ex4_sample_level="0"
+			       ex1aro_sample_level="1" ex2aro_sample_level="1" ex1aro_exposed_sample_level="0" ex2aro_exposed_sample_level="0"/>
+	 <LimitAromaChi2 name="limitarochi2" include_trp="1"/>
+	 <OperateOnResidueSubset name="design_core" selector="variable_helix_core"><RestrictAbsentCanonicalAASRLT aas="AFILVYM"/></OperateOnResidueSubset>
+	 <OperateOnResidueSubset name="design_nonpolar_around_net" selector="near_hb_only"><RestrictAbsentCanonicalAASRLT aas="AFILVYM"/></OperateOnResidueSubset>
+	 <OperateOnResidueSubset name="repack_not_part_of_nonpolar_around_net" selector="not_near_new_hbnet"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+	 <OperateOnResidueSubset name="design_boundary" selector="variable_helix_boundary"><RestrictAbsentCanonicalAASRLT aas="ADNEIKLQRSTVWY"/></OperateOnResidueSubset>
+	 <OperateOnResidueSubset name="design_surface" selector="combined_surface"><RestrictAbsentCanonicalAASRLT aas="EKQR"/></OperateOnResidueSubset>
+	 <OperateOnResidueSubset name="fix_surface" selector="combined_surface"><PreventRepackingRLT/></OperateOnResidueSubset>
+	 <OperateOnResidueSubset name="restrict_to_repack_not_surface" selector="not_surface"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+	 <OperateOnResidueSubset name="repack_invariant" selector="invariant_residues"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+	 <OperateOnResidueSubset name="fix_hbnet" selector="combined_hbnet"><PreventRepackingRLT/></OperateOnResidueSubset>
+	 <OperateOnResidueSubset name="fix_coord_his" selector="coordinating_his"><PreventRepackingRLT/></OperateOnResidueSubset>
+       </TASKOPERATIONS>
+       <MOVERS>
+	 <AddConstraintsToCurrentConformationMover name="add_coordinate_constraint"
+						   use_distance_cst="0" coord_dev="1.0" bound_width="0"
+						   min_seq_sep="8" max_distance="12.0" cst_weight="1.0"
+						   CA_only="0" bb_only="1"/>
+	 <ConstraintSetMover name="add_coord_his_cst" add_constraints="true" cst_file="/home/rcacho/Projects/zn_dependent_hydrolase/54_design_new_parametric_bundle/design_files/Zn_symm2.cst"/>
+	 <PackRotamersMover name="pack_surface" scorefxn="hard_elec" task_operations="design_nonpolar_around_net,repack_not_part_of_nonpolar_around_net,limitarochi2,keep_curr,fix_hbnet"/>
+	 <PackRotamersMover name="soft_pack_nonpolar_around_hbnet" scorefxn="soft_nov16" task_operations="design_nonpolar_around_net,repack_not_part_of_nonpolar_around_net,limitarochi2,keep_curr,ex1_2"/>
+	 <FastDesign name="fdesign_around_hbnet" scorefxn="hard_cst_cart_aa"  cartesian="true" bondangle="true" bondlength="true" task_operations="design_nonpolar_around_net,repack_not_part_of_nonpolar_around_net,limitarochi2,keep_curr,fix_hbnet" repeats="1"/>
+	 <MinMover name="hard_chi_min" scorefxn="hard_cst" chi="1" bb="0" bondangle="0" bondlength="0" />
+	 <PackRotamersMover name="hard_pack_nonpolar_around_hbnet" scorefxn="hard_cst" task_operations="design_nonpolar_around_net,repack_not_part_of_nonpolar_around_net,limitarochi2,keep_curr,fix_hbnet,ex1_2"/>
+       </MOVERS>
+       <PROTOCOLS>
+	 <Add mover="add_coordinate_constraint"/>
+	 <Add mover="soft_pack_nonpolar_around_hbnet"/>
+	 <Add mover="hard_chi_min"/>
+	 <Add mover="hard_pack_nonpolar_around_hbnet"/>
+	 <Add mover="fdesign_around_hbnet"/>
+	 <Add mover="pack_surface"/>
+	 <Add mover="hard_chi_min"/>
+       </PROTOCOLS>	 
+     </ROSETTASCRIPTS>
+    </MultiplePoseMover>
+  </MOVERS>
+  <PROTOCOLS>
+    <Add mover="hbnet_interf"/>
+    <!--Add mover="design_after_hbnet"/-->
+    
+ 
+ </PROTOCOLS>
+</ROSETTASCRIPTS>    
+    
+
+    

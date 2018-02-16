@@ -1,0 +1,87 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="csts_scorefunction" weights="ref2015" symmetric="1">
+      <Reweight scoretype="atom_pair_constraint" weight="1" />
+      <Reweight scoretype="dihedral_constraint" weight="1" />
+      <Reweight scoretype="angle_constraint" weight="1" />
+      <Reweight scoretype="coordinate_constraint" weight="1"/>
+      # Prevent too many Gly's from being inserted by adding aa_composition score term
+      <Reweight scoretype="aa_composition" weight="1.0" />
+    </ScoreFunction>
+    <ScoreFunction name="soft_cst" weights="/home/sboyken/weights/beta_soft_rep_cst.wts" symmetric="1">
+      <Reweight scoretype="atom_pair_constraint" weight="2" />
+      <Reweight scoretype="dihedral_constraint" weight="1" />
+      <Reweight scoretype="angle_constraint" weight="1" />
+      <Reweight scoretype="coordinate_constraint" weight="1"/>
+      <Reweight scoretype="aa_composition" weight="1.0" />
+    </ScoreFunction>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <Chain name="chain_A" chains="A"/>
+    <Chain name="chain_B" chains="B"/>
+    <Chain name="chain_C" chains="C"/>
+    <Chain name="chain_D" chains="D"/>
+    <ResidueName name="CHL" residue_names="CLA" />
+    <And name="CHL_B" selectors="CHL,chain_B" />
+    <And name="CHL_D" selectors="CHL,chain_D" />
+    
+    <Neighborhood name="CHL_neighborsMG1" selector="CHL" atom_names_for_distance_measure="MG1,MG1"/>
+    <Neighborhood name="CHL_neighborsC37" selector="CHL" atom_names_for_distance_measure="C37,C37"/>
+    <Neighborhood name="CHL_neighborsC42" selector="CHL" atom_names_for_distance_measure="C42,C42"/>
+    <Neighborhood name="CHL_neighborsC47" selector="CHL" atom_names_for_distance_measure="C47,C47"/>
+
+    <Neighborhood name="CHL_neighborsC6" selector="CHL" atom_names_for_distance_measure="C6,C6"/>
+    <Neighborhood name="CHL_neighborsC14" selector="CHL" atom_names_for_distance_measure="C14,C14"/>
+    <Neighborhood name="CHL_neighborsC21" selector="CHL" atom_names_for_distance_measure="C21,C21"/>
+    <Neighborhood name="CHL_neighborsC28" selector="CHL" atom_names_for_distance_measure="C28,C28"/>
+    <Or name="CHL_neighbors" selectors="CHL_neighborsMG1,CHL_neighborsC37,CHL_neighborsC42,CHL_neighborsC47,CHL_neighborsC6,CHL_neighborsC14,CHL_neighborsC21,CHL_neighborsC28" />
+    <SecondaryStructure name="helix_residues" use_dssp="true" ss="H" />
+    <And name="helical_CHL_neighbors" selectors="CHL_neighbors,helix_residues"/>
+    <Not name="not_CHL_neighbors" selector="CHL_neighbors" />
+    <ResidueName name="HIS" residue_names="HID" />
+    <And name="binding_HIS" selectors="chain_A,CHL_neighborsMG1,HIS" />
+    <Layer name="surface" select_surface="True" use_sidechain_neighbors="False"
+	   core_cutoff="20" surface_cutoff="40" />
+    <Layer name="boundary" select_boundary="True" use_sidechain_neighbors="False"
+	   core_cutoff="20" surface_cutoff="40" />
+    <Layer name="core" select_core="True" use_sidechain_neighbors="False"
+	   core_cutoff="20" surface_cutoff="40" />
+    <Not name="not_surface" selector="surface"/>
+    <Or name="active_site_res" selectors="binding_HIS,CHL"/>
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+    <InitializeFromCommandline name="init" />
+    <IncludeCurrent name="current"/>
+    # Disallows CA-CB-CG-CD1 dihedrals close to zero (bad for design).
+    <LimitAromaChi2 name="limitarochi2" include_trp="1"/>
+    # Only allow amino acids with the correct phi-psi torsion bins in the loop.
+    <ConsensusLoopDesign name="disallow_nonnative_loop_sequences"
+			 include_adjacent_residues="true"
+			 enrichment_threshold="0.4"
+			 use_dssp="true" />
+    <OperateOnResidueSubset name="rtr_active_site" selector="active_site_res" >
+      <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+  </TASKOPERATIONS>
+  <MOVERS>
+    <SwitchChainOrder name="extract_asymm" chain_order="12"/>
+    <SetupForSymmetry name="setup_symmetry" definition="./C2_Z.sym" />
+    <HBNet name="hbnet_ligand" scorefxn="csts_scorefunction"  hb_threshold="-0.5" min_network_size="2" max_unsat="1" write_network_pdbs="1" design_residues="STNQHYWKR" core_selector="core" start_selector="active_site_res"
+	   task_operations="current,init,limitarochi2,disallow_nonnative_loop_sequences,rtr_active_site" />
+    <AddConstraints name="add_csts" >
+      <DistanceConstraintGenerator name="V1_dist_cst" residue_selector1="CHL_B" residue_selector2="CHL_D" atom_name1="V1" atom_name2="V1" function="HARMONIC 0.0 2.0" />
+      <DistanceConstraintGenerator name="V2_dist_cst" residue_selector1="CHL_B" residue_selector2="CHL_D" atom_name1="V2" atom_name2="V2" function="HARMONIC 0.0 2.0" />
+      <DistanceConstraintGenerator name="HIS_CHL_dist_cst1" residue_selector1="CHL_B" residue_selector2="binding_HIS" atom_name1="MG1" atom_name2="NE2" function="HARMONIC 2.2 0.1" />
+      <DistanceConstraintGenerator name="HIS_CHL_dist_cst2" residue_selector1="CHL_B" residue_selector2="binding_HIS" atom_name1="N1" atom_name2="NE2" function="HARMONIC 3.25 0.25" />
+      <DistanceConstraintGenerator name="HIS_CHL_dist_cst3" residue_selector1="CHL_B" residue_selector2="binding_HIS" atom_name1="N2" atom_name2="NE2" function="HARMONIC 3.25 0.25" />
+      <DistanceConstraintGenerator name="HIS_CHL_dist_cst4" residue_selector1="CHL_B" residue_selector2="binding_HIS" atom_name1="N3" atom_name2="NE2" function="HARMONIC 3.25 0.25" />
+      <DistanceConstraintGenerator name="HIS_CHL_dist_cst5" residue_selector1="CHL_B" residue_selector2="binding_HIS" atom_name1="N4" atom_name2="NE2" function="HARMONIC 3.25 0.25" />
+    </AddConstraints>
+  </MOVERS>
+  <PROTOCOLS>
+    <Add mover="extract_asymm"/>
+    <Add mover="setup_symmetry"/>
+    <Add mover="add_csts" />
+    <Add mover="hbnet_ligand"/>
+  </PROTOCOLS>
+</ROSETTASCRIPTS>

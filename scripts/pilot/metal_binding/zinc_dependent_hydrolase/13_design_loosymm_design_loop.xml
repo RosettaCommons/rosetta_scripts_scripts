@@ -1,0 +1,76 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="hard" weights="beta_nov16"/>
+    <ScoreFunction name="hard_symm" weights="beta_nov16" symmetric="true"/>
+    <ScoreFunction name="hard_cst_aa" weights="beta_nov16_cst" symmetric="true">
+      <Reweight scoretype="aa_composition" weight="1.0"/>
+      <Reweight scoretype="coordinate_constraint" weight="10.0"/>
+      <Set aa_composition_setup_file="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/disfavor_polyala.comp" />
+    </ScoreFunction>
+    <ScoreFunction name="hard_aa" weights="beta_nov16" symmetric="true">
+      <Reweight scoretype="aa_composition" weight="1.0"/>
+      <Set aa_composition_setup_file="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/disfavor_polyala.comp" />
+    </ScoreFunction>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <Index name="coord_his" resnums="39A,39B,39C"/>
+    <SecondaryStructure name="loops" ss="L" use_dssp="true" include_terminal_loops="false" overlap="4"/>
+    <SecondaryStructure name="helix" ss="H" use_dssp="true" include_terminal_loops="false" overlap="0"/>
+    <Not name="not_around_loops" selector="loops"/>
+    <And name="helix_not_around_loops" selectors="not_around_loops,helix"/>
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+    <InitializeFromCommandline name="init"/>
+    <RestrictToRepacking name="restrict"/>
+    <IncludeCurrent name="keep_curr"/>
+    <OperateOnResidueSubset name="design_loops_TO" selector="loops"><RestrictAbsentCanonicalAASRLT aas="ADEFGHIKLMNPQRSTWY"/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="repack_not_loops" selector="not_around_loops"><PreventRepackingRLT/></OperateOnResidueSubset>
+    <OperateOnResidueSubset name="fix_coordinated_his" selector="coord_his"><PreventRepackingRLT/></OperateOnResidueSubset>
+    <ConsensusLoopDesign name="disallow_non_abego_aas"/>
+    <ExtraRotamersGeneric name="ex1_2"
+			  ex1="1" ex2="1" ex3="0" ex4="0"
+			  ex1aro="0" ex2aro="0" ex1aro_exposed="0" ex2aro_exposed="0"
+			  ex1_sample_level="1" ex2_sample_level="1" ex3_sample_level="0" ex4_sample_level="0"
+			  ex1aro_sample_level="1" ex2aro_sample_level="1" ex1aro_exposed_sample_level="0" ex2aro_exposed_sample_level="0"/>
+    <LimitAromaChi2 name="limitarochi2" include_trp="1"/>
+  </TASKOPERATIONS>
+  <FILTERS>
+    <SSPrediction name="psipred_conf" confidence="1" cmd="/work/lpl15/bin/psipred2.5/runpsipred_single" use_probability="True" mismatch_probability="True" use_svm="0" threshold="0.10"/>
+    <ResidueCount name="nres" confidence="1" />
+    <ScoreType name="total_score" scorefxn="hard_aa" score_type="total_score" threshold="-600" confidence="1" />
+    <CalculatorFilter name="score_norm" confidence="0" equation="SCORE/NRES" threshold="-3.0" >
+      <VAR name="SCORE" filter_name="total_score"/>
+      <VAR name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+    <CalculatorFilter name="score_norm_conf" confidence="1" equation="SCORE/NRES" threshold="-3.0" >
+      <VAR name="SCORE" filter_name="total_score"/>
+      <VAR name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+    <CalculatorFilter name="score_norm_conf2" confidence="1" equation="SCORE/NRES" threshold="-3.5" >
+      <VAR name="SCORE" filter_name="total_score"/>
+      <VAR name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+  </FILTERS>
+  <MOVERS>
+    <FastDesign name="repack_loops" scorefxn="hard_cst_aa" task_operations="design_loops_TO,repack_not_loops,fix_coordinated_his,disallow_non_abego_aas" repeats="1"/>
+    <FastRelax name="frelax" scorefxn="hard_cst_aa" repeats="1" task_operations="fix_coordinated_his,limitarochi2,ex1_2"/>
+    <GenericSimulatedAnnealer name="refine_loops" mover_name="repack_loops" trials="4" 
+			      eval_period="1" history="10" bolz_rank="1" recover_low="1" preapply="0" drift="1" checkpoint_file="mc" keep_checkpoint_file="0" filter_name="score_norm_conf" temperature="0.05" sample_type="low"
+			      stopping_condition="score_norm_conf2">
+      <Filters>
+	<AND filter_name="psipred_conf" temperature="0.005" />
+      </Filters>
+    </GenericSimulatedAnnealer>
+    <SwitchChainOrder name="take_chain_A" chain_order="1"/>
+    <SetupForSymmetry name="setup_symm" definition="/home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/C3_Z.sym"/>
+    <ConstraintSetMover name="add_coord_his_cst" add_constraints="true" cst_file="/home/rcacho/Projects/zn_dependent_hydrolase/13_design_loop/Zn_symm3.cst"/>
+  </MOVERS>
+  <PROTOCOLS>
+    <Add mover="take_chain_A"/>
+    <Add mover="setup_symm"/>
+    <Add mover="add_coord_his_cst"/>
+    <Add mover="refine_loops"/>
+    
+  </PROTOCOLS>
+  <OUTPUT scorefxn="hard"/>
+</ROSETTASCRIPTS>

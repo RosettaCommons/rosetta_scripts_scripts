@@ -1,0 +1,43 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="hard" weights="beta"/>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <ResidueName name="polar_aas" residue_name3="SER,THR,ASN,GLN,HIS,TYR,TRP,ASP,HID,GLU" />
+    <Index name="res34" resnums="34A,34B,34C"/>
+    <Neighborhood name="below_active_site" selector="res34" distance="7.0"/>
+    <Layer name="hbnet_core" select_core="true" core_cutoff="3.6" />
+    <Neighborhood name="around_polar" selector="polar_aas" distance="5.0" />
+    <And name="core_around_polar" selectors="hbnet_core,around_polar"/>
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+  </TASKOPERATIONS>
+  <FILTERS>
+    <ResidueCount name="nres" confidence="1" />
+    <ScoreType name="total_score" scorefxn="hard" score_type="total_score" threshold="0" confidence="1" />
+    <CalculatorFilter name="score_norm" confidence="0" equation="SCORE/NRES" threshold="3" >
+      <VAR name="SCORE" filter_name="total_score"/>
+      <VAR name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+    <SSShapeComplementarity name="ss_sc" verbose="0" loops="0" helices="1" confidence="0" min_sc="0.65"/>
+    <Holes name="network_holes" threshold="1.8" residue_selector="core_around_polar" normalize_per_atom="true" exclude_bb_atoms="true" confidence="0"/>
+    <Holes name="active_site_holes" threshold="1.8" residue_selector="below_active_site" normalize_per_atom="true" exclude_bb_atoms="true" confidence="0"/>
+    Will check for sidechain heavy atom unsats in entire pose, Must be 0
+    <BuriedUnsatHbonds3 name="new_buns_sc_heavy" scorefxn="hard" cutoff="0" use_reporter_behavior="true" report_sc_heavy_atom_unsats="true" print_out_info_to_pdb="true" ignore_surface_res="true" residue_surface_cutoff="20.0" ignore_bb_heavy_unsats="false" confidence="0"/>
+    New unsat filter to report heavy atom backbone unsats.  I've seen cases that work with 1 or 2 of these in turns, but 0 is best
+    <BuriedUnsatHbonds3 name="new_buns_bb_heavy" scorefxn="hard" cutoff="2" use_reporter_behavior="true" report_bb_heavy_atom_unsats="true" print_out_info_to_pdb="true" ignore_surface_res="true" residue_surface_cutoff="20.0" ignore_bb_heavy_unsats="false" confidence="0"/>
+  </FILTERS>
+  <MOVERS>
+  </MOVERS>
+  <APPLY_TO_POSE>
+  </APPLY_TO_POSE>
+  <PROTOCOLS>
+    <Add filter_name="score_norm"/>
+    <Add filter_name="ss_sc"/>
+    <Add filter_name="new_buns_sc_heavy"/>
+    <Add filter_name="new_buns_bb_heavy"/>
+    <Add filter_name="network_holes"/>
+    <Add filter_name="active_site_holes"/>
+    
+  </PROTOCOLS>
+</ROSETTASCRIPTS>
