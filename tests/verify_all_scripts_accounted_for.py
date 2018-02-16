@@ -22,13 +22,8 @@
 from __future__ import print_function
 
 import os, sys, imp, json, subprocess
-
-from argparse import ArgumentParser
-
 import validate_all_scripts
-scripts_to_parse    = imp.load_source('scripts_to_parse',    './../scripts_to_parse.py')
-scripts_to_validate = imp.load_source('scripts_to_validate', './../scripts_to_validate.py')
-untested_scripts    = imp.load_source('untested_scripts',    './../untested_scripts.py')
+from argparse import ArgumentParser
 
 
 def execute(message, command_line, return_='status', until_successes=False, terminate_on_failure=True, silent=False, silence_output=False):
@@ -64,6 +59,9 @@ def execute(message, command_line, return_='status', until_successes=False, term
     if return_ == 'output': return output
     else: return False
 
+def find_all_xml_scripts_in_repo() :
+    return { os.path.join( x[0], y )[len('./../'):] for x in os.walk('./../scripts/') for y in x[2] if y.endswith('.xml') }
+
 
 
 def main(command_line_args):
@@ -78,8 +76,14 @@ def main(command_line_args):
 
     args = parser.parse_args()
 
+    scripts_to_parse    = imp.load_source('scripts_to_parse',    './../scripts_to_parse.py')
+    scripts_to_validate = imp.load_source('scripts_to_validate', './../scripts_to_validate.py')
+    untested_scripts    = imp.load_source('untested_scripts',    './../untested_scripts.py')
+
+
+
     all_listed_scripts = set( scripts_to_validate.scripts_to_be_validated + scripts_to_parse.scripts_to_be_parsed + untested_scripts.scripts_not_tested )
-    all_found_files = { os.path.join( x[0], y )[len('./../'):] for x in os.walk('./../scripts/') for y in x[2] if y.endswith('.xml') }
+    all_found_files = find_all_xml_scripts_in_repo()
 
     # for x in all_found_files :
     #    print( "Found: " + x )

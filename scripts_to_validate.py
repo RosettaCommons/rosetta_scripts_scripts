@@ -23,7 +23,6 @@ scripts_to_be_validated = [
     "scripts/pilot/protein_design/backrub_disulfidize_monte_carlo/backrub_disulfidize_monte_carlo.xml",
     "scripts/pilot/mutation_scanning/filterscan_score_all/filterscan-nopssm.xml",
     "scripts/public/visualize_protocol/template_pymol_mover.xml",
-    "scripts/pilot/protein_binding_energy_estimation/h3h4_designs/fastrelax3x_h3h4_fullrelax.xml",
-
+    "scripts/pilot/protein_binding_energy_estimation/h3h4_designs/fastrelax3x_h3h4_fullrelax.xml"
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world
