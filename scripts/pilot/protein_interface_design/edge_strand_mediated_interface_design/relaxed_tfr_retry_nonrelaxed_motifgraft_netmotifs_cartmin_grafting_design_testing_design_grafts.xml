@@ -1,0 +1,165 @@
+<ROSETTASCRIPTS>
+    <SCOREFXNS>
+        <NOV15 weights="beta" >
+            <Reweight scoretype="coordinate_constraint" weight="1" />
+        </NOV15>
+        <VDW weights="empty" >
+            <Reweight scoretype="fa_atr" weight=1.0 />
+        </VDW>
+        <TotalHydrophobic weights="/work/dsahtoe/total_hydrophobic_weights.wts"/>
+    </SCOREFXNS>
+    
+    <RESIDUE_SELECTORS>
+    </RESIDUE_SELECTORS>
+    
+    <TASKOPERATIONS>
+        <PreventChainFromRepacking name="chainA" chain="2" />
+        <PreventChainFromRepacking name="chainB" chain="1" />
+        <ProteinInterfaceDesign name="chain1_interface" repack_chain1="0" design_chain2="0" jump="0" interface_distance_cutoff="8"/> //
+        <ProteinInterfaceDesign name="chain2_interface" repack_chain1="1" design_chain2="1" jump="0" interface_distance_cutoff="8"/> //
+        <ProteinInterfaceDesign name="pack_long" design_chain1="0" design_chain2="0" jump="0" interface_distance_cutoff="10"/>
+        <InitializeFromCommandline name=init/>
+        <RestrictToInterfaceVector name=interface jump=1 CB_dist_cutoff=10 nearby_atom_cutoff=5.5 vector_angle_cutoff=75 vector_dist_cutoff=9 />
+        <IncludeCurrent name=current/>
+        <LimitAromaChi2 name="limitchi2" chi2max=110 chi2min=70 include_trp="True" />
+        <ExtraRotamersGeneric name=ex1_ex2 ex1=1 ex2=1/>
+        <ExtraRotamersGeneric name=ex1 ex1=1/>
+        <LayerDesign name="all_layers" layer="core_boundary_surface_Nterm_Cterm" use_sidechain_neighbors=True pore_radius="2.0" verbose="true" />
+        <LayerDesign name="layer_core_SCN" layer="core" pore_radius="2.0" verbose="true" use_sidechain_neighbors="True" core=4 />
+        <LayerDesign name="layer_core_SASA" layer="core" core="20" pore_radius="2.0" verbose="true" />
+        <LayerDesign name="layer_core_boundary_SCN" layer="core_boundary" pore_radius="2.0" verbose="true" use_sidechain_neighbors="True" />
+        <DisallowIfNonnative name=disallow_GLY resnum=0 disallow_aas=G />
+        <DisallowIfNonnative name=disallow_PRO resnum=0 disallow_aas=P />
+        <OperateOnCertainResidues name="target_norepack">
+            <PreventRepackingRLT/>
+            <ChainIs chain=A/>
+        </OperateOnCertainResidues>
+        <OperateOnCertainResidues name="no_design_disulf" >
+            <RestrictToRepackingRLT />
+            <ResidueName3Is name3="CYS" />
+        </OperateOnCertainResidues>
+
+    </TASKOPERATIONS>
+
+    <MOVERS>
+        <VirtualRoot name=add_virtual_root removable=true remove=false />
+        <VirtualRoot name=remove_virtual_root removable=true remove=true />
+        <TaskAwareMinMover name=min scorefxn=NOV15 bb=0 chi=1 task_operations=pack_longi,no_design_disulf/>
+        <SwitchChainOrder name=chain1only chain_order="1"/>
+        <SwitchChainOrder name=chain2only chain_order="2"/>
+        <SavePoseMover name="save_RMSDreference_conformation_FD"  restore_pose=0 reference_name="reference_conformation_FD"/>
+        <SavePoseMover name="restore_RMSDreference_conformation_FD"  restore_pose=1 reference_name="reference_conformation_FD"/>
+        <FastDesign name="FastDesign" scorefxn=NOV15 repeats=5 task_operations=init,current,limitchi2,ex1_ex2,ex1,all_layers,disallow_GLY,disallow_PRO,target_norepack,interface,no_design_disulf
+          batch=false ramp_down_constraints=false
+          cartesian=false bondangle=false bondlength=false
+          min_type=dfpmin_armijo_nonmonotone >
+           <MoveMap name=MM >
+              <Chain number=1 chi=false bb=false/>
+              <Chain number=2 chi=true bb=true/>
+              <Jump number=1 setting=false/>
+           </MoveMap>
+        </FastDesign>
+        <FastRelax name=FastRelax scorefxn=NOV15 repeats=5 batch=false ramp_down_constraints=false cartesian=false bondangle=false bondlength=false min_type=dfpmin_armijo_nonmonotone task_operations=target_norepack,limitchi2,no_design_disulf >
+           <MoveMap name=MM >
+              <Chain number=1 chi=false bb=false/>
+              <Chain number=2 chi=true bb=true/>
+              <Jump number=1 setting=false/>
+           </MoveMap>
+        </FastRelax>
+    </MOVERS>
+
+    <FILTERS>
+        <Ddg name="ddg"  threshold=-10 jump=1 repeats=5 repack=1 relax_mover=min confidence=0 scorefxn=NOV15 />
+        <Ddg name="ddg_norepack"  threshold=-10 jump=1 repeats=1 repack=0 confidence=0 scorefxn=NOV15/>
+        <Ddg name="ddg_fa_atr"  threshold=-10 jump=1 repeats=5 repack=1 relax_mover=min confidence=0 scorefxn=VDW />
+        <Ddg name="ddg_fa_atr_norepack"  threshold=-10 jump=1 repeats=1 repack=0 confidence=0 scorefxn=VDW/>
+        <InterfaceHoles name="interface_holes" confidence=0 jump=1/>
+        <Sasa name="interface_buried_sasa" confidence=0/>
+        <Sasa name="interface_hydrophobic_sasa" confidence=0 hydrophobic=True/>
+        <Sasa name="interface_polar_sasa" confidence=0 polar=True/>
+        <BuriedUnsatHbonds name="interface_unsat_hbond1" confidence=0 jump_number=1/>
+        <BuriedUnsatHbonds2 name="interface_unsat_hbond2" confidence=0 jump_number=1/>
+        <TotalSasa name="exposed_hydrophobics_complex" confidence="0" hydrophobic=True />
+        <MoveBeforeFilter name=exposed_np_chain1 mover=chain1only filter=exposed_hydrophobics_complex/>
+        <MoveBeforeFilter name=exposed_np_chain2 mover=chain2only filter=exposed_hydrophobics_complex/>
+        <CalculatorFilter name="fxn_np_chain1_buried_approx" equation="(sasa  / 2) / (np+0.01)" threshold="1" confidence="0">
+            <VAR name="sasa" filter="interface_hydrophobic_sasa"/>
+            <VAR name="np" filter="exposed_np_chain1"/>
+        </CalculatorFilter>
+        <CalculatorFilter name="fxn_np_chain2_buried_approx" equation="(sasa / 2) / (np+0.01)" threshold="1" confidence="0">
+            <VAR name="sasa" filter="interface_hydrophobic_sasa"/>
+            <VAR name="np" filter="exposed_np_chain2"/>
+        </CalculatorFilter>
+        <CalculatorFilter name="np_chain1_exposed_approx" equation="np - (sasa / 2)" threshold="1" confidence="0">
+            <VAR name="sasa" filter="interface_hydrophobic_sasa"/>
+            <VAR name="np" filter="exposed_np_chain1"/>
+        </CalculatorFilter>
+        <CalculatorFilter name="np_chain2_exposed_approx" equation="np - (sasa / 2)" threshold="1" confidence="0">
+            <VAR name="sasa" filter="interface_hydrophobic_sasa"/>
+            <VAR name="np" filter="exposed_np_chain2"/>
+        </CalculatorFilter>
+        <CalculatorFilter name="ddg_per_1000sasa" equation="1000 * ddg / (sasa+0.01)" threshold="1" confidence="0">
+            <VAR name="ddg" filter="ddg"/>
+            <VAR name="sasa" filter="interface_buried_sasa"/>
+        </CalculatorFilter>
+        <CalculatorFilter name="ddg_norepack_per_1000sasa" equation="1000 * ddg / (sasa+0.01)" threshold="1" confidence="0">
+            <VAR name="ddg" filter="ddg_norepack"/>
+            <VAR name="sasa" filter="interface_buried_sasa"/>
+        </CalculatorFilter>
+        <CalculatorFilter name="ddg_fa_atr_per_1000sasa" equation="1000 * ddg / (sasa+0.01)" threshold="1" confidence="0">
+            <VAR name="ddg" filter="ddg_fa_atr"/>
+            <VAR name="sasa" filter="interface_buried_sasa"/>
+        </CalculatorFilter>
+        <CalculatorFilter name="ddg_fa_atr_norepack_per_1000sasa" equation="1000 * ddg / (sasa+0.01)" threshold="1" confidence="0">
+            <VAR name="ddg" filter="ddg_fa_atr_norepack"/>
+            <VAR name="sasa" filter="interface_buried_sasa"/>
+        </CalculatorFilter>
+        <CalculatorFilter name="interface_fxn_hydrophobic" equation="hydrophobic / (sasa + 0.01)" threshold="1" confidence="0">
+            <VAR name="hydrophobic" filter="interface_hydrophobic_sasa"/>
+            <VAR name="sasa" filter="interface_buried_sasa"/>
+        </CalculatorFilter>
+        <AverageDegree name="interface_averageDegree_chA" threshold="8.3" task_operations=chain1_interface confidence="0"/>
+        <AverageDegree name="interface_averageDegree_chB" threshold="8.3" task_operations=chain2_interface confidence="0"/>
+        <ShapeComplementarity name="interface_sc" verbose=0 min_sc=0.55 write_int_area=1 jump=1 confidence=0/>
+        <AtomicContactCount name="interface_contactcount" task_operations="interface" confidence="0" />
+        <NetCharge name=NetCharge_binder min=-100 max=100 chain=1 />
+        <NetCharge name=NetCharge_target min=-100 max=100 chain=2 />
+        <DesignableResidues name=des_res_chA task_operations=init,current,limitchi2,ex1_ex2,ex1,all_layers,interface,disallow_GLY,disallow_PRO,target_norepack,no_design_disulf/>
+        <Rmsd confidence=0 name=rmsdB chains="B" superimpose="1" />
+        <Rmsd confidence=0 name=rmsdA chains="A" superimpose="1" />
+    </FILTERS>
+
+    <PROTOCOLS>
+        <Add mover_name="add_virtual_root" />
+        <Add mover_name=FastDesign />
+        <Add mover_name=save_RMSDreference_conformation_FD />
+        <Add mover_name=FastRelax />
+        <Add mover_name="remove_virtual_root" />
+        
+        <Add filter_name="des_res_chA" />
+        Add filter_name="interface_holes"/>
+        <Add filter_name="interface_unsat_hbond2" />
+        <Add filter_name="interface_buried_sasa" />
+        <Add filter_name="interface_hydrophobic_sasa" />
+        <Add filter_name="interface_polar_sasa" />
+        <Add filter_name="interface_fxn_hydrophobic" />
+        <Add filter_name="ddg" />
+        <Add filter_name="ddg_norepack" />
+        <Add filter_name="ddg_per_1000sasa" />
+        <Add filter_name="ddg_norepack_per_1000sasa" />
+        <Add filter_name="ddg_fa_atr" />
+        <Add filter_name="ddg_fa_atr_norepack" />
+        <Add filter_name="ddg_fa_atr_per_1000sasa" />
+        <Add filter_name="ddg_fa_atr_norepack_per_1000sasa" />
+        <Add filter_name="fxn_np_chain1_buried_approx" />
+        <Add filter_name="fxn_np_chain2_buried_approx" />
+        <Add filter_name="np_chain1_exposed_approx" />
+        <Add filter_name="np_chain2_exposed_approx" />
+        <Add filter_name="interface_averageDegree_chA" />
+        <Add filter_name="interface_averageDegree_chB" />
+        <Add filter_name="interface_contactcount" />
+        <Add filter_name="interface_sc" />
+        <Add filter_name=  "rmsdB" />
+        <Add filter_name=  "rmsdA"/>
+    </PROTOCOLS>
+</ROSETTASCRIPTS>

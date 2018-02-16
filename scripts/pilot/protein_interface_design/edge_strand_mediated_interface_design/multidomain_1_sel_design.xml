@@ -1,0 +1,66 @@
+<ROSETTASCRIPTS>
+    <SCOREFXNS>
+        <ScoreFunction name="NOV16" weights="beta" >
+            <Reweight scoretype="coordinate_constraint" weight="1" />
+            Reweight scoretype="fa_elec" weight="1.25" />
+        </ScoreFunction>
+    </SCOREFXNS>
+
+    <RESIDUE_SELECTORS>
+        <Index name="no_des" resnums="22,23,26,33,29,34,30,36" />
+        <Chain name="chainA" chains="A"/>
+        <Not name="rest" selector="no_des"/>
+    </RESIDUE_SELECTORS>
+
+    <TASKOPERATIONS>
+        <InitializeFromCommandline name="init"/>
+        <IncludeCurrent name="current"/>
+        <LimitAromaChi2 name="limitchi2" chi2max="110" chi2min="70" include_trp="True" />
+        <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+        <ExtraRotamersGeneric name="ex1" ex1="1"/>
+        <LayerDesign name="all_layers" layer="core_boundary_surface_Nterm_Cterm" use_sidechain_neighbors="True" pore_radius="2.0" verbose="true" />
+        <OperateOnResidueSubset name="fix_binding" selector="no_des" >
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+        <LayerDesign name="core" layer="core" use_sidechain_neighbors="True" verbose="true" /> make_pymol_script="true"/>
+        <LayerDesign name="boundary" layer="boundary" use_sidechain_neighbors="True" verbose="true" /> make_pymol_script="true"/>
+        <LayerDesign name="surface" layer="surface_Nterm_Cterm" use_sidechain_neighbors="True" verbose="true" /> make_pymol_script="true"/>
+        <LayerDesign name="layer_core_SCN" layer="core" pore_radius="2.0" verbose="true" use_sidechain_neighbors="True" core="4" />
+        <LayerDesign name="layer_core_SASA" layer="core" core="20" pore_radius="2.0" verbose="true" />
+        <LayerDesign name="layer_core_boundary_SCN" layer="core_boundary" pore_radius="2.0" verbose="true" use_sidechain_neighbors="True" />
+    </TASKOPERATIONS>
+
+    <MOVERS>
+        <FastDesign name="FastDesign" scorefxn="NOV16" repeats="3" task_operations="init,current,limitchi2,ex1_ex2,ex1,all_layers,fix_binding"
+          batch="false" ramp_down_constraints="false"
+          cartesian="false" bondangle="false" bondlength="false"
+          min_type="dfpmin_armijo_nonmonotone" >
+            <MoveMap name="MM" >
+                <Chain number="1" chi="true" bb="true"/>
+                <Span begin="21" end="48" chi="true" bb="false" />
+            </MoveMap>
+        </FastDesign>
+
+        <FastRelax name="FastRelax" scorefxn="NOV16" repeats="3" batch="false" ramp_down_constraints="false" cartesian="false" bondangle="false" bondlength="false" min_type="dfpmin_armijo_nonmonotone" task_operations="fix_binding,limitchi2" >
+            <MoveMap name="MM" >
+                <Chain number="1" chi="true" bb="true"/>
+                <Span begin="21" end="48" chi="true" bb="false" />
+            </MoveMap>
+        </FastRelax>
+    </MOVERS>
+
+    <FILTERS>
+        <BuriedUnsatHbonds2 name="unsat_hbond2" confidence="0" jump_number="0"/>
+        <CavityVolume name="cavity_volume" confidence="0" />
+        <PackStat name="pack_stat" confidence="0"/>
+    </FILTERS>
+
+    <PROTOCOLS>
+        <Add mover_name="FastDesign" />
+        <Add mover_name="FastRelax" />
+        <Add filter_name="unsat_hbond2" />
+        <Add filter_name="cavity_volume" />
+        <Add filter_name="pack_stat" />
+    </PROTOCOLS>
+
+</ROSETTASCRIPTS>

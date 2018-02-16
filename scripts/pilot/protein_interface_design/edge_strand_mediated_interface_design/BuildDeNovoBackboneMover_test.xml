@@ -1,0 +1,83 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+		<CENTROID weights="fldsgn_cen" symmetric="0" >
+			<Reweight scoretype="hbond_lr_bb" weight="1.0" />
+			<Reweight scoretype="hbond_sr_bb" weight="1.0" />
+			<Reweight scoretype="atom_pair_constraint" weight="1.0" />
+			<Reweight scoretype="coordinate_constraint" weight="1.0" />
+			<Reweight scoretype="angle_constraint" weight="1.0" />
+			<Reweight scoretype="dihedral_constraint" weight="1.0" />
+			<Reweight scoretype="backbone_stub_constraint" weight="1.0" />
+			<Reweight scoretype="omega" weight="0.5" />
+			<Reweight scoretype="rama" weight="0.6" />
+		</CENTROID>
+	</SCOREFXNS>
+
+	<RESIDUE_SELECTORS>
+		<SecondaryStructure name="loops" ss="L" use_dssp="0" />
+		<NamedSegment name="AB" segment="AB" />
+		<Or name="loops_ab" selectors="AB,loops" />
+		<Not name="not_loops" selector="loops_ab" />
+	</RESIDUE_SELECTORS>
+
+	<FILTERS>
+		<Geometry name="geometry" />
+		<SecondaryStructure name="secstruct_filter" residue_selector="not_loops" /> 
+		<SheetTopology name="sheet_topology" use_dssp="0" />
+	</FILTERS>
+
+	<MOVERS>
+		<AddConstraints name="build_csts" >
+			<SheetConstraintGenerator name="sheet_csts" />
+		</AddConstraints>
+		<RemoveConstraints name="rm_build_csts" constraint_generators="sheet_csts" />
+		<MinMover name="cenmin" scorefxn="CENTROID" bb="1" chi="0" jump="0" cartesian="0" />
+        
+        <BuildDeNovoBackboneMover name="build_bb" build_overlap="3" iterations_per_phase="50" dump_pdbs="1" >
+			<CompoundArchitect name="" >
+				<Architects>
+					<PoseArchitect name="AB" />
+					<StrandArchitect name="NewStrand" length="4:6" />
+				</Architects>
+				<Connections>
+					<Connection name="Loop_NewStrand" motif="2LX,3LX" ideal_abego="1" segment2="NewStrand" segment1="AB.E02" />
+				</Connections>
+				<Pairing>
+					<StrandPairing segments="AB.E02,NewStrand" orient1="2" orient2="1" shift="0" />
+				</Pairing>
+			</CompoundArchitect>
+			<RemodelLoopMoverPoseFolder scorefxn="CENTROID" />
+			<Filters>
+				<Add filter="geometry" />
+				<Add filter="secstruct_filter" />
+				<Add filter="sheet_topology" />
+			</Filters>
+			<Perturbers>
+				<CompoundPerturber>
+					HelixPerturber architect="H1" />
+					HelixPerturber architect="H2" />
+					ConnectionPerturber architect="H1_E3" />
+					ConnectionPerturber architect="E3_H2" />
+					ConnectionPerturber architect="H2_E4" />
+					<ConnectionPerturber architect="Loop_NewStrand" />
+				</CompoundPerturber>
+				<!--<ConnectionPerturber connections="E1_E2,H1_E3,E3_H2,H2_E4,E4_E5" /> -->
+			</Perturbers>
+			<PreFoldMovers>
+				<Add mover="build_csts" />
+			</PreFoldMovers>
+			<PostFoldMovers>
+				<!-- These movers are run after fragment insertion, but before the pose
+				     is switched back to full-atom mode. -->
+				<Add mover="cenmin" />
+				<Add mover="rm_build_csts" />
+			</PostFoldMovers>	
+		</BuildDeNovoBackboneMover>
+    </MOVERS>
+
+	<PROTOCOLS>
+		<Add mover="build_bb" />
+		<!-- <Add filter="zaxis_csts" /> -->
+		<Add filter="sheet_topology" />
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

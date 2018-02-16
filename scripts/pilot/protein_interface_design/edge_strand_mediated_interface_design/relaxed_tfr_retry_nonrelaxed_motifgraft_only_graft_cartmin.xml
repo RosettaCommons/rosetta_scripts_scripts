@@ -1,0 +1,90 @@
+<ROSETTASCRIPTS>
+    
+    <SCOREFXNS>
+      <NOV15 weights="beta" >  
+      </NOV15>
+      <VDW weights="empty" >
+        <Reweight scoretype="fa_atr" weight=1.0 />
+      </VDW>
+    </SCOREFXNS>
+    <FILTERS>
+		<Geometry name="geom" omega="165" cart_bonded="20" start="115" confidence="0"/>
+		<ScoreType name=total_score scorefxn=sfxn_talaris2013 score_type=total_score threshold=500 confidence=0/>
+    </FILTERS>
+    <MOVERS>
+        <MotifGraft name="motif_grafting" context_structure="TfR_target.clean_relaxed.pdb" motif_structure="%%motif%%" RMSD_tolerance="2.0" NC_points_RMSD_tolerance="1.0" clash_score_cutoff="5" clash_test_residue="ALA"  combinatory_fragment_size_delta="0:0" max_fragment_replacement_size_delta="0:0"  full_motif_bb_alignment="1"  allow_independent_alignment_per_fragment="0" graft_only_hotspots_by_replacement="0" only_allow_if_N_point_match_aa_identity="0" only_allow_if_C_point_match_aa_identity="0" allow_repeat_same_graft_output="0" revert_graft_to_native_sequence="1"/>
+		<MultiplePoseMover name="MPM_design" max_input_poses=10>
+		<SELECT>
+		</SELECT>
+			<ROSETTASCRIPTS>
+				<SCOREFXNS>
+					<sfxn_talaris2013downAla weights="talaris2013_downAla" >
+					</sfxn_talaris2013downAla>
+					<sfxn_soft weights="soft_rep" >
+					</sfxn_soft>
+					<sfxn_soft_cst weights="soft_rep" >
+						<Reweight scoretype="coordinate_constraint" weight="2.0" />
+					</sfxn_soft_cst>
+					<sfxn_soft_cart_cst weights="soft_rep" >
+						<Reweight scoretype="coordinate_constraint" weight="1.0" />
+						<Reweight scoretype="cart_bonded" weight="1.0"/>
+						<Reweight scoretype="pro_close" weight="0.0"/>
+					</sfxn_soft_cart_cst>
+					<sfxn_talaris2013_cart_cst weights="talaris2013" >
+						<Reweight scoretype="coordinate_constraint" weight="1.0" />
+						<Reweight scoretype="cart_bonded" weight="1.0" />
+						<Reweight scoretype="pro_close" weight="0.0" />
+					</sfxn_talaris2013_cart_cst>
+					<sfxn_talaris2013_cst weights="talaris2013" >
+						<Reweight scoretype="coordinate_constraint" weight="1.0" />
+					</sfxn_talaris2013_cst>
+					</SCOREFXNS>
+				<TASKOPERATIONS>
+					<InitializeFromCommandline name="init"/>
+					<IncludeCurrent name="current" />
+					<OperateOnCertainResidues name="context_norepack">
+						<PreventRepackingRLT/>
+						<ResiduePDBInfoHasLabel property="CONTEXT"/>
+					</OperateOnCertainResidues>
+					<LimitAromaChi2 name=limitaro include_trp=true/>  #avoids extra rotamers
+				</TASKOPERATIONS>
+				<FILTERS>
+				</FILTERS>
+				<MOVERS>
+					<AddConstraintsToCurrentConformationMover name=constrainCA  task_operations="current" CA_only=1 />
+					<ClearConstraintsMover name=clearConstraints />
+					<TaskAwareMinMover name=min_soft_cart scorefxn=sfxn_soft_cart_cst bb=0 chi=1 jump=1 cartesian=1 task_operations="init,current,limitaro,context_norepack" />
+					<TaskAwareMinMover name=min_soft scorefxn=sfxn_soft_cst bb=0 chi=1 jump=1 cartesian=0 task_operations="init,current,limitaro,context_norepack" />
+					<TaskAwareMinMover name=min_hard_cart scorefxn=sfxn_talaris2013_cart_cst bb=0 chi=1 jump=1 cartesian=1 task_operations="init,limitaro,current,context_norepack" />
+					<TaskAwareMinMover name=min_hard scorefxn=sfxn_talaris2013_cst bb=0 chi=1 jump=1 cartesian=0 task_operations="init,current,limitaro,context_norepack" />
+				</MOVERS>
+				<APPLY_TO_POSE>
+				</APPLY_TO_POSE>
+				<PROTOCOLS>
+					<Add mover_name=constrainCA /> #Constraint CAs
+					<Add mover_name=min_soft_cart /> #Min cartesian
+					<Add mover_name=min_soft /> #Min kinematic
+					<Add mover_name=min_hard_cart /> #Min cartesian with normal LJ
+					<Add mover_name=min_hard /> #Min kinematic with normal LJ
+					<Add mover_name=clearConstraints /> #Remove constraints to CAs
+				</PROTOCOLS>
+			</ROSETTASCRIPTS>
+		</MultiplePoseMover>
+		//HERE You add filters
+		<MultiplePoseMover name="MPM_filters" max_input_poses=10>
+			<SELECT>
+				<AndSelector>
+					<Filter filter=omega />
+					<Filter filter=total_score />
+				</AndSelector>
+			</SELECT>
+		</MultiplePoseMover>
+    </MOVERS>
+    
+    <PROTOCOLS>
+        <Add mover_name="motif_grafting"/>
+        <Add mover_name=MPM_design />
+        <Add mover_name=MPM_filters />
+    </PROTOCOLS>
+
+</ROSETTASCRIPTS>

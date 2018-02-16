@@ -1,0 +1,22 @@
+<ROSETTASCRIPTS>
+    <SCOREFXNS>
+        <NOV15 weights=beta />
+    </SCOREFXNS>
+
+    <MOVERS>
+        <FastRelax name="min" scorefxn=NOV15 repeats=3 batch=0 ramp_down_constraints=0 cartesian=0 bondangle=0 bondlength=0 min_type=dfpmin_armijo_nonmonotone >
+            <MoveMap name=MM>
+                <Chain number=1 chi=0 bb=0/>
+                <Chain number=2 chi=1 bb=1/>
+                <Jump number=1 setting=1/>
+            </MoveMap>
+        </FastRelax>
+    </MOVERS>
+
+    <FILTERS>
+    </FILTERS>
+
+    <PROTOCOLS>
+        <Add mover_name=min />
+    </PROTOCOLS>
+</ROSETTASCRIPTS>

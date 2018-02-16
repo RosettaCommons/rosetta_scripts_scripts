@@ -1,0 +1,45 @@
+<ROSETTASCRIPTS>
+    <SCOREFXNS>
+        <ScoreFunction name="NOV16" weights="beta" >
+            <Reweight scoretype="coordinate_constraint" weight="1" />
+            <Reweight scoretype="fa_elec" weight="1.25" />
+        </ScoreFunction>
+    </SCOREFXNS>
+
+    <RESIDUE_SELECTORS>
+        <Index name="repackable" resnums="28,30,31,68,72,97,99,104,107,114,122,127" />
+        <Chain name="chainA" chains="A"/>
+        <Not name="rest_target" selector="repackable"/>
+    </RESIDUE_SELECTORS>
+
+    <TASKOPERATIONS>
+        <InitializeFromCommandline name="init"/>
+        <IncludeCurrent name="current"/>
+        <LimitAromaChi2 name="limitchi2" chi2max="110" chi2min="70" include_trp="True" />
+        <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+        <ExtraRotamersGeneric name="ex1" ex1="1"/>
+        <LayerDesign name="all_layers" layer="core_boundary_surface_Nterm_Cterm" use_sidechain_neighbors="True" pore_radius="2.0" verbose="true" />
+        <OperateOnResidueSubset name="fix_target" selector="rest_target" >
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+        <LayerDesign name="core" layer="core" use_sidechain_neighbors="True" verbose="true" /> make_pymol_script="true"/>
+        <LayerDesign name="boundary" layer="boundary" use_sidechain_neighbors="True" verbose="true" /> make_pymol_script="true"/>
+        <LayerDesign name="surface" layer="surface_Nterm_Cterm" use_sidechain_neighbors="True" verbose="true" /> make_pymol_script="true"/>
+        <LayerDesign name="layer_core_SCN" layer="core" pore_radius="2.0" verbose="true" use_sidechain_neighbors="True" core="4" />
+        <LayerDesign name="layer_core_SASA" layer="core" core="20" pore_radius="2.0" verbose="true" />
+        <LayerDesign name="layer_core_boundary_SCN" layer="core_boundary" pore_radius="2.0" verbose="true" use_sidechain_neighbors="True" />
+    </TASKOPERATIONS>
+
+    <MOVERS>
+        <PackRotamersMover name="des" task_operations="init,current,limitchi2,ex1,ex1_ex2,all_layers,fix_target" scorefxn="NOV16" />
+    </MOVERS>
+
+    <FILTERS>
+        <BuriedUnsatHbonds2 name="interface_unsat_hbond2" confidence="0" jump_number="0"/>
+    </FILTERS>
+
+    <PROTOCOLS>
+        <Add mover_name="des" />
+    </PROTOCOLS>
+
+</ROSETTASCRIPTS>

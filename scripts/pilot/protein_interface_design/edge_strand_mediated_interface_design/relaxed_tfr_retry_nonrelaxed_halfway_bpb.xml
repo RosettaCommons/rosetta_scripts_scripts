@@ -1,0 +1,63 @@
+Run with rama_map: To activate this rama map, you need this command line option:
+-rama_map /work/tlinsky/main/database/scoring/score_functions/rama/Rama_XPG_3level.txt
+<ROSETTASCRIPTS>
+<SCOREFXNS>
+    <CENTROID weights="fldsgn_cen" symmetric="0" >
+        <Reweight scoretype="hbond_lr_bb" weight="1.0" />
+        <Reweight scoretype="hbond_sr_bb" weight="1.0" />
+        <Reweight scoretype="atom_pair_constraint" weight="1.0" />
+        <Reweight scoretype="coordinate_constraint" weight="1.0" />
+        <Reweight scoretype="angle_constraint" weight="1.0" />
+        <Reweight scoretype="dihedral_constraint" weight="1.0" />
+        <Reweight scoretype="backbone_stub_constraint" weight="1.0" />
+        <Reweight scoretype="omega" weight="0.5" />
+        <Reweight scoretype="rama" weight="0.6" />
+    </CENTROID>
+</SCOREFXNS>
+
+<FILTERS>
+    HelixKink name="hk" bend=20 />
+    <Geometry name="geometry" count_bad_residues="true" />
+    <SheetTopology name="sheet_topo" blueprint="%%blueprint%%" />
+    <SecondaryStructure name="ss1" blueprint="%%blueprint%%" />
+    <AverageDegree name=degree confidence=1 threshold=9.5/>
+    <PackStat name=pack confidence=0/>
+    <ExposedHydrophobics name=exposed confidence=0/>
+    <AtomicContactCount name=contact confidence=0/>
+    <CavityVolume name=cavity confidence=0/>
+    HelixPairing name="hhpair" use_dssp="true" helix_pairings="1-2.A;2-3.A;1-3.P" dist=15.0 cross=45.0 />
+</FILTERS>
+
+<TASKOPERATIONS>
+</TASKOPERATIONS>
+
+<MOVERS>
+    <Dssp name="dssp" />
+    SheetCstGenerator name="sheet_new1" cacb_dihedral_tolerance="0.6" blueprint="%%blueprint%%" />
+    RemoveConstraints name="sheet_rm1" constraint_generator="sheet_new1" />
+    <SetSecStructEnergies name="set_ssene1" scorefxn="CENTROID" blueprint="%%blueprint%%" />     
+    <BluePrintBDR name="bdr1" use_abego_bias="1" scorefxn="CENTROID" constraints_NtoC="1.0" blueprint="%%blueprint%%" />
+    <DumpPdb name="dump" fname="%%blueprint%%_pass" tag_time=True/>
+    <ParsedProtocol name="build_dssp1" >
+        <Add mover_name="bdr1" />
+        <Add mover_name="dssp" />
+        Add filter_name="ss1" />
+        Add filter_name="hhpair" />
+        Add filter_name="degree" />
+        Add filter_name="sheet_topo" />
+        Add filter_name="geometry" />
+        Add filter_name="hk" />
+        <Add mover_name="dump" />
+    </ParsedProtocol>
+    <LoopOver name="lover1" mover_name="build_dssp1" iterations="50" drift="0" ms_whenfail="FAIL_DO_NOT_RETRY" />
+    <ParsedProtocol name="phase1" >
+        <Add mover_name="set_ssene1" />
+        <Add mover_name="lover1" />
+    </ParsedProtocol>
+</MOVERS>
+
+<PROTOCOLS>
+    <Add mover_name="phase1" />
+</PROTOCOLS>
+
+</ROSETTASCRIPTS>

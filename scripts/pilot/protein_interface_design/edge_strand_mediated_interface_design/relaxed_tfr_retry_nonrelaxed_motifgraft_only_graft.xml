@@ -1,0 +1,21 @@
+<ROSETTASCRIPTS>
+    
+    <SCOREFXNS>
+      <NOV15 weights="beta" >  
+      </NOV15>
+      <VDW weights="empty" >
+        <Reweight scoretype="fa_atr" weight=1.0 />
+      </VDW>
+    </SCOREFXNS>
+    
+    <MOVERS>
+        
+        <MotifGraft name="motif_grafting" context_structure="TfR_target.clean_relaxed.pdb" motif_structure="%%motif%%" RMSD_tolerance="2.0" NC_points_RMSD_tolerance="1.0" clash_score_cutoff="5" clash_test_residue="ALA"  combinatory_fragment_size_delta="0:0" max_fragment_replacement_size_delta="0:0"  full_motif_bb_alignment="1"  allow_independent_alignment_per_fragment="0" graft_only_hotspots_by_replacement="0" only_allow_if_N_point_match_aa_identity="0" only_allow_if_C_point_match_aa_identity="0" allow_repeat_same_graft_output="0" revert_graft_to_native_sequence="1"/>
+
+    </MOVERS>
+    
+    <PROTOCOLS>
+        <Add mover_name="motif_grafting"/>
+    </PROTOCOLS>
+
+</ROSETTASCRIPTS>

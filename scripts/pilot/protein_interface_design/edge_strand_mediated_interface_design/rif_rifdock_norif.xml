@@ -1,0 +1,142 @@
+<ROSETTASCRIPTS>
+    <SCOREFXNS>
+        <ScoreFunction name="NOV16" weights="beta" >
+            <Reweight scoretype="coordinate_constraint" weight="1" />
+            <Reweight scoretype="fa_elec" weight="1.25" />
+        </ScoreFunction>
+        <ScoreFunction name="VDW" weights="empty" >
+            <Reweight scoretype="fa_atr" weight="1.0" />
+        </ScoreFunction>
+        <ScoreFunction name="TotalHydrophobic" weights="total_hydrophobic_weights.wts"/>
+    </SCOREFXNS>
+
+    <RESIDUE_SELECTORS>
+        <ResiduePDBInfoHasLabel name="RIF_Res" property="RIFRES" />
+        <Chain name="chainA" chains="A"/>
+        <Chain name="chainB" chains="B"/>
+        <Neighborhood name="interface_chA" selector="chainB" distance="8.0"/>
+        <Neighborhood name="interface_chB" selector="chainA" distance="8.0"/>
+        <And name="AB_interface" selectors="interface_chA,interface_chB" />
+        <Not name="Not_interface" selector="AB_interface" />
+    </RESIDUE_SELECTORS>
+
+    <TASKOPERATIONS>
+        <ProteinInterfaceDesign name="pack_long" design_chain1="0" design_chain2="0" jump="1" interface_distance_cutoff="15"/>
+        <InitializeFromCommandline name="init"/>
+        <IncludeCurrent name="current"/>
+        <LimitAromaChi2 name="limitchi2" chi2max="110" chi2min="70" include_trp="True" />
+        <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+        <ExtraRotamersGeneric name="ex1" ex1="1"/>
+        <LayerDesign name="all_layers" layer="core_boundary_surface_Nterm_Cterm" use_sidechain_neighbors="True" pore_radius="2.0" verbose="true" />
+        <OperateOnResidueSubset name="restrict_to_interface" selector="Not_interface">
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="keep_rif_cst" selector="RIF_Res" >
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="no_des_target" selector="chainB" >
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+        <LayerDesign name="core" layer="core" use_sidechain_neighbors="True" verbose="true" /> make_pymol_script="true"/>
+        <LayerDesign name="boundary" layer="boundary" use_sidechain_neighbors="True" verbose="true" /> make_pymol_script="true"/>
+        <LayerDesign name="surface" layer="surface_Nterm_Cterm" use_sidechain_neighbors="True" verbose="true" /> make_pymol_script="true"/>
+        <LayerDesign name="layer_core_SCN" layer="core" pore_radius="2.0" verbose="true" use_sidechain_neighbors="True" core="4" />
+        <LayerDesign name="layer_core_SASA" layer="core" core="20" pore_radius="2.0" verbose="true" />
+        <LayerDesign name="layer_core_boundary_SCN" layer="core_boundary" pore_radius="2.0" verbose="true" use_sidechain_neighbors="True" />
+    </TASKOPERATIONS>
+
+    <MOVERS>
+        <TaskAwareMinMover name="min" scorefxn="NOV16" bb="0" chi="1" task_operations="pack_long"/>
+        <SwitchChainOrder name="chain1only" chain_order="1"/>
+        <SwitchChainOrder name="chain2only" chain_order="2"/>
+        <Dssp name="dssp" reduced_IG_as_L="1"/>
+        <VirtualRoot name="add_virtual_root" removable="true" remove="false" />
+        <VirtualRoot name="remove_virtual_root" removable="true" remove="true" />
+        <FastDesign name="FastDesign" scorefxn="NOV16" repeats="5" task_operations="init,current,limitchi2,ex1_ex2,ex1,all_layers,restrict_to_interface,no_des_target"
+          batch="false" ramp_down_constraints="false"
+          cartesian="false" bondangle="false" bondlength="false"
+          min_type="dfpmin_armijo_nonmonotone" >
+            <MoveMap name="MM" >
+                <Chain number="1" chi="true" bb="true"/>
+                <Chain number="2" chi="false" bb="false"/>
+                <Jump number="1" setting="true"/>
+            </MoveMap>
+        </FastDesign>
+        <FastRelax name="FastRelax" scorefxn="NOV16" repeats="5" batch="false" ramp_down_constraints="false" cartesian="false" bondangle="false" bondlength="false" min_type="dfpmin_armijo_nonmonotone" task_operations="no_des_target,limitchi2" >
+            <MoveMap name="MM" >
+                <Chain number="1" chi="true" bb="true"/>
+                <Chain number="2" chi="false" bb="false"/>
+                <Jump number="1" setting="true"/>
+           </MoveMap>
+        </FastRelax>
+    </MOVERS>
+
+    <FILTERS>
+        <Ddg name="ddg"  threshold="-10" jump="1" repeats="5" repack="1" relax_mover="min" confidence="0" scorefxn="NOV16" />
+        <Ddg name="ddg_norepack"  threshold="-10" jump="1" repeats="1" repack="0" confidence="0" scorefxn="NOV16"/>
+        <Ddg name="ddg_fa_atr"  threshold="-10" jump="1" repeats="5" repack="1" relax_mover="min" confidence="0" scorefxn="VDW" />
+        <Ddg name="ddg_fa_atr_norepack"  threshold="-10" jump="1" repeats="1" repack="0" confidence="0" scorefxn="VDW"/>
+        <Sasa name="interface_buried_sasa" confidence="0"/>
+        <Sasa name="interface_hydrophobic_sasa" confidence="0" hydrophobic="True"/>
+        <Sasa name="interface_polar_sasa" confidence="0" polar="True"/>
+        <ShapeComplementarity name="interface_sc" verbose="0" min_sc="0.55" write_int_area="1" jump="1" confidence="0"/>
+        <BuriedUnsatHbonds2 name="interface_unsat_hbond2" confidence="0" jump_number="1"/>
+        <CalculatorFilter name="ddg_per_1000sasa" equation="1000 * ddg / (sasa+0.01)" threshold="1" confidence="0">
+            <Var name="ddg" filter="ddg"/>
+            <Var name="sasa" filter="interface_buried_sasa"/>
+        </CalculatorFilter>
+        <CalculatorFilter name="ddg_norepack_per_1000sasa" equation="1000 * ddg / (sasa+0.01)" threshold="1" confidence="0">
+            <Var name="ddg" filter="ddg_norepack"/>
+            <Var name="sasa" filter="interface_buried_sasa"/>
+        </CalculatorFilter>
+        <CalculatorFilter name="ddg_fa_atr_per_1000sasa" equation="1000 * ddg / (sasa+0.01)" threshold="1" confidence="0">
+            <Var name="ddg" filter="ddg_fa_atr"/>
+            <Var name="sasa" filter="interface_buried_sasa"/>
+        </CalculatorFilter>
+        <CalculatorFilter name="ddg_fa_atr_norepack_per_1000sasa" equation="1000 * ddg / (sasa+0.01)" threshold="1" confidence="0">
+            <Var name="ddg" filter="ddg_fa_atr_norepack"/>
+            <Var name="sasa" filter="interface_buried_sasa"/>
+        </CalculatorFilter>
+        <CalculatorFilter name="interface_fxn_hydrophobic" equation="hydrophobic / (sasa + 0.01)" threshold="1" confidence="0">
+            <Var name="hydrophobic" filter="interface_hydrophobic_sasa"/>
+            <Var name="sasa" filter="interface_buried_sasa"/>
+        </CalculatorFilter>
+
+        <ScoreType name="total_score_MBF" scorefxn="NOV16" score_type="total_score" threshold="0" confidence="0" />
+        <MoveBeforeFilter name="total_score_monomer" mover="chain1only" filter="total_score_MBF" confidence="0" />
+        <CavityVolume name="cavity_volume_MBF" />
+        <MoveBeforeFilter name="cavity_volume" mover="chain1only" filter="cavity_volume_MBF" />
+        <PackStat name="packable_MBF" confidence="0"/>
+        <MoveBeforeFilter name="packable" mover="chain1only" filter="packable_MBF" />
+        <BuriedUnsatHbonds2 name="unsat_hbond2_monomer_MBF" confidence="0" jump_number="0"/>
+        <MoveBeforeFilter name="unsat_hbond2_monomer" mover="chain1only" filter="unsat_hbond2_monomer_MBF" />
+    </FILTERS>
+
+    <PROTOCOLS>
+        <Add mover_name="add_virtual_root" />
+        <Add mover_name="FastDesign" />
+        <Add mover_name="FastRelax" />
+        <Add mover_name="remove_virtual_root" />
+        <Add mover_name="dssp" />
+        <Add filter_name="interface_unsat_hbond2" />
+        <Add filter_name="interface_buried_sasa" />
+        <Add filter_name="interface_hydrophobic_sasa" />
+        <Add filter_name="interface_polar_sasa" />
+        <Add filter_name="interface_fxn_hydrophobic" />
+        <Add filter_name="ddg" />
+        <Add filter_name="ddg_norepack" />
+        <Add filter_name="ddg_per_1000sasa" />
+        <Add filter_name="ddg_norepack_per_1000sasa" />
+        <Add filter_name="ddg_fa_atr" />
+        <Add filter_name="ddg_fa_atr_norepack" />
+        <Add filter_name="ddg_fa_atr_per_1000sasa" />
+        <Add filter_name="ddg_fa_atr_norepack_per_1000sasa" />
+        <Add filter_name="interface_sc" />
+
+        <Add filter_name="cavity_volume" />
+        <Add filter_name="packable" />
+        <Add filter_name="unsat_hbond2_monomer" />
+        <Add filter_name="total_score_monomer" />
+    </PROTOCOLS>
+
+</ROSETTASCRIPTS>
