@@ -122,6 +122,10 @@ def add_files_to_python_list_script( lines, new_files ) :
     return newlines
 
 def main( input_args ):
+    """Look for all of the not-yet registered scripts and add them to eitehr
+    rosetta_scripts_scripts/untested_scripts.py or
+    rosetta_scripts_scripts/scripts_to_validate.py depending on whether
+    the script is valid according to the XSD"""
 
     parser = ArgumentParser( description=main.__doc__ )
 
