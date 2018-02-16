@@ -1,0 +1,125 @@
+<ROSETTASCRIPTS>
+
+	<SCOREFXNS>
+		<ScoreFunction name="score12_symm" weights="score12_full" symmetric="1" />
+		<ScoreFunction name="score12_symm_cst" weights="score12_full" symmetric="1">
+			<Reweight scoretype="res_type_constraint" weight="1.0" />
+		</ScoreFunction>
+		<ScoreFunction name="score12_symm_no_ref" weights="score12_full" symmetric="1">
+			<Reweight scoretype="ref" weight="0" />
+		</ScoreFunction>
+	</SCOREFXNS>
+
+	<TASKOPERATIONS>
+		<InitializeFromCommandline name="init" />
+		<IncludeCurrent name="ic" />
+		DisallowIfNonnative name=dsgn_aa_set disallow_aas=CEFGHKMPQRWY />
+		<BuildingBlockInterface name="bbi" nsub_bblock="1" />
+		<RestrictToNonzeroSASA name="rtns" />
+		<RestrictIdentities name="pgr" identities="PRO,GLY" prevent_repacking="0" />
+		<LimitAromaChi2 name="limitaro" chi2max="110" chi2min="70" />
+		<RetrieveStoredTask name="design_task" task_name="design_task" />
+		<RetrieveStoredTask name="revert_task" task_name="revert_task" />
+		<JointSequence name="joint" use_current="1" use_native="1" />
+		<RestrictToRepacking name="repack_only" />
+	</TASKOPERATIONS>
+
+	<FILTERS>
+		<SaveResfileToDisk name="save_resfile1" task_operations="design_task" designable_only="0" resfile_name="output/C5_ank1_top_dock_dsgn.resfile" resfile_general_property="NATRO" />
+		<SaveResfileToDisk name="save_resfile2" task_operations="design_task" designable_only="0" resfile_name="output/C5_ank1_top_dock_rvrt.resfile" resfile_general_property="NATRO" />
+		<ShapeComplementarity name="sc" jump="1" verbose="1" min_sc="0.3" write_int_area="1" />
+		<OligomericAverageDegree name="avg_deg" threshold="8" distance_threshold="10.0" write2pdb="1" task_operations="design_task" />
+		<TaskAwareAlaScan name="ala_scan" task_operations="design_task" jump="1" repeats="1" scorefxn="score12_symm" repack="1" report_diffs="0" exempt_identities="PRO,GLY" write2pdb="1" />
+		<Ddg name="ddG_filt" scorefxn="score12_symm" jump="1" repack="1" repeats="2" threshold="100" />
+		<SymUnsatHbonds name="unsat_pols" jump="1" cutoff="5" verbose="1" write2pdb="1" />
+		<RotamerBoltzmannWeight name="rotboltz" task_operations="design_task" radius="6.0" jump="1" unbound="1" scorefxn="score12_symm" temperature="0.8" repack="1" skip_ala_scan="1" write2pdb="1" />
+		<DesignableResidues name="des_pos" task_operations="design_task" designable="1" packable="1" />
+		<Sasa name="sasa_int_area" threshold="300" upper_threshold="2000" hydrophobic="0" polar="0" jump="1" />
+		<InterfacePacking name="packing" lower_cutoff="-50" upper_cutoff="5" distance_cutoff="9.0" />
+		<AverageInterfaceEnergy name="air_energy" task_operations="design_task" scorefxn="score12_symm" cutoff="0" bb_bb="0" />
+		<AverageInterfaceEnergy name="air_fa_atr" task_operations="design_task" scorefxn="score12_symm" score_type="fa_atr" cutoff="0" bb_bb="0" />
+		<AverageInterfaceEnergy name="air_fa_rep" task_operations="design_task" scorefxn="score12_symm" score_type="fa_rep" cutoff="2" bb_bb="0" />
+		<AverageInterfaceEnergy name="air_fa_dun" task_operations="design_task" scorefxn="score12_symm" score_type="fa_dun" cutoff="2" bb_bb="0" />
+		<SequenceRecovery name="mutations" rate_threshold="0.0" mutation_threshold="50" report_mutations="1" verbose="1" write2pdb="1" task_operations="design_task" />
+		<ScoreType name="constraints" scorefxn="score12_symm_cst" score_type="res_type_constraint" threshold="0" confidence="0"/>
+                <ScoreType name="total_score" scorefxn="score12_symm_no_ref" score_type="total_score" threshold="0" confidence="0"/>
+                <CombinedValue name="ddg_cst_e" confidence="0">
+                        <Add filter_name="ddG_filt" factor="1" />
+                        <Add filter_name="total_score" factor="1" />
+			<Add filter_name="constraints" factor="0.5" />
+		</CombinedValue>
+	</FILTERS>
+
+	<MOVERS>
+		<Symmetrizer name="gen_docked_config" symm_file="/work/balej/projects/symmetric_scaffolds/sym_def_files/C5_Z.sym" sampling_mode="uniform" radial_disp_min="-0.4" radial_disp_max="3.4" axis="z"/>
+
+		Random roll 5 degrees
+		<RollMover name="roll_x_5" axis="x" min_angle="-2.5" max_angle="2.5"/>
+		<RollMover name="roll_y_5" axis="y" min_angle="-2.5" max_angle="2.5"/>
+		<RollMover name="roll_z_5" axis="z" min_angle="-2.5" max_angle="2.5"/>
+		<ParsedProtocol name="roll_xy_5">
+			<Add mover="roll_x_5"/>
+			<Add mover="roll_y_5"/>
+		</ParsedProtocol>
+		<ParsedProtocol name="roll_xz_5">
+			<Add mover="roll_x_5"/>
+			<Add mover="roll_z_5"/>
+		</ParsedProtocol>
+		<ParsedProtocol name="roll_yz_5" >
+			<Add mover="roll_y_5"/>
+			<Add mover="roll_z_5"/>
+		</ParsedProtocol>
+
+		<ParsedProtocol name="random_roll_5" mode="single_random" >
+			<Add mover="roll_xy_5"/>
+			<Add mover="roll_xz_5"/>
+			<Add mover="roll_yz_5"/>
+		</ParsedProtocol>
+
+		StoreTaskMover name=store_design_task task_name="design_task" task_operations=init,ic,bbi,rtns,pgr,limitaro,dsgn_aa_set />
+		<StoreTaskMover name="store_design_task" task_name="design_task" task_operations="init,ic,bbi,rtns,pgr,limitaro" />
+		<StoreTaskMover name="store_revert_task" task_name="revert_task" task_operations="init,ic,bbi,rtns,pgr,limitaro" />
+		<SymPackRotamersMover name="design" scorefxn="score12_symm" task_operations="design_task" />
+		<SymPackRotamersMover name="repack" scorefxn="score12_symm" task_operations="design_task,repack_only" />
+		<TaskAwareSymMinMover name="min" scorefxn="score12_symm" bb="0" chi="1" rb="0" task_operations="design_task" />
+		<FavorSequenceProfile name="fsp" scaling="prob" use_native="1" matrix="IDENTITY" weight="1.0" scorefxns="score12_symm_cst" />
+		<ParsedProtocol name="min_repack_min">
+			<Add mover="min" />
+			<Add mover="repack" />
+			<Add mover="min" />
+		</ParsedProtocol>
+		<GreedyOptMutationMover name="revert" task_operations="revert_task,joint" filter="ddg_cst_e" scorefxn="score12_symm" relax_mover="min_repack_min" />
+	</MOVERS>
+
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+
+	<PROTOCOLS>
+		<Add mover_name="random_roll_5" />
+		<Add mover_name="gen_docked_config" />
+		<Add mover_name="store_design_task" />
+		<Add mover_name="store_revert_task" />
+		<Add mover_name="design" />
+		<Add filter_name="save_resfile1" />
+		<Add mover_name="min" />
+		<Add mover_name="fsp" />
+		<Add mover_name="revert" />
+		<Add filter_name="save_resfile2" />
+		<Add mover_name="min_repack_min" />
+		<Add filter_name="sc" />
+		<Add filter_name="ddG_filt" />
+		<Add filter_name="avg_deg" />
+		<Add filter_name="ala_scan" />
+		<Add filter_name="unsat_pols" />
+		<Add filter_name="sasa_int_area" />
+		<Add filter_name="packing" />
+		<Add filter_name="air_energy" />
+		<Add filter_name="air_fa_atr" />
+		<Add filter_name="air_fa_rep" />
+		<Add filter_name="air_fa_dun" />
+		<Add filter_name="des_pos" />
+		<Add filter_name="rotboltz" />
+		<Add filter_name="mutations" />
+	</PROTOCOLS>
+
+</ROSETTASCRIPTS>

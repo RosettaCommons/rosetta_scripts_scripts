@@ -1,0 +1,58 @@
+<ROSETTASCRIPTS>
+    <TASKOPERATIONS></TASKOPERATIONS>
+    <SCOREFXNS>
+	<ScoreFunction name="stage1" weights="score3" symmetric="0">
+	    <Reweight scoretype="atom_pair_constraint" weight="5"/>
+	</ScoreFunction>
+	<ScoreFunction name="stage2" weights="score4_smooth_cart" symmetric="0">
+	    <Reweight scoretype="atom_pair_constraint" weight="5"/>
+	</ScoreFunction>
+	<ScoreFunction name="fullatom" weights="beta_cart.wts" symmetric="0">
+	    <Reweight scoretype="atom_pair_constraint" weight="1"/>
+	</ScoreFunction>
+    </SCOREFXNS>
+    <FILTERS></FILTERS>
+    <MOVERS>
+	<Hybridize name="hybridize" stage1_scorefxn="stage1"
+		stage2_scorefxn="stage2" fa_cst_file="PF14912.5.sig.rst" fa_scorefxn="fullatom"
+		batch="1" stage1_increase_cycles="2" stage2_increase_cycles="1"
+		linmin_only="0" skip_long_min="1">
+	    <Fragments three_mers="PF14912.5.a3m.200.3mers.gz" nine_mers="PF14912.5.a3m.200.9mers.gz"/>
+	    <Template pdb="PF14912.5.1ee4_B.pdb" weight="0.741847" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.2rnj_A.pdb" weight="0.717295" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.4lup_A.pdb" weight="0.711211" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1mhz_G.pdb" weight="0.699171" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1thx_A.pdb" weight="0.697465" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1mhy_G.pdb" weight="0.695515" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1kap_P.pdb" weight="0.694467" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1aw9_A.pdb" weight="0.69047" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.6as4_B.pdb" weight="0.688935" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1axd_A.pdb" weight="0.688886" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1qjg_B.pdb" weight="0.67748" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1gph_1.pdb" weight="0.666585" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1grj_A.pdb" weight="0.664173" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.5lb7_B.pdb" weight="0.66254" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.4i0p_B.pdb" weight="0.662442" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.5lp0_A.pdb" weight="0.661735" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1hyp_A.pdb" weight="0.679593" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1unk_D.pdb" weight="0.659834" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.4was_C.pdb" weight="0.658932" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1aa7_A.pdb" weight="0.658201" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1ois_A.pdb" weight="0.654253" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1fxy_A.pdb" weight="0.657618" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.2v7f_A.pdb" weight="0.651158" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1igt_D.pdb" weight="0.670407" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.4udf_50.pdb" weight="0.650378" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1b1b_A.pdb" weight="0.650085" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1dct_B.pdb" weight="0.650012" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1b0x_A.pdb" weight="0.649452" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.4i0p_D.pdb" weight="0.648525" cst_file="PF14912.5.bnd.rst"/>
+	    <Template pdb="PF14912.5.1fur_B.pdb" weight="0.646454" cst_file="PF14912.5.bnd.rst"/>
+	</Hybridize>
+    </MOVERS>
+    <APPLY_TO_POSE></APPLY_TO_POSE>
+    <PROTOCOLS>
+	<Add mover="hybridize"/>
+    </PROTOCOLS>
+    <OUTPUT scorefxn="fullatom"/>
+</ROSETTASCRIPTS>

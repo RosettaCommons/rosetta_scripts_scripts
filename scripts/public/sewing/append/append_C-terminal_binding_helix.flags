@@ -1,0 +1,17 @@
+-beta
+-ex1
+-ex2
+-in:file:s ${PDB}
+-parser:protocol ${SCRIPT}
+-parser:script_vars contextpdb=${CONTEXTPDB} segment_file=${SEGMENTS}
+-mh:path:motifs ${MOTIFS}
+-mh:path:scores_BB_BB ${SCORESBBBB}
+-mh:match:aa1 false
+-mh:match:aa2 false
+-mh:score:use_ss1 true
+-mh:score:use_ss2 true
+-mh:gen_reverse_motifs_on_load false
+-mh::dump::max_rms 0.4
+-detect_disulf false
+-pdb_comments true
+-preserve_crystinfo true

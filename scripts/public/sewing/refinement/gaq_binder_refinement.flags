@@ -1,0 +1,35 @@
+-database /home/matt/Rosetta/main/database
+#-in
+	#-file
+	#	-s example.pdb
+		#-l
+		#-native
+		#-fasta
+
+-out
+	#-prefix
+	-suffix _designed2
+	-path
+		-all /home/matt/Documents/research/unc/gq_binders/rosetta/stage_4_fast_relax/outputs/
+	#-file
+	#	-scorefile example.dat
+		#-silent_struct_type binary
+		#-silent	/nas02/home/m/c/mccummin/scratch/plc_gtpase_binding/stage_0_fast_relax/outputs/gaq_hth/gaq_hth.out
+
+-parser
+	-view
+	#-protocol /home/matt/Documents/research/unc/gq_binders/rosetta/stage_4_fast_relax/inputs/gaq_binder_refinement.xml
+
+#-ignore_unrecognized_res
+#-lazy_ig
+-linmem_ig 10
+#-limit_aroma_chi2
+
+-overwrite
+
+-nstruct 1
+
+#-ex1
+#-ex2
+#-mute all
+#-out:level 500

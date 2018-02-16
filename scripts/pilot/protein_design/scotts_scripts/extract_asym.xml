@@ -1,0 +1,12 @@
+<ROSETTASCRIPTS>
+        <MOVERS>
+                <ExtractAsymmetricUnit name="get_asym" virtual_atoms="0"/>
+        </MOVERS>
+        <FILTERS>
+                <Rmsd name="rms" threshold="1000.0" reference_name="00001.pdb"/>
+        </FILTERS>>
+<PROTOCOLS>
+        <Add mover="get_asym"/>
+        Add filter=rms/>
+</PROTOCOLS>
+</ROSETTASCRIPTS>

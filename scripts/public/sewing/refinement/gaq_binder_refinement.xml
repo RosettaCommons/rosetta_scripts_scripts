@@ -1,0 +1,296 @@
+<ROSETTASCRIPTS>
+Keywords: protein interface design, single sided design, sewing refinement
+Author: Matt Cummins
+Email: mccummin@email.unc.edu
+
+A refinement protocol to be used after a sewing append production run. First, side chains are designed using soft repulsion weights. Second, nonideal bond lengths and angles are corrected using cartesian minimization. Third, the assembly is designed and relaxed.
+
+    <SCOREFXNS>
+        
+        Scorefunction for design
+        <ScoreFunction name="sfxn" weights="ref2015" >
+            <Reweight scoretype="res_type_constraint" weight="1.0"/>
+            <Reweight scoretype="coordinate_constraint" weight="1" />
+        </ScoreFunction>
+
+        Scorefunction for cart min
+        <ScoreFunction name = "sfxn_cart" weights="ref2015_cart" >
+            <Reweight scoretype="coordinate_constraint" weight="1" />
+        </ScoreFunction>
+
+        Scorefunction for soft pack design
+        <ScoreFunction name = "sfxn_soft" weights = "ref2015_soft" >
+            <Reweight scoretype="res_type_constraint" weight="1.0"/>
+        </ScoreFunction>
+
+    </SCOREFXNS>
+
+
+
+	<RESIDUE_SELECTORS>
+        
+        Select the sewing assembly to be designed
+        <Chain name="sewing_assembly" chains="A"/>
+
+        Select the target the sewing assembly binds to
+        <Chain name="target" chains="B"/>
+
+        Select the interface between the proteins
+        <InterfaceByVector name="interface" grp1_selector="sewing_assembly" grp2_selector="target"/>
+
+        Select the target not interface to turn off packing
+        <Not name="target_not_interface">
+            <Or selectors="interface,sewing_assembly"/>
+        </Not>
+
+        Select the target interface to turn on packing
+        <And name="target_interface" selectors="target,interface"/>
+
+        Select sewing loops to include native res type constraints
+        <And name="sewing_assembly_loops" selectors="sewing_assembly">
+            <SecondaryStructure overlap="1" include_terminal_loops="false" ss="L" use_dssp="true"/>
+        </And>
+
+        Select layers for design
+        <And name="helix_caps">
+            <SecondaryStructure ss="H"/>
+            <SecondaryStructure ss="L" overlap="1"/>
+        </And>
+        <And name="core_helices">
+            <Layer select_core="true"/>
+            <SecondaryStructure ss="H"/>
+            <Not selector="helix_caps"/>
+        </And>
+        <And name="core_loops">
+            <Layer select_core="true"/>
+            <SecondaryStructure ss="L"/>
+        </And>
+        <And name="boundary_helices">
+            <Layer select_boundary="true"/>
+            <SecondaryStructure ss="H"/>
+            <Not selector="helix_caps"/>
+        </And>
+        <And name="boundary_loops">
+            <Layer select_core="true"/>
+            <SecondaryStructure ss="L"/>
+        </And>
+        <And name="surface_helices">
+            <Layer select_surface="true"/>
+            <SecondaryStructure ss="H"/>
+            <Not selector="helix_caps"/>
+        </And>
+        <And name="surface_loops">
+            <Layer select_core="true"/>
+            <SecondaryStructure ss="L"/>
+        </And>
+
+        Select vital residues to turn off minimization
+        <ResiduePDBInfoHasLabel name="vital_residues" property="VITAL"/>
+        
+        Select non vital residues to turn on minimization
+        <Not name="sewing_assembly_non_vital">
+            <And selectors="target,vital_residues"/>
+        </Not>
+        
+    </RESIDUE_SELECTORS>
+
+
+
+    <JUMP_SELECTORS>
+    
+        Select jump to turn off minimization
+        <Interchain name="jump1" />
+
+    </JUMP_SELECTORS>
+
+
+
+    <TASKOPERATIONS>
+
+        General task ops
+        <LimitAromaChi2 name="limitchi2" include_trp="true" />
+        <ExtraRotamersGeneric name="extra_rots" ex1="true" ex2="false" />
+        <IncludeCurrent name="include_starting_rotamers" />
+        <RestrictAbsentCanonicalAAS name="no_cys" keep_aas="ADEFGHIKLMNPQRSTVWY" />
+        <InitializeFromCommandline name="cmdline" />
+
+        Disallow unfavorable loop residues
+        <ConsensusLoopDesign name="disallow_nonnative_loop_sequences" />
+
+        Turn off design for vital residues
+        <ReadResfile name="repack_vital_residues" filename="%%resfile%%" />
+
+        Turn off packing for non interface target residues
+        <OperateOnResidueSubset name="no_packing_target_not_interface" selector="target_not_interface">
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+
+        Turn off design for interface target residues
+        <OperateOnResidueSubset name="pack_target_interface" selector="target_interface">
+            <RestrictToRepackingRLT/>
+        </OperateOnResidueSubset>
+
+        Do layer design on sewing assembly
+        <OperateOnResidueSubset name="core_helices_to" selector="core_helices">
+            <RestrictAbsentCanonicalAASRLT aas="AFILMVWY"/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="boundary_helices_to" selector="boundary_helices">
+            <RestrictAbsentCanonicalAASRLT aas="ADEIKLMNQRSTVWY"/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="surface_helices_to" selector="surface_helices">
+            <RestrictAbsentCanonicalAASRLT aas="DEHKNQRST"/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="core_loops_to" selector="core_loops">
+            <RestrictAbsentCanonicalAASRLT aas="AFIMLPVWY"/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="boundary_loops_to" selector="boundary_loops">
+            <RestrictAbsentCanonicalAASRLT aas="ADEFGIKMLNPQRSTVWY"/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="surface_loops_to" selector="surface_loops">
+            <RestrictAbsentCanonicalAASRLT aas="DEGHKNPQRST"/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="helix_caps_to" selector="helix_caps">
+            <RestrictAbsentCanonicalAASRLT aas="DNPST"/>
+        </OperateOnResidueSubset>
+
+    </TASKOPERATIONS>
+
+
+
+    <FILTERS>
+   
+        Ensure that the helices have hydrophobic residues 
+        <SecondaryStructureHasResidue name="helices_have_hydrophobic_residues" confidence="0"/>
+    
+        Compute packing statistics
+        <PackStat name="packstat" threshold="0.60" repeats="1" confidence="0"/>
+
+        Check if pose matches secstruct prediction
+        <SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0" />
+
+        Are there voids?
+        <CavityVolume name="cav_vol" confidence="0"/>
+
+        How many buried unsat hbonds?
+        <BuriedUnsatHbonds name="new_buns_bb_heavy" residue_selector="sewing_assembly" report_bb_heavy_atom_unsats="true" scorefxn="sfxn" cutoff="4" residue_surface_cutoff="20.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+        <BuriedUnsatHbonds name="new_buns_sc_heavy" residue_selector="sewing_assembly" report_sc_heavy_atom_unsats="true" scorefxn="sfxn" cutoff="0" residue_surface_cutoff="20.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+
+        Check for faulty fragments
+        <FragmentLookupFilter name="faulty_fragments" lookup_name="source_fragments_4_mer" store_path="/nas02/home/m/c/mccummin/netscratch/stage_2_fast_relax/inputs/backbone_profiler_database_06032014" lookup_mode="first" chain="1" threshold="0" confidence="0" />
+
+        Check for shape complementary with target
+        <ShapeComplementarity name="shape_comp" min_sc="0.65" min_interface="0" verbose="0" quick="0" jump="1" write_int_area="1" confidence="0"/>
+
+        Output the normalized score
+        <ResidueCount name="sewing_res_count" residue_selector="sewing_assembly" confidence="0"/>
+        <ScoreType name="sewing_unnormalized_score" scorefxn="sfxn" threshold="0" confidence="0"/>
+        <CalculatorFilter name="calc_sewing_normalized_score" equation="total_score / res" confidence="0">
+              <VAR name="total_score" filter="sewing_unnormalized_score"/>
+              <VAR name="res" filter="sewing_res_count"/>
+        </CalculatorFilter>
+    
+    </FILTERS>
+
+
+
+	<MOVE_MAP_FACTORIES>
+        
+        Movemap for fast design 
+        <MoveMapFactory name="fast_design_mm">
+            
+            Minimize just the side chains of the vital residues
+            <Backbone residue_selector="vital_residues" enable="false" />
+            <Chi residue_selector="vital_residues" enable="true" /> 
+            
+            Minimize the rest of the sewing assembly
+	        <Backbone residue_selector="sewing_assembly_non_vital" enable="true" />
+	        <Chi residue_selector="sewing_assembly_non_vital" enable="true" />
+    
+            Dont minimize target residues outside of the interface
+	        <Backbone residue_selector="target_not_interface" enable="false"/>
+	        <Chi residue_selector="target_not_interface" enable="false"/>
+
+            Minimize just the side chains of target residues at interface
+	        <Backbone residue_selector="target_interface" enable="false"/>
+            <Chi residue_selector="target_interface" enable="true"/>
+
+            Dont minimize jumps
+            <Jumps jump_selector="jump1" enable="false"/>
+
+        </MoveMapFactory>
+
+    </MOVE_MAP_FACTORIES>
+
+
+
+	<MOVERS>
+
+        Assign secstruct
+        <Dssp name="dssp" />
+
+        Soft pack design before fast design
+        <PackRotamersMover name="soft_pack" scorefxn="sfxn_soft" task_operations="disallow_nonnative_loop_sequences,repack_vital_residues,no_packing_target_not_interface,pack_target_interface,limitchi2,no_cys,cmdline,extra_rots,include_starting_rotamers,core_loops_to,boundary_loops_to,surface_loops_to,core_helices_to,boundary_helices_to,surface_helices_to,helix_caps_to" />
+
+        Bias towards native loops
+        <AddConstraints name="favor_native_loops" >
+            <ResidueTypeConstraintGenerator name="loop_csts" residue_selector="sewing_assembly_loops" favor_native_bonus="1.0" />
+        </AddConstraints>
+        
+        Cart min to fix bond lengths and angles
+        <MinMover name="cart_min" scorefxn="sfxn_cart" chi="0" bb="0" omega="false" jump="0" cartesian="true" bondangle="true" bondlength="true" tolerance="0.001" max_iter="1000" >
+            <MoveMap>
+                <Jump number="1" setting="0"/>
+                <Chain number="1" chi="1" bb="1"/>
+                <Chain number="2" chi="0" bb="0"/>
+            </MoveMap>
+        </MinMover>
+
+        Flexible backbone design
+        <FastDesign name="fastdesign" task_operations="disallow_nonnative_loop_sequences,repack_vital_residues,no_packing_target_not_interface,pack_target_interface,limitchi2,no_cys,cmdline,extra_rots,include_starting_rotamers,core_loops_to,boundary_loops_to,surface_loops_to,core_helices_to,boundary_helices_to,surface_helices_to,helix_caps_to" movemap_factory="fast_design_mm" scorefxn="sfxn" repeats="3" ramp_down_constraints="false" min_type="lbfgs_armijo_nonmonotone"/>
+
+        Don't minimize vital residues
+        <AddConstraintsToCurrentConformationMover name="apply_coordinate_constraints_to_vital_residues_for_cart_min" residue_selector="vital_residues" cst_weight="10" use_distance_cst="false" coord_dev="0.015" bound_width="0" CA_only="false" bb_only="false" />
+        <ClearConstraintsMover name="remove_coordinate_constraints" />
+
+        Remove target to compute filters on sewing assembly alone
+        <DeleteRegionMover name="remove_target_for_filters" residue_selector="target"/>
+
+        Run interface analysis
+        <InterfaceAnalyzerMover name="ifam" scorefxn="sfxn" pack_separated="true" pack_input="true" interface_sc="true" jump="1"/>
+
+    </MOVERS>
+
+
+
+    <PROTOCOLS>
+
+        <Add mover_name="dssp"/>
+        <Add mover_name="favor_native_loops"/>
+        <Add mover_name="soft_pack"/>
+        <Add mover_name="apply_coordinate_constraints_to_vital_residues_for_cart_min" />
+        <Add mover_name="cart_min"/>
+        <Add mover_name="remove_coordinate_constraints" />
+        <Add mover_name="dssp"/>
+        <Add mover_name="favor_native_loops"/>
+        <Add mover_name="fastdesign"/>
+        <Add mover_name="ifam"/>
+        <Add filter_name="shape_comp"/>
+        Add mover_name="remove_target_for_filters"/>
+        Add filter_name="helices_have_hydrophobic_residues"/>
+        Add filter_name="packstat"/>
+        Add filter_name="sspred"/>
+        Add filter_name="cav_vol"/>
+        Add filter_name="new_buns_bb_heavy"/>
+        Add filter_name="new_buns_sc_heavy"/>
+        Add filter_name="faulty_fragments"/>
+        Add filter_name="calc_sewing_normalized_score"/>
+
+    </PROTOCOLS>
+
+
+
+    <OUTPUT />
+
+
+
+</ROSETTASCRIPTS>

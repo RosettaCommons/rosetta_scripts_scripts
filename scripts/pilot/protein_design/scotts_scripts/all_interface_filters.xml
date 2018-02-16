@@ -1,0 +1,73 @@
+<ROSETTASCRIPTS>
+<SCOREFXNS>
+  <ScoreFunction name="talaris" weights="talaris2013.wts" />
+</SCOREFXNS>
+<TASKOPERATIONS>
+	<RestrictToInterface name="interf" distance="10.0" />
+</TASKOPERATIONS>
+
+<MOVERS>
+
+         # Minimization of complex - no design allowed
+         <TaskAwareMinMover name="min" bb="0" chi="1" jump="1" scorefxn="talaris" task_operations="interf" />
+         # Packing of rotamers making sure no aromatic with chi2 of 90 degrees
+         <PackRotamersMover name="repack" task_operations="interf" />
+
+         <ParsedProtocol name="min_repack_min">
+              <Add mover="min"/>
+              <Add mover="repack"/>
+              <Add mover="min"/>
+         </ParsedProtocol>
+
+
+      </MOVERS>
+
+<FILTERS>
+  ###############################################
+  # These are the actual filters which score things
+  ###############################################
+  <TotalSasa name="total_sasa" threshold="1" upper_threshold="1000000000000000" report_per_residue_sasa="False" confidence="0" />
+  <AtomicContactCount name="contact_all" confidence="0" />
+  
+  <ScoreType name="total_e" scorefxn="talaris" score_type="total_score" threshold="0"/>
+
+  <SSShapeComplementarity name="ss_sc" verbose="0" confidence="0" />
+  <TotalSasa name="exposed_hydrophobics" confidence="0" hydrophobic="True" />
+
+  <PackStat name="pack" confidence="0"/>
+  <Holes name="holes" confidence="0"/>
+
+  <Ddg name="ddg"  scorefxn="talaris" threshold="-10" jump="1" repeats="1" repack="0" confidence="0"/>
+
+  <SSPrediction name="mismatch_probability" confidence="0" cmd="/work/tlinsky/Rosetta/tools/fragment_tools/psipred/runpsipred_single" use_probability="1" mismatch_probability="1" use_svm="0" />
+  <BuriedUnsatHbonds name="unsat_hbond" confidence="0" jump_number="0"/>
+
+  <Ddg name="ddg_repack" scorefxn="talaris" threshold="-15" relax_mover="min_repack_min" confidence="0" />
+
+
+</FILTERS>
+
+<MOVERS>
+	<InterfaceAnalyzerMover name="interf_analyzer" scorefxn="talaris" packstat="true" pack_input="false" pack_separated="true" fixedchains="A" tracer="true" use_jobname="true" resfile="false"  />
+	<ddG name="per_residue_ddg" per_residue_ddg="1" scorefxn="talaris" />
+
+</MOVERS>
+
+<PROTOCOLS>
+
+  <Add mover_name="interf_analyzer" />
+  <Add filter_name="unsat_hbond" />
+  <Add filter_name="ddg" />
+  <Add filter_name="ddg_repack" />
+  Add mover_name="per_residue_ddg" />
+  # then score/filter
+  Add mover_name="remove" />
+    <Add filter_name="contact_all" />
+  Add filter_name="entropy" />
+  <Add filter_name="ss_sc" />
+  <Add filter_name="exposed_hydrophobics" />
+  <Add filter_name="holes" />
+  <Add filter_name="pack" />
+  <Add filter_name="total_e" />
+</PROTOCOLS>
+</ROSETTASCRIPTS>

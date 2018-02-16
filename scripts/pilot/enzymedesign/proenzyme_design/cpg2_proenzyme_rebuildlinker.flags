@@ -1,0 +1,5 @@
+-run:preserve_header
+-linmem_ig 10
+-mute core.io.database
+
+-parser:script_vars pivot=398

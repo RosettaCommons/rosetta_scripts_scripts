@@ -1,0 +1,65 @@
+<ROSETTASCRIPTS>
+##############################################
+# ScoreFunctions
+# Be sure to use this flag:-use_bicubic_interpolation
+##############################################
+<SCOREFXNS>
+    <ScoreFunction name="sfxn_cstWt1" weights="beta" symmetric="0">
+        <Reweight scoretype="res_type_constraint" weight="2"/>
+        <Reweight scoretype="aa_composition" weight="1.0" />
+        <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+        <Set aa_composition_setup_file="disfavor_polyala.comp" />
+    </ScoreFunction>
+    <ScoreFunction name="sfxn_cstWt1_symm" weights="beta" symmetric="1">
+        <Reweight scoretype="res_type_constraint" weight="2"/>
+        <Reweight scoretype="aa_composition" weight="1.0" />
+        <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+        <Set aa_composition_setup_file="disfavor_polyala.comp" />
+    </ScoreFunction>
+</SCOREFXNS>
+##############################################
+# RESIDUE_SELECTORS
+##############################################
+<RESIDUE_SELECTORS>
+</RESIDUE_SELECTORS>
+##############################################
+# Task Operations
+##############################################
+<TASKOPERATIONS>
+  </TASKOPERATIONS>
+###############################################
+# Filters
+###############################################
+<FILTERS>
+    worst9mer name="worst9mer_h" threshold="0.2" only_helices="true"/>
+    <ResidueCount name="resCount" max_residue_count="600"/>
+    <Sasa name="Sasa" threshold="1500" upper_threshold="1000000" jump="1" confidence="1"/>
+</FILTERS>
+ ##############################################
+  # Underlying relax/repack/min/pack movers
+  ##############################################
+  <MOVERS>
+    <DetectSymmetry name="detect"/>
+    <ExtractAsymmetricUnit name="asymm_pose" keep_virtual="False" keep_unknown_aas="False" />
+    <SetupForSymmetry name="symm_pose" definition="C4_Z.sym" preserve_datacache="False" />
+##############################################
+#  Looped Movers
+##############################################
+
+      </MOVERS>
+<APPLY_TO_POSE>
+</APPLY_TO_POSE>
+##############################################
+#  main
+##############################################
+<PROTOCOLS>
+    Add mover_name="detect"/>
+    <Add mover_name="asymm_pose"/>
+    <Add mover_name="symm_pose"/>
+    <Add filter_name="resCount"/>
+    <Add filter_name="Sasa"/>
+    Add filter_name="worst9mer_a"/>
+    Add filter_name="worst9mer_h"/>
+</PROTOCOLS>
+<OUTPUT scorefxn="sfxn_cstWt1_symm" />
+</ROSETTASCRIPTS>

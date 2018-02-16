@@ -1,0 +1,49 @@
+<ROSETTASCRIPTS>
+
+	<TASKOPERATIONS>
+
+
+		<InitializeFromCommandline name="init"/>	
+
+		<LimitAromaChi2 name="limchi2"/>
+
+                <SetIGType name="linmem_ig" lin_mem_ig="1"/>
+
+                <RestrictToRepacking name="repack_only" /> 
+
+
+	</TASKOPERATIONS>
+
+
+
+      <APPLY_TO_POSE>
+      </APPLY_TO_POSE>
+
+ 	<SCOREFXNS>
+
+		<ScoreFunction name="enzdes" weights="enzdes.wts"/>
+
+
+  	</SCOREFXNS>
+
+
+
+   <FILTERS>
+One needs to add the parameters which are specific for each filter
+
+  </FILTERS>
+
+   <MOVERS>	
+
+<SatisfyPolarInteraction name="tm" design_shell="8.0" hb_threshold="-0.6" atoms="O4,H14" explosion="2"/> 
+
+
+</MOVERS>
+
+      <PROTOCOLS>
+
+	<Add mover_name="tm"/>
+
+      </PROTOCOLS>
+
+</ROSETTASCRIPTS>

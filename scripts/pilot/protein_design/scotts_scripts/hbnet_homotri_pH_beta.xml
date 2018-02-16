@@ -1,0 +1,183 @@
+<ROSETTASCRIPTS>#Design of symmetric homo-oligomers using HBNet
+	<SCOREFXNS>
+	  	<ScoreFunction name="hard_symm" weights="beta_cst" symmetric="1">
+               		<Reweight scoretype="coordinate_constraint" weight="0.5" />
+          	</ScoreFunction>
+          	<ScoreFunction name="hard_bb" weights="beta_cart" symmetric="1"/>
+	  	<ScoreFunction name="hard_symm_no_cst" weights="beta" symmetric="1"/>
+   	</SCOREFXNS>
+	<RESIDUE_SELECTORS>
+                Index name=start resnums="45,46,52,53,59,60,66,67" />
+                <Layer name="core_or_boundary" select_core="true" select_boundary="true" />
+		<Layer name="core_loose" select_core="true" core_cutoff="3.6" use_sidechain_neighbors="true"  />
+        </RESIDUE_SELECTORS>
+	<TASKOPERATIONS>
+          	<InitializeFromCommandline name="init"/>
+          	<IncludeCurrent name="current"/>
+          	<LimitAromaChi2 name="arochi" />
+          	<ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+          	<ExtraRotamersGeneric name="ex1" ex1="1"/>
+          	<RestrictAbsentCanonicalAAS name="ala_only" resnum="0" keep_aas="A" />
+	  	<LayerDesign name="init_layers" layer="other" make_pymol_script="0">
+            		<TaskLayer>
+                		<SelectBySASA name="symmetric_inteface_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                		<all copy_layer="core" />
+                		<Helix append="NQSTHKYW"/>
+            		</TaskLayer>
+            		<TaskLayer>
+                		<SelectBySASA name="symmetric_inteface_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                		<all copy_layer="surface" />
+            		</TaskLayer>
+            		<TaskLayer>
+                		<SelectBySASA name="symmetric_inteface_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                		<all copy_layer="boundary" />
+                		<Helix exclude="EW"/>
+            		</TaskLayer>
+          	</LayerDesign>
+          	<SelectBySASA name="select_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          	<SelectBySASA name="select_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          	<SelectBySASA name="select_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          	<SelectBySASA name="select_all" state="bound" mode="mc" core="1" boundary="1" surface="1" probe_radius="2.2" core_asa="35" surface_asa="45" verbose="1"/>
+   	</TASKOPERATIONS>
+   	<FILTERS>
+		<EnzScore name="cst_score" score_type="cstE" scorefxn="hard_symm" whole_pose="1" energy_cutoff="10.0" />
+                <SymUnsatHbonds name="uhb" cutoff="1000"/>
+                <Holes name="holes" threshold="1.8" confidence="0"/>
+   	</FILTERS>
+   	<MOVERS>
+		#define symmetry of homo-oligomer; in this example, it's C3 symmetry
+       		<DetectSymmetry name="detect_sym" />
+		<SetupForSymmetry name="setup_symm" definition="/work/sboyken/Rosetta/main/database/symmetry/cyclic/C3_Z.sym"/>
+	  	<SymPackRotamersMover name="transform_sc" scorefxn="hard_symm" task_operations="ala_only" />
+          	<AddConstraintsToCurrentConformationMover name="add_cst" use_distance_cst="0" max_distance="12." coord_dev="2.5" min_seq_sep="8" />
+          	<ClearConstraintsMover name="clearconstraints"/>
+          	<SymMinMover name="hardmin_bb" scorefxn="hard_bb" type="lbfgs_armijo_nonmonotone" tolerance="0.0001"  chi="1" bb="1" bondangle="1" bondlength="1" jump="all" cartesian="1"/>
+          
+		#HBNet Mover definition	
+		<HBNetStapleInterface name="hbnet_interf" hb_threshold="-0.4" combos="2" min_helices_contacted_by_network="3" onebody_hb_threshold="-0.2" pH_His="1" core_selector="core_loose" min_core_res="2" secondary_search="0" design_residues="SNTQHDK" write_network_pdbs="1" minimize="0" min_network_size="3" max_unsat="1" min_networks_per_pose="2" max_networks_per_pose="4" task_operations="init,current,arochi,init_layers" />
+		HBNetStapleInterface name=hbnet_interf verbose=1 scorefxn=hard_symm hb_threshold=-0.5 pH_His=1 core_selector="core_or_boundary" secondary_search=0 design_residues="SNTQHDK" write_network_pdbs=1 minimize=0 min_staples_per_interface=2 max_staples_per_interface=4 combos=2 min_network_size=4 max_unsat=1 no_heavy_unsats_allowed=1 onebody_hb_threshold=-0.3 task_operations=arochi,init_layers />
+      		#MultiplePoseMover (MPM) is needed because HBNet will pass back multiple poses -- one for each network, or combination of networks that is tried
+		# The MPM collects all poses passed to it by HBNet, and then runs a nested ROSETTASCRIPTS protocol iteratively on each pose
+		# Constraints are automatically turned on to keep the given network fixed in relative position during downstream design
+		<MultiplePoseMover name="MPM_design" max_input_poses="100">
+           	   <SELECT>
+        	   </SELECT>
+        	   <ROSETTASCRIPTS>
+        		<SCOREFXNS>
+				<ScoreFunction name="soft_symm" weights="beta_soft_rep" symmetric="1"/>
+          			<ScoreFunction name="hard_symm" weights="beta_cst" symmetric="1">
+              				<Reweight scoretype="coordinate_constraint" weight="0.5" />
+          			</ScoreFunction>
+	  			<ScoreFunction name="up_ele" weights="beta_cart" symmetric="1">
+               				<Reweight scoretype="fa_elec" weight="1.4" />
+               				<Reweight scoretype="hbond_sc" weight="2.0" />
+          			</ScoreFunction>
+			</SCOREFXNS>
+        		<TASKOPERATIONS>
+	  			<InitializeFromCommandline name="init"/>
+          			<IncludeCurrent name="current"/>
+          			<LimitAromaChi2 name="arochi" />
+          			<ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+          			<ExtraRotamersGeneric name="ex1" ex1="1"/>
+          			<LayerDesign name="all_layers" layer="other" make_pymol_script="0">
+            				<TaskLayer>
+                				<SelectBySASA name="symmetric_inteface_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                				<all copy_layer="core" />
+                				<Helix append="M"/>
+            				</TaskLayer>
+            				<TaskLayer>
+                			<SelectBySASA name="symmetric_inteface_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                			<all copy_layer="surface" />
+            				</TaskLayer>
+            				<TaskLayer>
+                				<SelectBySASA name="symmetric_inteface_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                				<all copy_layer="boundary" />
+                				<Helix exclude="D"/>
+            				</TaskLayer>
+          			</LayerDesign>
+          			<SelectBySASA name="select_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          			<SelectBySASA name="select_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+          			<SelectBySASA name="select_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+	  			<ConstrainHBondNetwork name="hbnet_task" />
+			</TASKOPERATIONS>
+			<MOVERS>
+          			<SymPackRotamersMover name="softpack_core" scorefxn="soft_symm" task_operations="init,all_layers,select_core,current,arochi,hbnet_task"/>
+          			<SymPackRotamersMover name="softpack_boundary" scorefxn="soft_symm" task_operations="init,all_layers,select_boundary,current,arochi,hbnet_task"/>
+				<SymPackRotamersMover name="softpack_surface" scorefxn="soft_symm" task_operations="init,all_layers,select_surface,current,arochi,hbnet_task"/>
+          			<SymPackRotamersMover name="hardpack_core" scorefxn="hard_symm" task_operations="init,all_layers,select_core,current,arochi,ex1_ex2,hbnet_task"/>
+          			<SymPackRotamersMover name="hardpack_boundary"  scorefxn="hard_symm" task_operations="init,all_layers,select_boundary,current,arochi,ex1_ex2,hbnet_task"/>
+          			<SymPackRotamersMover name="hardpack_surface" scorefxn="up_ele" task_operations="init,all_layers,select_surface,current,arochi,ex1,hbnet_task"/>
+				<SymMinMover name="hardmin_sconly" scorefxn="hard_symm" chi="1" bb="0" bondangle="0" bondlength="0" />
+				<SymMinMover name="hardmin_sc_bb" scorefxn="hard_symm" chi="1" bb="1" bondangle="0" bondlength="0" />
+         		</MOVERS>
+        		<APPLY_TO_POSE>
+        		</APPLY_TO_POSE>
+        		<PROTOCOLS>
+				Add mover=hardmin_sc_bb/>
+          			<Add mover="softpack_core"/>
+	  			<Add mover="softpack_boundary"/>
+	  			<Add mover="softpack_surface"/>
+          			<Add mover="hardmin_sconly"/>
+          			<Add mover="hardpack_core"/>
+          			<Add mover="hardpack_boundary"/>
+          			<Add mover="hardpack_surface"/>
+        		</PROTOCOLS>
+      		   </ROSETTASCRIPTS>
+   		</MultiplePoseMover>
+    		<MultiplePoseMover name="MPM_min_repack" max_input_poses="100">
+      		   <ROSETTASCRIPTS>
+			<SCOREFXNS>
+				<ScoreFunction name="hard_symm_no_cst" weights="beta" symmetric="1"/>
+ 	        		<ScoreFunction name="talaris_cart_sym" weights="beta_cart" symmetric="1"/>
+			</SCOREFXNS>
+			<TASKOPERATIONS>
+				<RestrictToRepacking name="repack_only" />
+			</TASKOPERATIONS>
+			<MOVERS>
+				<SymMinMover name="hardmin_cart" scorefxn="talaris_cart_sym" type="lbfgs_armijo_nonmonotone" tolerance="0.0001" chi="1" bb="1" bondangle="1" bondlength="1" jump="ALL" cartesian="1"/>
+				<SymPackRotamersMover name="repack" scorefxn="hard_symm_no_cst" task_operations="repack_only" />
+			</MOVERS>
+			<APPLY_TO_POSE>
+        		</APPLY_TO_POSE>
+			<PROTOCOLS>
+				<Add mover="hardmin_cart" />
+				<Add mover="repack" />
+			</PROTOCOLS>
+      		   </ROSETTASCRIPTS>
+    		</MultiplePoseMover>
+		#minimize and repack without constrainsts on the network residues; if there is good packing around the networks, they should stay
+			# in place in absence of the constraints.
+    		<MultiplePoseMover name="MPM_filters" max_input_poses="100">
+        	   <SELECT>
+			<AndSelector>
+				<Filter filter="cst_score"/> #this score represent how much the network moved during repacking without constraints
+				<Filter filter="uhb"/> #number of buried unsatisfied polar atoms in the entire pose
+				<Filter filter="holes"/> #filter out designs with large cavities
+        		</AndSelector>
+		   </SELECT>
+    		</MultiplePoseMover>
+	</MOVERS>
+	<PROTOCOLS>
+		Add mover=detect_sym/>
+		#SETUP THE POSE
+		#generate the symmetric backbone
+  		<Add mover="setup_symm"/>
+		#transform all sidechains to Ala (need CB for minimization), then minimize with coordinate constraints on the backbone
+          	<Add mover="transform_sc"/>
+	        #constraints on the backbone
+		<Add mover="add_cst"/>
+		#minimize away bad torsions that may be present in the "ideal" generated backbone
+          	<Add mover="hardmin_bb"/>
+          	<Add mover="clearconstraints"/>
+		#NOW LOOK FOR NETWORKS
+		#find h-bond networks using HBNet
+  		<Add mover_name="hbnet_interf"/>
+		#EVERYTHING AFTER HERE IS WITH MULTPLE_POSE_MOVER (MPM)
+		#design the rest of the pose around the networks
+  		<Add mover_name="MPM_design"/>
+		#minimize and repack without the network csts turn on (this acts as a filter for networks with poor packing around them, or bad sidechains)
+  		<Add mover_name="MPM_min_repack"/>
+		#filters
+  		<Add mover_name="MPM_filters"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

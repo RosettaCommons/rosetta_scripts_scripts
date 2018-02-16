@@ -1,0 +1,44 @@
+<ROSETTASCRIPTS>
+<SCOREFXNS>
+  <ScoreFunction name="NOV16" weights="beta" >
+    <Reweight scoretype="coordinate_constraint" weight="1" />
+  </ScoreFunction>
+</SCOREFXNS>
+<RESIDUE_SELECTORS>
+	<Chain name="chA" chains="A"/>
+	<Chain name="chB" chains="B"/>
+	<ResidueName name="polars" residue_name3="SER,THR,ASP,GLU,ARG,LYS,HIS,TYR,ASN,GLN" />
+	<And name="chA_polars" selectors="chA,polars" />
+	<Neighborhood name="neighborhood" selector="chA_polars" distance="6"/>
+	<Chain name="chBC" chains="B,C"/>
+	<And name="chBC_across_from_chA_polars" selectors="chBC,neighborhood" />
+	<Not name="iface13">
+		<Or>
+			### selects chains B and C within 13A of chain A
+			<Neighborhood distance="13" include_focus_in_subset="false" selector="chA" />
+			### selects chain A within 13A of chain B or C
+			<Neighborhood distance="13" include_focus_in_subset="false" selector="chBC" />
+		</Or>
+	</Not>
+	<ResidueName name="GPYW" residue_name3="GLY,PRO,TYR,TRP" />
+</RESIDUE_SELECTORS>
+<TASKOPERATIONS>
+	<InitializeFromCommandline name="init"/>
+	<LimitAromaChi2 name="arochi2"/>
+	<IncludeCurrent name="inclcur"/>
+	<ExtraRotamersGeneric name="exrot" ex1="1" ex2="1" extrachi_cutoff="1"/>
+	<OperateOnResidueSubset name="PR_iface13" selector="iface13"><PreventRepackingRLT/></OperateOnResidueSubset>
+	<OperateOnResidueSubset name="restrict_chA" selector="chA"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+	<OperateOnResidueSubset name="restrict_native_GPYW" selector="GPYW"><RestrictToRepackingRLT/></OperateOnResidueSubset>
+</TASKOPERATIONS>
+<MOVERS>
+<HBNet name="hbnet" scorefxn="NOV16" monte_carlo="1" hb_threshold="-0.5" min_network_size="2" min_core_res="0" max_unsat_Hpol="0" start_selector="chA_polars" write_network_pdbs="1" design_residues="STRKHYNQDE" task_operations="init,arochi2,inclcur,PR_iface13,restrict_chA,restrict_native_GPYW" />
+</MOVERS>
+<FILTERS>
+</FILTERS>
+<APPLY_TO_POSE>
+</APPLY_TO_POSE>
+<PROTOCOLS>
+	<Add mover_name="hbnet"/>
+</PROTOCOLS>
+</ROSETTASCRIPTS>

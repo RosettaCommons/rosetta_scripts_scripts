@@ -1,0 +1,287 @@
+<ROSETTASCRIPTS>
+<!--
+Keywords: de novo protein design, protein interface design
+Author: Christopher D. Bahl
+Email: cdbahl@gmail.com
+
+This protocol is intended to follow take a de novo generated protein that is holding a helical peptide fragment bound to a target protein and perform design to optimize the binder protein..
+-->
+
+
+  <SCOREFXNS>
+
+    <!-- score function to repack the startin sewn model to alleviate side chain clashes prior to cartesian minimization -->
+    <ScoreFunction name="sfxn_soft" weights="beta_soft">
+    </ScoreFunction>
+
+    <!-- score function for cartesian minimization of the starting sewn model -->
+    <ScoreFunction name="sfxn_cart" weights="beta_cart">
+      <Reweight scoretype="coordinate_constraint" weight="1" />
+    </ScoreFunction>
+
+    <!-- score function for design -->
+    <ScoreFunction name="sfxn_design" weights="beta" >
+      <Reweight scoretype="coordinate_constraint" weight="1" />
+      <Reweight scoretype="aa_composition" weight="1"/>
+      <Reweight scoretype="hbnet" weight="1" />
+      <Reweight scoretype="res_type_constraint" weight="1" />
+    </ScoreFunction>
+    
+    <!-- score function to evaluate the pose -->
+    <ScoreFunction name="sfxn_evaluate" weights="beta" >
+      <Reweight scoretype="coordinate_constraint" weight="1" />
+    </ScoreFunction>
+
+    <!-- for scoring with polar score terms only --> 
+    <ScoreFunction name="sfxn_electrostatics_and_hbond" weights="empty">
+      <Reweight scoretype="hbond_bb_sc" weight="1"/>
+      <Reweight scoretype="hbond_lr_bb" weight="1"/>
+      <Reweight scoretype="hbond_sc" weight="1"/>
+      <Reweight scoretype="hbond_sr_bb" weight="1"/>
+      <Reweight scoretype="lk_ball_bridge_uncpl" weight="-0.33"/>
+      <Reweight scoretype="fa_elec" weight="1"/>
+      <Reweight scoretype="hbnet" weight="1" />
+    </ScoreFunction>
+
+    <!-- for scoring with fa_atr only-->
+    <ScoreFunction name="sfxn_vanderwaals" weights="empty">
+      <Reweight scoretype="fa_atr" weight="1.0"/>
+    </ScoreFunction>
+
+  </SCOREFXNS>
+
+
+  <RESIDUE_SELECTORS>
+
+    <!-- select target protein for binder design -->
+    <Chain name="target" chains="B"/>
+    
+    <!-- select the sewn de novo binder binder protein -->
+    <Chain name="binder" chains="A"/>
+
+    <!-- select interface between the target and sewn binder protein -->
+    <InterfaceByVector name="interface" grp1_selector="target" grp2_selector="binder"/>
+
+    <!-- select the loops on the sewn protein -->
+    <And name="sewn_loops" selectors="binder">
+      <SecondaryStructure  overlap="1" include_terminal_loops="false" ss="L" use_dssp="true"/>
+    </And>
+
+    <!-- select the target protein, except for the interface with the sewn binder -->
+    <Not name="target_except_for_interface">
+      <Or selectors="interface,binder"/>
+    </Not>
+
+    <ResiduePDBInfoHasLabel name="motif_interface_residues" property="VITAL"/>
+
+  </RESIDUE_SELECTORS>
+
+
+  <TASKOPERATIONS>
+
+    <!-- standard task operations used for design -->
+    <LimitAromaChi2 name="limitchi2" include_trp="1" />
+    <ExtraRotamersGeneric name="extra_rots" ex1="True" ex2="True" />
+    <IncludeCurrent name="include_starting_rotamers" />
+    <ConsensusLoopDesign name="disallow_nonnative_loop_sequences" />
+    <RestrictAbsentCanonicalAAS name="no_Cys" keep_aas="ADEFGHIKLMNPQRSTVWY" />
+
+    <!-- layer design with interface specification -->
+    <LayerDesign name="layer_all" layer="core_boundary_surface_interface_Nterm_Cterm" verbose="False" use_sidechain_neighbors="True">
+      <TaskLayer>
+        <RestrictToInterfaceVector name="interface" jump="1" />
+        <all copy_layer="boundary"/>
+      </TaskLayer>
+    </LayerDesign>
+
+    <!-- turn off packing for the target protein -->
+    <OperateOnResidueSubset name="no_repack_target" selector="target" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+
+    <!-- turn off design for the target protein -->
+    <OperateOnResidueSubset name="restrict_target_to_repack" selector="target" >
+      <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+
+    <!-- turn off design for the sewn protein -->
+    <OperateOnResidueSubset name="restrict_sewn_to_repack" selector="binder" >
+      <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+
+    <!-- turn off design for the interface residues for the starting fragment used for sewing -->
+    <OperateOnResidueSubset name="restrict_interface_motif_to_repack" selector="motif_interface_residues" >
+      <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+
+    <!-- turn off packing for the interface residues for the starting fragment used for sewing -->
+    <OperateOnResidueSubset name="no_repack_interface_motif" selector="motif_interface_residues" >
+      <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+
+    <!-- turn off packing for the target protein outside the interface-->
+    <OperateOnResidueSubset name="no_repack_target_except_for_interface" selector="target_except_for_interface" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+
+  </TASKOPERATIONS>
+
+
+  <MOVERS>
+
+    <!-- remove target to allow for evaluation of the binder -->
+    <DeleteRegionMover name="delete_target" residue_selector="target"/>
+
+    <!-- relax mover -->
+    <FastRelax name="relax_for_ddg" scorefxn="sfxn_evaluate" repeats="1" task_operations="extra_rots,limitchi2,include_starting_rotamers,no_repack_target_except_for_interface"/>
+    <AddConstraintsToCurrentConformationMover name="apply_coordinate_constraints_to_target_for_ddg" residue_selector="target" cst_weight="1.0" use_distance_cst="False" coord_dev="0.015" bound_width="0" CA_only="True" bb_only="False" />
+    <ClearConstraintsMover name="remove_coordinate_constraints" />
+    <ParsedProtocol name="constrained_relax_for_ddg" mode="sequence">
+      <Add mover_name="apply_coordinate_constraints_to_target_for_ddg" />
+      <Add mover_name="relax_for_ddg" />
+      <Add mover_name="remove_coordinate_constraints" />
+    </ParsedProtocol>
+
+  </MOVERS>
+
+
+  <FILTERS>
+
+<!--###################################################
+    ## filters to assess the quality of initial dock ##
+    ###################################################-->
+
+    <!-- filters to see if initial dock is of sufficient quality to justify running lengthy design protocol -->
+    <Sasa name="interface_area_minimum_threshold" threshold="1200" upper_threshold="99999" hydrophobic="0" polar="0" jump="1" confidence="1"/>
+
+<!--##########################################################
+    ## filters to assess the quality of the binder scaffold ##
+    ##########################################################-->
+
+    <!-- quality metric filters for the sewn binder  -->
+    <SecondaryStructureHasResidue name="require_core" confidence="0" />
+    <MoveBeforeFilter name="binder_require_core" mover_name="delete_target" filter_name="require_core" confidence="0"/>
+
+    <PackStat name="packstat" threshold="0.60" repeats="1" confidence="0" />
+    <MoveBeforeFilter name="binder_packstat" mover_name="delete_target" filter_name="packstat" confidence="0"/>
+
+    <SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0" />
+    <MoveBeforeFilter name="binder_sspred" mover_name="delete_target" filter_name="sspred" confidence="0"/>
+
+    <!-- binder_score_per_res filter -->
+    <ResidueCount name="binder_res_count" max_residue_count="9999" residue_selector="binder" confidence="0"/>
+    <ScoreType name="total_score" scorefxn="sfxn_evaluate" threshold="0" confidence="0"/>
+    <MoveBeforeFilter name="binder_total_score" mover_name="delete_target" filter_name="total_score" confidence="0"/>
+    <CalculatorFilter name="binder_score_per_res" equation="total_score / res" threshold="-3.2" confidence="0">
+      <VAR name="total_score" filter="binder_total_score"/>
+      <VAR name="res" filter="binder_res_count"/>
+    </CalculatorFilter>
+
+    <!-- binder_cavity filter -->
+    <CavityVolume name="cavity" confidence="0"/>
+    <MoveBeforeFilter name="binder_cavity" mover_name="delete_target" filter_name="cavity" confidence="0"/>
+
+<!--##############################################################################
+    ## filters to assess the quality of the interface between binder and target ##
+    ##############################################################################-->
+
+    <!-- filters called by calculators and other wrappers -->
+    <Sasa name="interface_area" threshold="1400" upper_threshold="99999" hydrophobic="0" polar="0" jump="1" confidence="1"/>
+    <ShapeComplementarity name="shape_complementarity" min_sc="0.65" min_interface="0" verbose="0" quick="0" jump="1" write_int_area="1" confidence="1"/>
+    <Ddg name="ddg_norepack" scorefxn="sfxn_evaluate" threshold="0" jump="1" repeats="1" repack="False" repack_bound="False" relax_bound="False" extreme_value_removal="False" confidence="0"/>
+    <Ddg name="ddg_fa_atr_norepack" scorefxn="sfxn_vanderwaals" threshold="0" jump="1" repeats="1" repack="False" repack_bound="False" relax_bound="False" extreme_value_removal="False" confidence="0"/>
+    <Ddg name="ddg_hbond_norepack" scorefxn="sfxn_electrostatics_and_hbond" threshold="0" jump="1" repeats="1" repack="False" repack_bound="False" relax_bound="False" extreme_value_removal="False" confidence="0"/>
+    <Ddg name="ddg_relax_unbound" scorefxn="sfxn_evaluate" threshold="0" jump="1" repeats="1" repack="False" repack_bound="False" relax_bound="False" relax_mover="constrained_relax_for_ddg" extreme_value_removal="False" confidence="0"/>
+
+    <!-- calculator filters to assess interface quality -->
+    <CalculatorFilter name="ddg_norepack_per_1000sasa" equation="1000*ddg / sasa" threshold="-10" confidence="0">
+      <Var name="ddg" filter="ddg_norepack"/>
+      <Var name="sasa" filter="interface_area"/>
+    </CalculatorFilter>
+    <CalculatorFilter name="ddg_fa_atr_norepack_per_1000sasa" equation="1000*ddg / sasa" threshold="-10" confidence="0">
+      <Var name="ddg" filter="ddg_fa_atr_norepack"/>
+      <Var name="sasa" filter="interface_area"/>
+    </CalculatorFilter>
+    <CalculatorFilter name="ddg_hbond_norepack_per_1000sasa" equation="1000*ddg / sasa" threshold="-30" confidence="0">
+      <Var name="ddg" filter="ddg_hbond_norepack"/>
+      <Var name="sasa" filter="interface_area"/>
+    </CalculatorFilter>
+    <CalculatorFilter name="ddg_relax_unbound_per_1000sasa" equation="1000*ddg / sasa" threshold="-30" confidence="0">
+      <Var name="ddg" filter="ddg_relax_unbound"/>
+      <Var name="sasa" filter="interface_area"/>
+    </CalculatorFilter>
+
+  </FILTERS>
+
+
+  <MOVERS>
+
+    <!-- assign secondary structure information to the pose -->
+    <Dssp name="dssp" />
+
+    <!-- for adding and removing coordinate constraints before and after design -->
+    <AddConstraintsToCurrentConformationMover name="apply_coordinate_constraints_to_target_for_cartmin" residue_selector="target" cst_weight="10" use_distance_cst="False" coord_dev="0.015" bound_width="0" CA_only="False" bb_only="False" />
+    <AddConstraintsToCurrentConformationMover name="apply_coordinate_constraints_to_target_for_design" residue_selector="target" cst_weight="1.0" use_distance_cst="False" coord_dev="0.154" bound_width="0" CA_only="True" bb_only="False" />
+
+    <!-- for adding and removing helix sequence design constraints -->
+    <AddHelixSequenceConstraints name="apply_helix_sequence_constraints" ala_constraint_under_strength="0" add_hydrophobic_constraints="false" />
+    <ClearCompositionConstraintsMover name="remove_sequence_constraints" />
+
+    <!-- bias the loops to retain the sequence from the sewn fragments -->
+    <AddConstraints name="constrain_loop_identities" >
+      <ResidueTypeConstraintGenerator name="loop_csts" residue_selector="sewn_loops" favor_native_bonus="1.0" />
+    </AddConstraints>
+    <RemoveConstraints name="remove_loop_identity_constraints" constraint_generators="loop_csts" />
+
+    <!-- prepare the sewn model for design --> 
+    <PackRotamersMover name="prepack_sewn_soft" scorefxn="sfxn_soft" task_operations="extra_rots,limitchi2,include_starting_rotamers,no_repack_target,restrict_sewn_to_repack,no_repack_interface_motif" />
+    <MinMover name="cartesian_minimization" scorefxn="sfxn_cart" chi="false" bb="false" omega="false" jump="0" cartesian="true" bondangle="true" bondlength="true" tolerance="0.001" max_iter="1000" />
+
+    <!-- flexible backbone design -->
+    <FastDesign name="fastdesign" task_operations="extra_rots,limitchi2,include_starting_rotamers,disallow_nonnative_loop_sequences,layer_all,restrict_target_to_repack,no_repack_target_except_for_interface,restrict_interface_motif_to_repack" scorefxn="sfxn_design" clear_designable_residues="False" repeats="3" ramp_down_constraints="False" />
+    <FastRelax name="relax_post_design" scorefxn="sfxn_evaluate" repeats="1" task_operations="extra_rots,limitchi2,include_starting_rotamers,no_repack_target_except_for_interface"/>
+
+  </MOVERS>
+
+
+  <PROTOCOLS>
+
+    <!-- prepare for design -->
+    <Add mover_name="dssp" />
+    <Add mover_name="prepack_sewn_soft" />
+    <Add mover_name="apply_coordinate_constraints_to_target_for_cartmin" />
+    <Add mover_name="cartesian_minimization" />
+    <Add mover_name="remove_coordinate_constraints" />
+    <Add mover_name="dssp" />
+
+    <!-- check to see if the starting pose is good enough to be imporved by further design -->
+    <Add filter_name="interface_area_minimum_threshold"/>
+    
+    <!-- perform flexible backbone design with coordinate constraints -->
+    <Add mover_name="apply_coordinate_constraints_to_target_for_design" />
+    <Add mover_name="apply_helix_sequence_constraints" />
+    <Add mover_name="constrain_loop_identities" />
+    <Add mover_name="fastdesign" />
+    <Add mover_name="remove_sequence_constraints" />
+    <Add mover_name="remove_loop_identity_constraints" />
+    <Add mover_name="relax_post_design" />
+    <Add mover_name="remove_coordinate_constraints" />
+
+    <!-- assess the the quality of the sewn binder scaffold -->
+    <Add filter_name="binder_cavity"/>
+    <Add filter_name="binder_score_per_res"/>
+    <Add filter_name="binder_require_core"/>
+    <Add filter_name="binder_packstat"/>
+
+    <!-- assess the interface -->
+    <Add filter_name="interface_area"/>
+    <Add filter_name="shape_complementarity"/>
+    <Add filter_name="ddg_fa_atr_norepack_per_1000sasa"/>
+    <Add filter_name="ddg_hbond_norepack_per_1000sasa"/>
+    <Add filter_name="ddg_norepack_per_1000sasa"/>
+    <Add filter_name="ddg_relax_unbound_per_1000sasa"/>
+
+  </PROTOCOLS>
+
+
+</ROSETTASCRIPTS>

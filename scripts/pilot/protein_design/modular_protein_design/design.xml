@@ -1,0 +1,47 @@
+<ROSETTASCRIPTS>
+##############################################
+# ScoreFunctions
+# Be sure to use this flag:-use_bicubic_interpolation
+##############################################
+<SCOREFXNS>
+    <ScoreFunction name="sfxn_beta_cart" weights="beta_cart"/>
+    <ScoreFunction name="sfxn_beta" weights="beta"/>
+    <ScoreFunction name="VDW" weights="empty" >
+        <Reweight scoretype="fa_atr" weight="1.0" />
+    </ScoreFunction>
+</SCOREFXNS>
+##############################################
+# Task Operations
+##############################################
+<TASKOPERATIONS>
+</TASKOPERATIONS>
+###############################################
+# Filters
+###############################################
+<FILTERS>
+    <ScoreType name="vdw_filter" scorefxn="VDW" score_type="fa_atr" threshold="0" confidence="0" />
+</FILTERS>
+ ##############################################
+  # Underlying relax/repack/min/pack movers
+  ##############################################
+  <MOVERS>
+      <MakeJunctionsMover name="junc1" designs="repeat_blueprint_1.jobs" scorefxn="sfxn_beta_cart" junction_rmsd_thresh="4.0" maintain_hydrophobic_during_attach="true"/>
+      <MultiplePoseMover name="MPM_filters" max_input_poses="100000">
+        <SELECT>
+        <AndSelector>
+          <Filter filter="vdw_filter"/>
+        </AndSelector>
+        </SELECT>
+      </MultiplePoseMover>
+  </MOVERS>
+<APPLY_TO_POSE>
+</APPLY_TO_POSE>
+##############################################
+#  main
+##############################################
+<PROTOCOLS>
+    <Add mover_name="junc1"/>
+    <Add mover_name="MPM_filters"/>
+</PROTOCOLS>
+    <OUTPUT scorefxn="sfxn_beta_cart" />
+</ROSETTASCRIPTS>

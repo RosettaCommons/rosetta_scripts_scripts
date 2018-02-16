@@ -1,0 +1,13 @@
+-run:preserve_header
+#linmem_ig 10 can be turned on or off depending on runtime and memory requirements.
+#-linmem_ig 10
+-mute core.io.database
+-no_packstat_calculation
+-no_optH
+-use_truncated_termini 0
+#Disable output of PDB files (ie. output only scorefiles) to save diskspace.  The idea here is to sample the landscape, not really to look at the individual results.
+-out:file:score_only score.sc
+#Turn off unnecessary tracers to save diskspace in production runs.
+-out:levels all:300 core.pose:200 protocols.rosetta_scripts:200 core.pack:200 core.conformation:200
+
+-parser:script_vars set_torsion_runs=30

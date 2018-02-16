@@ -1,0 +1,79 @@
+<ROSETTASCRIPTS>
+Keywords: SEWING, protein interface design, single sided design, enzyme design
+Author: Brahm Yachnin
+Email: brahm.yachnin@rutgers.edu
+
+Starting with a short helix that we have found to autoinhibit carboxypeptidease G2,
+this script extends that helix using SEWING (AppendAssembly), adapted using suggestions from
+Sharon Guffy and Frank Teets (Kuhlman lab).  This will be followed by subsequent design steps
+in a separate script:
+-Start with the inhibitory helix (prodomain) alone as the input PDB.
+-Run AppendAssemblyMover SEWING, using the CPG2 "scaffold" as the partner_pdb.  The
+ last residue of the scaffold-prodomain is removed from the partner_pdb to prevent the 
+ SEWING mover from thinking it's a clash.
++Add the CPG2 "scaffold" as new chains in a separate script.
++Do a repack/design and cartesian minimization to relieve clashes.
++Do FastDesign for more extensive design with small backbone movements.
+This script runs the SEWING part, and a companion script does the design part.  This allows us to
+keep the SEWING scoreterms in the scorefile.  Adding the scaffold is done "outside" of Rosetta.
+	<SCOREFXNS>
+		<ScoreFunction name="ref" weights="ref2015.wts"/>
+	</SCOREFXNS>
+	
+	<RESIDUE_SELECTORS>
+		<Index name="cat_glu" resnums="411B"/>
+	</RESIDUE_SELECTORS>
+	
+	<TASKOPERATIONS>	
+	</TASKOPERATIONS>
+	
+	<FILTERS>
+		<PackStat name="packstat" threshold="0.50" chain="1" confidence="0"/>
+		<CavityVolume name="cavvolume" confidence="0"/>
+		<SSPrediction name="sspred" threshold="0.35" use_svm="1" use_probability="1" mismatch_probability="1" confidence="0"/>
+		<SecondaryStructureHasResidue name="require_core" confidence="0"/>
+		<FragmentLookupFilter name="fragment_lookup" lookup_name="source_fragments_4_mer" store_path="VALL_clustered/backbone_profiler_database_06032014"
+		 lookup_mode="first" chain="1" threshold="0" confidence="0" />
+		<ResidueCount name="nres_b" min_residue_count="0" max_residue_count="1000" confidence="0"/>
+	</FILTERS>
+	<MOVERS>
+		<AppendAssemblyMover name="aam" model_file_name="smotifs_H_5_40_L_1_6_H_5_40.segments" hashed="false"
+			add_probability="0.9" delete_probability = "0.1" max_segments = "9" minimum_cycles = "10000"
+			maximum_cycles = "11000" modifiable_terminus = "C" output_pose_per_move = "false"
+			partner_pdb="cpg2-gstevg-_zns.pdb" required_selector="cat_glu" output_partner="0"
+			pose_segment_starts="1" pose_segment_ends="17">
+			<Ligands>
+				<Ligand ligand_resnum="402" partner_ligand="1" auto_detect_contacts="1"/>
+			</Ligands>
+			<AssemblyScorers>
+				<MotifScorer weight = "1" />
+				<InterModelMotifScorer weight = "10" />
+				<PartnerMotifScorer weight = "2" />
+				<LigandScorer weight="10" ligand_interaction_cutoff_distance="4.0"/>
+				
+				<SubsetPartnerMotifScorer weight="10" region_start="23" region_end="26"/>
+				<SubsetPartnerMotifScorer weight="10" region_start="109" region_end="120"/>
+				<SubsetPartnerMotifScorer weight="10" region_start="267" region_end="270"/>
+				<SubsetPartnerMotifScorer weight="10" region_start="291" region_end="297"/>
+				<SubsetPartnerMotifScorer weight="10" region_start="543" region_end="545"/>
+				<SubsetPartnerMotifScorer weight="10" region_start="586" region_end="590"/>
+			</AssemblyScorers>
+			<AssemblyRequirements>
+				<ClashRequirement clash_radius = "4" />
+				<LigandClashRequirement maximum_clashes_allowed="0" clash_radius="2"/>
+				<LengthInResiduesRequirement minimum_length="25" maximum_length="70"/>
+			</AssemblyRequirements>
+		</AppendAssemblyMover> 
+	</MOVERS>
+	<PROTOCOLS>
+		<Add mover_name="aam" />
+	
+		Add some filters
+		<Add filter_name="packstat"/>
+		<Add filter_name="cavvolume"/>Cavity volume doesn't work with the selector.
+		<Add filter_name="sspred"/>
+		<Add filter_name="require_core"/>
+		<Add filter_name="nres_b"/>
+		<Add filter_name="fragment_lookup"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

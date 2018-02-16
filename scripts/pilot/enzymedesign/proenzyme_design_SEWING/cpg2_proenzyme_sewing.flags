@@ -1,0 +1,12 @@
+-run:preserve_header
+-linmem_ig 10
+-mute core.io.database
+-out:levels all:300 devel.smart_sewing:200 protocols.filters.Filter:200 protocols.rosetta_scripts.ParsedProtocol:200 protocols.rosetta_scripts.ParsedProtocol.REPORT:300 
+
+#Sewing
+-use_input_sc
+-mh:score:use_ss1 true
+-mh:score:use_ss2 true
+-mh:path:motifs xsmax_bb_ss_AILV_resl0.8_msc0.3/xsmax_bb_ss_AILV_resl0.8_msc0.3/xsmax_bb_ss_AILV_resl0.8_msc0.3.rpm.bin.gz
+-mh:path:scores_BB_BB xsmax_bb_ss_AILV_resl0.8_msc0.3/xsmax_bb_ss_AILV_resl0.8_msc0.3/xsmax_bb_ss_AILV_resl0.8_msc0.3
+-mh:gen_reverse_motifs_on_load false     # I think the inverse motifs are already in the datafiles

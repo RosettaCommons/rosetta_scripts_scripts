@@ -1,0 +1,3 @@
+-run:preserve_header
+-linmem_ig 10
+-mute core.io.database

@@ -1,0 +1,223 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+	  	<ScoreFunction name="hard" weights="beta_cst" />
+		<ScoreFunction name="hard_cart" weights="beta_cart"/>
+                <ScoreFunction name="soft_cst" weights="/work/sboyken/weights/beta_soft_rep_cst.wts"/>
+                hard weights=beta/>
+                <ScoreFunction name="hard_cst" weights="beta_cst"/>
+                <ScoreFunction name="beta_aa_comp" weights="beta_cst" >
+                                        <Reweight scoretype="aa_composition" weight="1.0" />
+                                        Set aa_composition_setup_file="CA2_constraint.comp" />
+                                </ScoreFunction>
+                <ScoreFunction name="up_ele" weights="beta_cst" >
+                                        <Reweight scoretype="fa_elec" weight="1.4" />
+                                        <Reweight scoretype="hbond_sc" weight="2.0" />
+                </ScoreFunction>
+   	</SCOREFXNS>
+	<RESIDUE_SELECTORS>
+                Layer name=core_or_boundary select_core=true select_boundary=true />
+                Chain name=chain_a chains=A/>
+                Chain name=chain_b chains=B/>
+                Chain name=chain_c chains=C/>
+		<ResidueName name="all_ala" residue_name3="ALA"/>
+      		<Not name="not_ala" selector="all_ala"/>
+		<Layer name="pick_core_and_boundary" select_core="true" select_boundary="true" core_cutoff="5.2"/>
+                <Layer name="pick_core_and_boundary_3" select_core="true" select_boundary="true" surface_cutoff="3" core_cutoff="5.2"/>
+		<Layer name="pick_core_and_surface" select_core="true" select_surface="true" core_cutoff="5.2"/>
+                <Layer name="pick_surface_and_boundary" select_surface="true" select_boundary="true" core_cutoff="5.2"/>
+                <Layer name="core" select_core="true" core_cutoff="5.2" />
+                <Layer name="surface" select_surface="true" />
+		<ResidueName name="ala_and_met" residue_name3="ALA,MET" />
+		<ResidueName name="lys_arg_glu_asp" residue_name3="LYS,ARG,GLU,ASP" />
+                <ResidueName name="ala_met_arg_lys_glu_asp" residue_name3="ALA,MET,ARG,LYS,GLU,ASP" />
+                <Not name="not_ala_or_met" selector="ala_and_met" />
+                <Not name="not_ala_met_arg_lys_glu_asp" selector="ala_met_arg_lys_glu_asp"/>
+		<ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet" />
+		StoredResidueSubset
+		<StoredResidueSubset name="get_hbnet_residues" allow_extensions="1" subset_name="hbnet_residues_cached" />
+		Or name=main selectors="chain_a,chain_b,chain_c"/>
+		Not name=not_main selector=main/>
+		Neighborhood name=around_third_helices distance=8.0 selector=not_main/>
+		Or name=third_helix_design_residues selectors="not_main,around_third_helices"/>
+		Not name=no_design_res selector=third_helix_design_residues/>
+		<Index name="third_helices" resnums="%%term1_res1%%-%%term6_res2%%" />
+		#will select third_helix and neighborhood residues
+		#It sets each position in the ResidueSubset that corresponds to a residue within a certain distance of the focused set of residues as well as the residues in the focused set to true
+		<Neighborhood name="around_third_helices" distance="6.0" selector="third_helices"/>
+                <Not name="no_design_res" selector="around_third_helices"/>
+	</RESIDUE_SELECTORS>
+   	<TASKOPERATIONS>
+   		<ConsensusLoopDesign name="disallow_non_abego_aas"/>
+                <LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="5.2" >
+              <core>
+                <Helix append="M" />
+                <all exclude="W" />
+              </core>
+              <boundary>
+                <Helix exclude="D" />
+                <all exclude="W" />
+              </boundary>
+              <surface>
+                <Helix append="A"/>
+              </surface>
+            </LayerDesign>
+	    <LayerDesign name="layer_all_3" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" surface="3" core="5.2" >
+              <core>
+                <Helix append="M" />
+                <all exclude="W" />
+              </core>
+              <boundary>
+                <Helix exclude="D" />
+                <all exclude="W" />
+              </boundary>
+              <surface>
+                <Helix append="A"/>
+              </surface>
+            </LayerDesign>
+         <OperateOnResidueSubset name="design_core" selector="pick_surface_and_boundary">
+           <PreventRepackingRLT/>
+         </OperateOnResidueSubset>
+         <OperateOnResidueSubset name="design_boundary" selector="pick_core_and_surface">
+           <PreventRepackingRLT/>
+         </OperateOnResidueSubset>
+         <OperateOnResidueSubset name="design_surface" selector="pick_core_and_boundary">
+           <PreventRepackingRLT/>
+         </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="design_surface_3" selector="pick_core_and_boundary_3">
+           <PreventRepackingRLT/>
+         </OperateOnResidueSubset> 
+	<OperateOnResidueSubset name="repack_not_ala_or_met" selector="not_ala_or_met" >
+           <RestrictToRepackingRLT/>
+         </OperateOnResidueSubset>
+         <OperateOnResidueSubset name="redesign_ala_met" selector="ala_and_met" >
+           <RestrictAbsentCanonicalAASRLT aas="AMILVF" />
+         </OperateOnResidueSubset>
+         <OperateOnResidueSubset name="repack_not_ala_met_arg_lys_glu_asp" selector="not_ala_met_arg_lys_glu_asp" >
+           <RestrictToRepackingRLT/>
+         </OperateOnResidueSubset>
+         <OperateOnResidueSubset name="redesign_charges" selector="lys_arg_glu_asp" >
+           <RestrictAbsentCanonicalAASRLT aas="RKEDSTA" />
+         </OperateOnResidueSubset>
+	<InitializeFromCommandline name="init"/>
+      OperateOnResidueSubset name=hbnet_task selector=hbnet_residues>
+                                  RestrictToRepackingRLT/>
+                                /OperateOnResidueSubset>
+        <OperateOnResidueSubset name="hbnet_task" selector="get_hbnet_residues">
+                                  <PreventRepackingRLT/>
+                                </OperateOnResidueSubset>
+        ConstrainHBondNetwork name=hbnet_task />
+	
+	<OperateOnResidueSubset name="no_design" selector="no_design_res" >
+           <RestrictToRepackingRLT/>
+         </OperateOnResidueSubset>
+
+      <IncludeCurrent name="current"/>
+      <LimitAromaChi2 name="arochi" />
+      <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+      <ExtraRotamersGeneric name="ex1" ex1="1"/>
+      <RestrictAbsentCanonicalAAS name="ala_only" resnum="0" keep_aas="A" />
+	</TASKOPERATIONS>
+   	<FILTERS>
+       BundleReporter name=bundle_report scorefxn=beta behavior=ALWAYS_TRUE report_sequence=true />
+   	<PreProline name="prepro" use_statistical_potential="0" confidence="0" />
+      <ScoreType name="scorefilter" scorefxn="hard_cst" score_type="total_score" threshold="100000000.0" confidence="1" />
+      EnzScore name="cst_score" score_type=cstE scorefxn=hard_cst whole_pose=1 energy_cutoff=10 confidence=1/>
+      
+      #default for uhb is jump=1, which won't work for heterotrimer
+      <BuriedUnsatHbonds name="uhb" scorefxn="hard_cst" cutoff="4" confidence="0"/>
+      <BuriedUnsatHbonds2 name="uhb2" scorefxn="hard_cst" cutoff="4" confidence="0" AHD_cutoff="90" confidence="0"/>
+      <ResidueCount name="ala_count" max_residue_count="20" residue_types="ALA" confidence="0"/>
+      ResidueCount name=chainA_ILVF_count min_residue_count=5 residue_types="ILE,LEU,VAL,PHE" residue_selector=chain_a confidence=0/>
+      ResidueCount name=chainB_ILVF_count min_residue_count=5 residue_types="ILE,LEU,VAL,PHE" residue_selector=chain_b confidence=0/>
+      ResidueCount name=chainC_ILVF_count min_residue_count=5 residue_types="ILE,LEU,VAL,PHE" residue_selector=chain_c confidence=0/>
+	</FILTERS>
+   	<MOVERS>
+	<StoreResidueSubset name="store_hbnet_residues" subset_name="hbnet_residues_cached" residue_selector="hbnet_residues" overwrite="1" />
+        <BundleGridSampler name="bgs1" use_degrees="true" helix_length="%%hel_length%%" reset="false" scorefxn="hard" crick_params_file="alpha_helix_100" set_bondlengths="true" set_bondangles="true" set_dihedrals="true" dump_pdbs="true" max_samples="1265625000000" nstruct_mode="true" pre_selection_filter="scorefilter">
+    <Helix delta_omega0="25" invert="false" delta_omega1_min="0.0" delta_omega1_max="90.0" delta_omega1_samples="6" r0="%%r_in_1%%" z1_offset="1.51" omega0="-2.5" />
+    <Helix delta_omega0="140" invert="false" delta_omega1_copies_helix="1" r0="%%r_in_2%%" z1_offset_copies_helix="1" omega0="-2.5" />
+    <Helix delta_omega0="260" invert="false" delta_omega1_copies_helix="1" r0="%%r_in_3%%" z1_offset_copies_helix="1" omega0="-2.5" />
+    </BundleGridSampler>
+	# need to change numbering to actual rosetta numbering
+	<DeclareBond name="add_termini1" add_termini="true" atom1="C" atom2="N" res1="%%term1_res1%%" res2="%%term1_res2%%" />
+	<DeclareBond name="add_termini2" add_termini="true" atom1="C" atom2="N" res1="%%term2_res1%%" res2="%%term2_res2%%" />
+	<DeclareBond name="add_termini3" add_termini="true" atom1="C" atom2="N" res1="%%term3_res1%%" res2="%%term3_res2%%" />
+	<DeclareBond name="add_termini4" add_termini="true" atom1="C" atom2="N" res1="%%term4_res1%%" res2="%%term4_res2%%" />
+	<DeclareBond name="add_termini5" add_termini="true" atom1="C" atom2="N" res1="%%term5_res1%%" res2="%%term5_res2%%" />
+	<DeclareBond name="add_termini6" add_termini="true" atom1="C" atom2="N" res1="%%term6_res1%%" res2="%%term6_res2%%" />
+	DeclareBond name=add_termini7 add_termini=true atom1=C atom2=N res1=106 res2=138 />
+	DeclareBond name=add_termini8 add_termini=true atom1=C atom2=N res1=139 res2=140 />
+	DeclareBond name=add_termini9 add_termini=true atom1=C atom2=N res1=141 res2=142 />
+	DeclareBond name=add_termini10 add_termini=true atom1=C atom2=N res1=174 res2=175 />
+	DeclareBond name=add_termini11 add_termini=true atom1=C atom2=N res1=176 res2=177 />
+	DeclareBond name=add_termini12 add_termini=true atom1=C atom2=N res1=209 res2=210 />
+	<MinMover name="hardmin_bb" scorefxn="hard_cart" type="lbfgs_armijo_nonmonotone" tolerance="0.0001" chi="0" bb="1" bondangle="1" bondlength="1" jump="all" cartesian="1"/>
+                <PackRotamersMover name="softpack_core" scorefxn="soft_cst" task_operations="init,layer_all,design_core,current,arochi,hbnet_task,disallow_non_abego_aas"/>
+                <PackRotamersMover name="softpack_boundary" scorefxn="soft_cst" task_operations="init,layer_all,design_boundary,current,arochi,hbnet_task,disallow_non_abego_aas"/>
+                <PackRotamersMover name="softpack_surface" scorefxn="soft_cst" task_operations="init,layer_all,design_surface,current,arochi,hbnet_task,disallow_non_abego_aas"/>
+                <PackRotamersMover name="hardpack_core" scorefxn="hard_cst" task_operations="init,layer_all,design_core,current,arochi,ex1_ex2,hbnet_task,disallow_non_abego_aas"/>
+                <PackRotamersMover name="hardpack_boundary" scorefxn="hard_cst" task_operations="init,layer_all,design_boundary,current,arochi,ex1_ex2,hbnet_task,disallow_non_abego_aas"/>
+                <PackRotamersMover name="hardpack_surface" scorefxn="up_ele" task_operations="init,layer_all,design_surface,current,arochi,ex1,hbnet_task,disallow_non_abego_aas"/>
+                <PackRotamersMover name="hardpack_surface_third_only" scorefxn="up_ele" task_operations="init,layer_all_3,design_surface_3,no_design,current,arochi,ex1,hbnet_task,disallow_non_abego_aas"/>
+		<MinMover name="hardmin_sconly" scorefxn="hard_cst" chi="1" bb="0" bondangle="0" bondlength="0" />
+	        <AddCompositionConstraintMover name="add_comp_core" filename="/work/sboyken/aa_comp_files/bundle_core_heterotrimer.comp" selector="pick_core_and_boundary" />
+                AddCompositionConstraintMover name=add_comp_surf filename="/work/sboyken/aa_comp_files/bundle_surface_heterotrimer.comp" selector=surface /> 
+                InterfaceAnalyzerMover name=interface_analyzer scorefxn=beta_aa_comp packstat=1 pack_input=1 pack_separated=1 />
+                <FastDesign name="fdes2" scorefxn="beta_aa_comp" repeats="1" task_operations="init,layer_all,redesign_ala_met,repack_not_ala_or_met,current,arochi,ex1,hbnet_task,disallow_non_abego_aas" />
+                <FastDesign name="fdes1" scorefxn="beta_aa_comp" repeats="1" task_operations="init,layer_all,no_design,current,arochi,hbnet_task,disallow_non_abego_aas" >
+                        <MoveMap >
+                                <Span begin="1" end="%%input_end%%" chi="0" bb="0" />
+                                <Jump number="1" setting="0" />
+                                <Jump number="2" setting="0" />
+                                <Jump number="3" setting="0" />
+                                Chain number=1 chi=1 bb=0 />
+                                Chain number=2 chi=1 bb=0 />
+                                Chain number=3 chi=1 bb=0 />
+                        </MoveMap>
+                </FastDesign>
+		<DumpPdb name="dump1" fname="dump1.pdb" scorefxn="beta_aa_comp"/>
+                <DumpPdb name="dump2" fname="dump2.pdb" scorefxn="beta_aa_comp"/>
+                <DumpPdb name="dump3" fname="dump3.pdb" scorefxn="beta_aa_comp"/>
+		<DumpPdb name="dump4" fname="dump4.pdb" scorefxn="beta_aa_comp"/>
+		<DumpPdb name="dump5" fname="dump5.pdb" scorefxn="beta_aa_comp"/>
+	</MOVERS>
+	<PROTOCOLS>
+	  <Add mover="store_hbnet_residues"/>
+	  <Add mover="bgs1"/>
+	  <Add mover="add_termini1" />
+	  <Add mover="add_termini2" />
+	  <Add mover="add_termini3" />
+	  <Add mover="add_termini4" />
+	  <Add mover="add_termini5" />
+	  <Add mover="add_termini6" />
+          <Add mover="add_comp_core" />
+	  <Add mover="fdes1"/>
+          <Add mover="dump2"/>
+	  Add mover=softpack_core/>
+          Add mover=softpack_boundary/>
+          Add mover=softpack_surface/>
+          Add mover=hardmin_sconly/>
+          Add mover=hardpack_core/>
+          Add mover=hardpack_boundary/>
+          Add mover=add_comp_surf/>
+	  <Add mover="hardpack_surface_third_only"/>
+	  Add mover=dump2/>
+	  Add mover=fdes1/>
+	  <Add mover="dump3"/>
+          Add mover=add_comp_file />
+          <Add mover="fdes2"/>
+          <Add mover="dump4"/>
+          <Add mover="hardpack_surface"/>
+	  #need surface design with up_ele and AAcomp
+        Add mover=dump5/>
+        Add filter=cst_score/>
+        Add filter=chainA_ILVF_count/>
+        Add filter=chainB_ILVF_count/>
+        Add filter=chainC_ILVF_count/>
+        <Add filter="ala_count"/>
+        <Add filter="uhb"/>
+        <Add filter="uhb2"/>
+        <Add filter="prepro"/>
+        Add mover=interface_analyzer/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

@@ -1,0 +1,49 @@
+<ROSETTASCRIPTS>
+   <TASKOPERATIONS>
+          
+      <InitializeFromCommandline name="init"/>
+
+      <DetectProteinLigandInterface name="LigInterface" cut1="6" cut2="8" cut3="10" cut4="12" design="0" />
+
+
+        </TASKOPERATIONS>
+
+        <SCOREFXNS>
+	        <ScoreFunction name="enzdes" weights="enzdes" />
+        </SCOREFXNS>
+
+
+        <MOVERS>
+          Position of mutation and the new entity are specified
+	  <MutateResidue name="l55i" target="55A" new_res="ILE"/>
+
+          <DumpPdb name="dp" fname="dump.pdb" scorefxn="enzdes"/>
+
+          We specify a distance to the ligand by including the LigInterface from the task_operations
+          <TaskAwareMinMover name="min" bb="0" chi="1" jump="1" scorefxn="enzdes" task_operations="LigInterface"/>
+	  Adding any cst to the pose
+	  <AddOrRemoveMatchCsts name="addcst" cst_instruction="add_new" />
+	  
+	  <PackRotamersMover name="repack" task_operations="init,LigInterface"/>
+
+         The minimisation protocol specified for the pose
+   	  <ParsedProtocol name="min_repack_min">
+            <Add mover="min"/>
+            <Add mover="repack"/>
+            <Add mover="min"/>
+          </ParsedProtocol>
+
+	</MOVERS>
+
+        <APPLY_TO_POSE>
+        </APPLY_TO_POSE>
+
+        <PROTOCOLS>
+
+	  <Add mover="l55i" />
+	  <Add mover="addcst"/>
+	  <Add mover="min" />
+
+        </PROTOCOLS>
+
+</ROSETTASCRIPTS>

@@ -1,0 +1,38 @@
+<ROSETTASCRIPTS>If using the 100 degree per residue convention,
+Add crick_params_file="alpha_helix_100";
+for 2 layer, set omega0=-2.85
+for 3 layer, set omega0=1.82
+for 5 layer, set omega0=0
+
+delta_omega0: superhelical phase
+delta_omega1: helix phase
+
+	<SCOREFXNS>
+        <ScoreFunction name="tala" weights="talaris2014.wts" />
+	</SCOREFXNS>
+    
+	<TASKOPERATIONS>
+	</TASKOPERATIONS>
+    
+	<FILTERS>
+		<ScoreType name="scorefilter" scorefxn="tala" score_type="total_score" threshold="0.0" confidence="1" />
+		<BundleReporter name="bgs_filter" scorefxn="tala" behavior="ALWAYS_TRUE" report_sequence="true"  />
+	</FILTERS>
+    
+	<MOVERS>
+		<BundleGridSampler name="bgs1" use_degrees="true" helix_length="36" scorefxn="tala" crick_params_file="alpha_helix" set_bondlengths="true" set_bondangles="true" set_dihedrals="true" dump_pdbs="false" max_samples="1000000000" nstruct_mode="true">
+            <Helix delta_omega0="0" invert="false" delta_omega1="-161" r0="4.8" z1_offset="0" omega0="-3.2" delta_t="%%delta_t%%" />
+            <Helix delta_omega0="90" invert="true" delta_omega1_min="89" delta_omega1_max="96" delta_omega1_samples="12" r0_min="9.0" r0_max="12.0" r0_samples="10" z1_offset="0.8" omega0_copies_helix="1" delta_t="%%inverse_delta_t%%" />
+            <Helix delta_omega0="180" invert="true" delta_omega1="146" r0="4.8" z1_offset="2" omega0_copies_helix="1" delta_t_copies_helix="2" />
+            <Helix delta_omega0="270" invert="false" delta_omega1_min="220" delta_omega1_max="260" delta_omega1_samples="15" r0_min="9.0" r0_max="12.0" r0_samples="10" z1_offset="0.0" omega0_copies_helix="1" delta_t_copies_helix="1" />
+		</BundleGridSampler>
+	</MOVERS>
+    
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+    
+	<PROTOCOLS>
+		<Add mover="bgs1" />
+		<Add filter_name="bgs_filter"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

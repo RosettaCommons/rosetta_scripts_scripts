@@ -1,0 +1,116 @@
+<ROSETTASCRIPTS>#07/24/13 
+#Scott Boyken
+#Design of Mj tRNA synthetase (PDB IDs 1ZH6, 1ZH0, 2AG6) to accomodate novel NSAA's (NCAA's)
+#This design protocol will use a constrain (.cst) file to fix distance ranges for certain key H-bonds that are conserved
+#   between almost all synthetases and N-CA-CO residues of the amino acid ligand, important for catalysis of AA to ATP
+#This design protocol will also prevent aa's in the ATP binding pocket and tRNA binding pocket from being mutated
+
+
+	<TASKOPERATIONS>
+	# Initialize from cmd (reads command line options)
+	<InitializeFromCommandline name="init"/>	
+        # Detect interface without design
+	<DetectProteinLigandInterface name="dpli_nodesign" design="0" cut1="6.0" cut2="8.0" cut3="10.0" cut4="12.0"/>
+	# Limit chi2 angles of aromatic residues ~ 0 degrees gives
+	# internal clash of the residue
+	<LimitAromaChi2 name="limchi2"/>
+	# Access the memory in a linear fashion (avoids crashes due to using too much memory)
+        <SetIGType name="linmem_ig" lin_mem_ig="1"/>
+
+        </TASKOPERATIONS>
+
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+
+ 	<SCOREFXNS>
+
+	  # Using talaris2013 scoring fan throughout
+	  #enzdes is a variable that is used throughout rest of this script
+	  <ScoreFunction name="enzdes" weights="talaris2013.wts"/>
+	  # Change of the repulsive term in vdw calculation, made less steep
+	  #   allows for slight clashes during the initial design process
+	  <ScoreFunction name="soft" weights="ligand_soft_rep" />
+
+  	</SCOREFXNS>
+
+
+        <MOVERS>
+
+          # Minimization of complex - no design allowed
+          <TaskAwareMinMover name="min" bb="0" chi="1" jump="1" scorefxn="enzdes" task_operations="dpli_nodesign,init"/>
+          # Packing of rotamers making sure no aromatic with chi2 of 90 degrees
+          <PackRotamersMover name="repack" task_operations="init,dpli_nodesign,limchi2"/>
+
+          <ParsedProtocol name="min_repack_min">
+               <Add mover="min"/>
+               <Add mover="repack"/>
+               <Add mover="min"/>
+          </ParsedProtocol>
+
+        </MOVERS>
+
+        <FILTERS>
+          # Computes the energy of the ligand on the interaction graph
+          <LigInterfaceEnergy name="interfE" scorefxn="enzdes" energy_cutoff="0"/>
+
+          <ShapeComplementarity name="sc" min_sc="0.25" jump="1"/>
+          
+          # Keeping the hydrogen bonds
+          # NEED TO BE CAREFUL WITH HbondsToResidue filter!
+          <HbondsToResidue name="hbonds_filter" partners="1" energy_cutoff="-0.5" backbone="1" sidechain="1" pdb_num="1X"/> 
+ 
+          # 0.6 is based on empirical observation from Nobu
+          <PackStat name="pstat" chain="0" threshold="0.1" repeats="5"/>
+     
+          #Repack without the ligand to ensure structure does not change too much in absence of ligand
+          <RepackWithoutLigand name="rwl" scorefxn="enzdes" target_res="all_repacked" rms_threshold="2.0"/>
+
+          # The calculations is run 10 times to get a semi-reasonable value
+          <Ddg name="ddg_complex" scorefxn="enzdes" threshold="-1" jump="1" repeats="10" relax_mover="min_repack_min"/>
+
+
+        </FILTERS>
+
+     <MOVERS>	
+
+     # Hard minimization / no repack, no design, only minimize, with backbone minimization
+     # minimization
+     <EnzRepackMinimize name="fin_min" repack_only="0" design="0" scorefxn_minimize="enzdes" scorefxn_repack="enzdes" minimize_rb="0" minimize_sc="1" minimize_bb="0" cycles="1" task_operations="init,dpli_nodesign,limchi2,linmem_ig"/>
+     # Added 16-04-2013
+     <GenericMonteCarlo name="g_fin_min" mover_name="fin_min" filter_name="interfE" trials="5" sample_type="low" temperature="0.6" drift="0"/>
+
+     # Hard minimization / hard repack without design and no backbone minimization
+     # Leave rigid body min off here
+     <EnzRepackMinimize name="fin_rpkmin" repack_only="1" design="0" scorefxn_minimize="enzdes" scorefxn_repack="enzdes" minimize_rb="0" minimize_sc="1" minimize_bb="0" cycles="1" task_operations="init,dpli_nodesign,limchi2,linmem_ig"/>
+     <GenericMonteCarlo name="g_fin_rpkmin" mover_name="fin_rpkmin" filter_name="interfE" trials="5" sample_type="low" temperature="0.6" drift="0"/>
+       
+
+   </MOVERS>
+
+   <PROTOCOLS>
+
+     # Hard minimization / no repack, no design, minimize backbone, minimize ligand
+     <Add mover_name="g_fin_min"/>
+
+     # Hard minimization / hard repack without design and no backbone minimization
+     <Add mover_name="g_fin_rpkmin" filter_name="interfE"/>
+
+     # Computes shape complementarity
+     <Add filter_name="sc"/>
+     # Computes the pack stat
+     # uses RosettaHoles to estimate voids in the ligand binding pocket
+     # 0.6 is "good" value
+     <Add filter_name="pstat"/>
+ 
+     # Computes the ddG ( 10 runs)
+     <Add filter_name="ddg_complex"/>
+    
+     # Computes the repack without ligand if side chains move more than 
+     # thredshold
+     <Add filter_name="rwl"/>
+
+     <Add filter_name="hbonds_filter"/>
+
+   </PROTOCOLS>
+
+</ROSETTASCRIPTS>

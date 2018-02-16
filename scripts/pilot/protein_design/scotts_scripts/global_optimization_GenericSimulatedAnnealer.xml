@@ -1,0 +1,211 @@
+<ROSETTASCRIPTS>
+<SCOREFXNS>
+  <ScoreFunction name="SFXN7" weights="talaris2013.wts">
+        <Reweight scoretype="res_type_constraint" weight="1"/>
+  </ScoreFunction>
+    <ScoreFunction name="TotalHydrophobic" weights="/work/grocklin/miniproteins/EEHEE/bigger1/bps/total_hydrophobic_weights.wts"/>
+</SCOREFXNS>
+<TASKOPERATIONS>
+  <LimitAromaChi2 name="limitchi2" />
+    <LayerDesign name="layer" layer="core_boundary_surface_Nterm_Cterm" pore_radius="2.0" verbose="true" use_sidechain_neighbors="True">
+        boundary>
+            Helix exclude="TVI" />
+            Strand exclude="S" />
+        /boundary>
+        surface>
+            Helix exclude="T" />
+            Strand exclude="S" />
+        /surface>
+  </LayerDesign>
+    <LayerDesign name="layer_surface" layer="surface" pore_radius="2.0" verbose="true" use_sidechain_neighbors="True">
+        boundary>
+            Helix exclude="TVI" />
+            Strand exclude="S" />
+        /boundary>
+        surface>
+            Helix exclude="T" />
+            Strand exclude="S" />
+        /surface>
+  </LayerDesign>
+  <RestrictToRepacking name="restrict" />
+  <DesignByResidueCentrality name="design_central_residues" regions_to_design="5" region_shell="0" repack_non_selected="0" />
+<OperateOnCertainResidues name="keepron2">
+    <ResidueIndexIs indices="33,35,36,37,38,39,41,43"/>   all plus 297
+    <PreventRepackingRLT/>
+  </OperateOnCertainResidues>
+  <OperateOnCertainResidues name="chainA">
+   <ChainIs chain="B"/>
+   <PreventRepackingRLT/>
+  </OperateOnCertainResidues>
+    <NoRepackDisulfides name="exemptdisulf" />
+  <ReadResfile name="rrf" filename="resfile" />
+
+</TASKOPERATIONS>
+<MOVERS>
+  ##############################################
+  # Underlying relax/repack/min/design movers
+  ##############################################
+  <ConstraintSetMover name="loadcstMSA" cst_file="../MSAcst"/>
+  <FastRelax name="relax_test" repeats="2" scorefxn="SFXN7" task_operations="limitchi2,keepron2,chainA,restrict">
+        <MoveMap name="mm">
+        <Chain number="2" chi="False" bb="False"/>
+      </MoveMap>
+  </FastRelax>
+  <FastRelax name="full_relax" scorefxn="SFXN7" task_operations="limitchi2,keepron2,chainA,restrict">
+        <MoveMap name="mm">
+        <Chain number="2" chi="False" bb="False"/>
+      </MoveMap>
+  </FastRelax>
+
+  <TaskAwareMinMover name="bb_min" scorefxn="SFXN7" bb="1" chi="1" jump="1" task_operations="limitchi2,keepron2,chainA,rrf" tolerance="0.0001" />
+  <PackRotamersMover name="design_hard" scorefxn="SFXN7" task_operations="limitchi2,keepron2,chainA,rrf" />
+  <ParsedProtocol name="design_min" >
+    <Add mover_name="design_hard" />
+    <Add mover_name="bb_min" />
+  </ParsedProtocol>
+</MOVERS>
+<FILTERS>
+  ###############################################
+  # These are the actual filters which score things
+  ###############################################
+
+  <ResidueCount name="nres_cys" residue_types="CYD" confidence="0" />
+  <ResidueCount name="nres" confidence="0" />
+  <ScoreType name="dslf_fa13" scorefxn="SFXN7" score_type="dslf_fa13" threshold="0"/>
+  <ScoreType name="hbond_sfn" scorefxn="SFXN7" score_type="hbond_lr_bb" threshold="0"/>
+
+
+  <SSPrediction name="psipred_prob" confidence="0" cmd="/work/tlinsky/Rosetta/tools/fragment_tools/psipred/runpsipred_single" use_probability="1" use_svm="0" />
+  <SSPrediction name="psipred_nres" confidence="0" cmd="/work/tlinsky/Rosetta/tools/fragment_tools/psipred/runpsipred_single" use_probability="0" use_svm="0" />
+
+  <SSShapeComplementarity name="ss_sc" verbose="0" confidence="0" />
+  <TotalSasa name="exposed_hydrophobics" confidence="0" hydrophobic="True" />
+
+  <ScoreType name="total_hydrophobic" scorefxn="TotalHydrophobic" threshold="0"/>
+
+  <CalculatorFilter name="buried_np" equation="total - exposed" threshold="1" confidence="0">
+      <Var name="total" filter="total_hydrophobic"/>
+      <Var name="exposed" filter="exposed_hydrophobics"/>
+  </CalculatorFilter>
+
+  <CalculatorFilter name="buried_over_exposed" equation="buried / exposed" threshold="1" confidence="0">
+      <Var name="buried" filter="buried_np"/>
+      <Var name="exposed" filter="exposed_hydrophobics"/>
+  </CalculatorFilter>
+
+  <CalculatorFilter name="bb" equation="hbond / rescount" threshold="-0.23" confidence="0">
+      <Var name="hbond" filter="hbond_sfn"/>
+      <Var name="rescount" filter="nres"/>
+  </CalculatorFilter>
+
+    <CalculatorFilter name="mean_dslf" equation="(dslf + 4.55525) / (cyscount-10)" threshold="-0.35" confidence="0">
+        <Var name="dslf" filter="dslf_fa13"/>
+        <Var name="cyscount" filter="nres_cys"/>
+    </CalculatorFilter>
+
+  <RotamerBoltzmannWeight name="rotamer_boltz_core_avg" task_operations="design_central_residues" skip_ala_scan="1" scorefxn="SFXN7" no_modified_ddG="1" />
+  <CavityVolume name="cavity_volume" />
+  <PackStat name="pack" confidence="0"/>
+  <Holes name="holes" confidence="0"/>
+
+    <Ddg name="ddg"  scorefxn="SFXN7" threshold="-10" jump="1" repeats="1" repack="0" confidence="0"/>
+
+    <Rmsd name="rmsdToPeptide" threshold="0.45" superimpose="0" confidence="0"> 
+            <span_two begin_native="1" end_native="11" begin_pose="33" end_pose="43" CA_only="0"/>
+    </Rmsd>
+
+</FILTERS>
+
+<MOVERS>
+  # DSSP
+  <Dssp name="dssp" />
+    <DumpPdb name="AfterSuper" fname="AfterSuper.pdb" tag_time="True" />
+    <DumpPdb name="AfterRelax" fname="AfterRelax.pdb" tag_time="True" />
+
+  <Superimpose name="super_target" ref_start="13" ref_end="213"  target_start="49" target_end="249" CA_only="0"/>    
+
+  <FastDesign name="fastdes" scorefxn="SFXN7" repeats="3" task_operations="limitchi2,keepron2,chainA,layer_surface">
+        <MoveMap name="mm">
+        <Chain number="2" chi="False" bb="False"/>
+      </MoveMap>
+  </FastDesign>
+
+  <FastRelax name="relax_for_greedy" scorefxn="SFXN7" repeats="1" task_operations="limitchi2,keepron2,chainA,restrict">
+        <MoveMap name="mm">
+        <Chain number="2" chi="False" bb="False"/>
+      </MoveMap>
+  </FastRelax>
+
+  <ParsedProtocol name="relax_for_greedy_fix">
+    <Add mover_name="relax_for_greedy" />
+    <Add mover_name="super_target" />
+  </ParsedProtocol>
+
+
+  # Movers to restrict residue in worst region and redesign
+  <RestrictRegion name="restrict_worst_psipred" type="psipred" scorefxn="SFXN7" psipred_cmd="/work/tlinsky/Rosetta/tools/fragment_tools/psipred/runpsipred_single" max_trp="1" task_operations="limitchi2,layer,keepron2,chainA"  resfile="resfile" />
+  <RestrictRegion name="restrict_worst_exposed" type="packstat" scorefxn="SFXN7" psipred_cmd="/work/tlinsky/Rosetta/tools/fragment_tools/psipred/runpsipred_single" max_trp="1" task_operations="limitchi2,layer,keepron2,chainA"  resfile="resfile" />
+  <RestrictRegion name="restrict_worst_random_mut" type="random_mutation" scorefxn="SFXN7" psipred_cmd="/work/tlinsky/Rosetta/tools/fragment_tools/psipred/runpsipred_single" max_trp="1" task_operations="limitchi2,layer,keepron2,chainA"  resfile="resfile" />
+  <RestrictRegion name="restrict_worst_score" type="score" scorefxn="SFXN7" psipred_cmd="/work/tlinsky/Rosetta/tools/fragment_tools/psipred/runpsipred_single" max_trp="1" task_operations="limitchi2,layer,keepron2,chainA"  resfile="resfile" />
+
+
+  <ParsedProtocol name="restrict_worst_random" mode="single_random">
+    <Add mover_name="restrict_worst_psipred" />
+    <Add mover_name="restrict_worst_exposed" />
+    <Add mover_name="restrict_worst_random_mut" />
+    <Add mover_name="restrict_worst_score" />
+  </ParsedProtocol>
+  
+  # repeat the refinement several times for good measure to get the best psipred after mutating a residue
+  <GenericMonteCarlo name="repeat_refinement" mover_name="design_min" scorefxn_name="SFXN7" recover_low="1" trials="5" sample_type="low" preapply="0" drift="1" temperature="0"/>
+  
+  <ParsedProtocol name="mutate_residue" >
+    <Add mover_name="restrict_worst_random" />
+    <Add mover_name="repeat_refinement" />
+    <Add mover_name="super_target" />
+  </ParsedProtocol>
+
+  
+  <GenericSimulatedAnnealer name="optimize_pose"
+  	mover_name="mutate_residue" trials="15000"
+	periodic_mover="relax_for_greedy_fix" eval_period="40" history="40" 
+	bolz_rank="1" recover_low="1" preapply="0" drift="1" 
+	checkpoint_file="mc" keep_checkpoint_file="1"
+	filter_name="psipred_prob" temperature="0.0002" sample_type="low" > 
+    <Filters>
+      AND filter_name="psipred_prob" temperature="0.002" />
+      <AND filter_name="cavity_volume" temperature="5.0" sample_type="low"/>
+      AND filter_name="ss_sc" temperature="0.05" sample_type="high" />
+      <AND filter_name="pack" temperature="0.03" sample_type="high" />
+      <AND filter_name="bb" temperature="0.001" sample_type="low" /> 
+      <AND filter_name="mean_dslf" temperature="0.02" sample_type="low" /> 
+      <AND filter_name="buried_np" temperature="50" sample_type="high" />   
+      <AND filter_name="holes" temperature="0.001" sample_type="low"/>  
+      AND filter_name="ddg" temperature="" sample_type="low"/>         
+      <AND filter_name="rmsdToPeptide" temperature="0.01" sample_type="low" />
+
+    </Filters>
+  </GenericSimulatedAnnealer>
+</MOVERS>
+
+<PROTOCOLS>
+  # optimize pose
+  <Add mover_name="loadcstMSA" />
+  <Add mover_name="fastdes" />
+  <Add mover_name="dssp" />
+  <Add mover_name="optimize_pose" />
+  <Add mover_name="full_relax" />
+
+  # then score/filter
+  <Add filter_name="psipred_prob" />
+  <Add filter_name="psipred_nres" />
+  <Add filter_name="cavity_volume" />
+  <Add filter_name="ss_sc" />
+  <Add filter_name="exposed_hydrophobics" />
+  <Add filter_name="holes" />
+  <Add filter_name="bb" />
+  <Add filter_name="mean_dslf" />
+  <Add filter_name="buried_np" />
+  Add filter_name="rotamer_boltz_core_avg" />
+</PROTOCOLS>
+</ROSETTASCRIPTS>

@@ -1,0 +1,211 @@
+<ROSETTASCRIPTS>
+
+  <SCOREFXNS>
+    <ScoreFunction name="beta" weights="beta" />
+    <ScoreFunction name="beta_aa" weights="beta" >
+      <Reweight scoretype="aa_composition" weight="1.0" />
+      <Set aa_composition_setup_file="/gscratch/baker/doujy/SmalMolecule_BENCHMARK/favour_core_aromatics.comp" />
+    </ScoreFunction>
+  </SCOREFXNS>
+
+  <RESIDUE_SELECTORS>
+
+   ###### Basic Residue Selectors######
+   # rif residues
+    <ResiduePDBInfoHasLabel name="rifRes" property="RIFRES" />
+  
+    # ligand neighborhood
+    <Neighborhood name="ligNeighborRes" distance="10.0" >
+        <Chain chains="B" />
+    </Neighborhood>
+
+    # core, boundary, surface, cutoff values are specific for beta barrels
+    <Layer name="coreRes" select_core="true" use_sidechain_neighbors="true" core_cutoff="2.1" surface_cutoff="1.0"/>
+    <Layer name="boundRes" select_boundary="true" use_sidechain_neighbors="true" core_cutoff="2.1" surface_cutoff="1.0"/>
+    <Layer name="surfRes" select_surface="true" use_sidechain_neighbors="true" core_cutoff="2.1" surface_cutoff="1.0"/>
+    # secondary structure, specific to your scaffold
+    <SecondaryStructure name="all" ss="HEL" pose_secstruct="LLHHHHHLEEEEEEEEELLLEEEEEEEEEEEEELLEEEEEEEEEELLLEEEEEEEEEEEEELLEEEEEEEELLLEEEEEEEEEEELLEEEEEEEELLLEEEEEEEEEEL"/>
+    <SecondaryStructure name="helix" ss="H"  pose_secstruct="LLHHHHHLEEEEEEEEELLLEEEEEEEEEEEEELLEEEEEEEEEELLLEEEEEEEEEEEEELLEEEEEEEELLLEEEEEEEEEEELLEEEEEEEELLLEEEEEEEEEEL"/>
+    <SecondaryStructure name="strand" ss="E"  pose_secstruct="LLHHHHHLEEEEEEEEELLLEEEEEEEEEEEEELLEEEEEEEEEELLLEEEEEEEEEEEEELLEEEEEEEELLLEEEEEEEEEEELLEEEEEEEELLLEEEEEEEEEEL"/>
+    <SecondaryStructure name="loop" ss="L"  pose_secstruct="LLHHHHHLEEEEEEEEELLLEEEEEEEEEEEEELLEEEEEEEEEELLLEEEEEEEEEEEEELLEEEEEEEELLLEEEEEEEEEEELLEEEEEEEELLLEEEEEEEEEEL"/>
+    # resfile residue
+    <Index name="resfile_res" resnums="8,9,11,18,19,20,25,29,31,32,33,34,35,43,46,47,48,50,53,55,59,60,61,62,63,72,73,74,75,79,83,84,85,86,87,97,98,103,107"/>
+    <Not name="nonresfile_res" selector="resfile_res"/> 
+ 
+    # amino acids
+    <ResidueName name="polarAA" residue_name3="ASP,GLU,ASN,GLN,LYS,ARG,SER,HIS,THR,TYR" />
+
+    # aa composition
+    <Index name="packing_core" resnums="3,7,13,27,37,39,57,65,67,81,89,91,105"/>
+
+    ##### Combinatotiral Selectors #####
+ 
+    <And name="coreAll" selectors="coreRes,all,nonresfile_res" />
+    <And name="coreH" selectors="coreRes,helix,nonresfile_res" />
+    <And name="coreE" selectors="coreRes,strand,nonresfile_res" />
+    <And name="coreL" selectors="coreRes,loop,nonresfile_res" />
+    <And name="boundAll" selectors="boundRes,all,nonresfile_res" />
+    <And name="boundH" selectors="boundRes,helix,nonresfile_res" />
+    <And name="boundE" selectors="boundRes,strand,nonresfile_res" />
+    <And name="boundL" selectors="boundRes,loop,nonresfile_res" />
+    <And name="surfAll" selectors="surfRes,all,nonresfile_res" />
+    <And name="surfH" selectors="surfRes,helix,nonresfile_res" />
+    <And name="surfE" selectors="surfRes,strand,nonresfile_res" />
+    <And name="surfL" selectors="surfRes,loop,nonresfile_res" />
+
+    <And name="coreLigZone" selectors="coreRes,ligNeighborRes,nonresfile_res" />
+    <And name="boundLigZone" selectors="boundRes,ligNeighborRes,nonresfile_res" />
+    <And name="surfLigZone" selectors="surfRes,ligNeighborRes,nonresfile_res" />
+   
+    <Or name="pocket" selectors="coreLigZone,boundLigZone"/>
+    <Not name="nonpocket" selector="pocket"/>
+
+   <And name="nonpocket_nonres" selectors="nonpocket,nonresfile_res"/>
+
+    <And name="polarRifRes" selectors="rifRes,polarAA"/>
+   
+  </RESIDUE_SELECTORS>
+ 
+  <TASKOPERATIONS>
+    <LimitAromaChi2 name="limchi2"/>
+    <InitializeFromCommandline name="init"/>
+    <ReadResfile name="resfile" filename="/gscratch/baker/doujy/SmalMolecule_BENCHMARK/rectBarrel.resfile"/>      
+    <IncludeCurrent name="includeCurrent"/>	
+    <RestrictToRepacking name="repack_only" />            		
+
+# to test each selector 
+<OperateOnResidueSubset name="test" selector="boundRes" >
+      <PreventRepackingRLT/>
+</OperateOnResidueSubset>
+  
+    <OperateOnResidueSubset name="fix_rifRes" selector="rifRes" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+
+   # for pocket
+    <OperateOnResidueSubset name="design_coreLigZone_AA" selector="coreLigZone" >
+      <RestrictAbsentCanonicalAASRLT aas="ASTFVYMILNQHW"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_boundLigZone_AA" selector="boundLigZone" >
+      <RestrictAbsentCanonicalAASRLT aas="ASTFVYMILNQHW"/>
+    </OperateOnResidueSubset>
+ 
+    <OperateOnResidueSubset name="repack_pocketRes" selector="pocket" >
+      <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+
+    <OperateOnResidueSubset name="repack_nonpocketRes" selector="nonpocket" >
+      <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+
+    <OperateOnResidueSubset name="repack_nonpocket_nonres_Res" selector="nonpocket_nonres" >
+      <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+
+  
+   # for structure elements
+    <OperateOnResidueSubset name="design_allCore_AA" selector="coreAll" >
+      <RestrictAbsentCanonicalAASRLT aas="AFILVWYM"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_helixCore_AA" selector="coreH" >
+      <RestrictAbsentCanonicalAASRLT aas="AFILVM"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_strandCore_AA" selector="coreE" >
+      <RestrictAbsentCanonicalAASRLT aas="FILVM"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_loopCore_AA" selector="coreL" >
+      <RestrictAbsentCanonicalAASRLT aas="AGFILPVWYM"/>
+    </OperateOnResidueSubset>
+
+    <OperateOnResidueSubset name="design_allBound_AA" selector="boundAll" >
+      <RestrictAbsentCanonicalAASRLT aas="ADEFGIKLNPQRSTVY"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_helixBound_AA" selector="boundH" >
+      <RestrictAbsentCanonicalAASRLT aas="AILNQSTVY"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_strandBound_AA" selector="boundE" >
+      <RestrictAbsentCanonicalAASRLT aas="ILNQSTVY"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_loopBound_AA" selector="boundL" >
+      <RestrictAbsentCanonicalAASRLT aas="ADEFGIKLNPQRSTVY"/>
+    </OperateOnResidueSubset>
+
+    <OperateOnResidueSubset name="design_allSurf_AA" selector="surfAll" >
+      <RestrictAbsentCanonicalAASRLT aas="DEGHKNPQRST"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_helixSurf_AA" selector="surfH" >
+      <RestrictAbsentCanonicalAASRLT aas="DEHKNQRST"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_strandSurf_AA" selector="surfE" >
+      <RestrictAbsentCanonicalAASRLT aas="DHKNQRT"/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="design_loopSurf_AA" selector="surfL" >
+      <RestrictAbsentCanonicalAASRLT aas="DEGHKNPQRST"/>
+    </OperateOnResidueSubset>
+ 
+  
+  
+  </TASKOPERATIONS>
+  <FILTERS>
+    <LigInterfaceEnergy name="interfE" scorefxn="beta" energy_cutoff="9999"/>
+    <ShapeComplementarity name="SC" min_sc="0" min_interface="0" verbose="0" quick="0" jump="1"/>
+   
+    <ScoreType name="totalscore" scorefxn="beta" threshold="9999" confidence="1"/>
+    <ResidueCount name="nres" confidence="1" />
+    <CalculatorFilter name="res_totalscore" confidence="1" equation="SCORE/NRES" threshold="0">
+               <Var name="SCORE" filter_name="totalscore" />
+               <Var name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+    <BuriedUnsatHbonds2 name="interf_uhb2" cutoff="200" scorefxn="beta" jump_number="1" />  
+    <RepackWithoutLigand name="rwl" scorefxn="beta" target_res="all_repacked" rms_threshold="999"/>
+    #DFHBI specific atom hbond filters
+    <HbondsToAtom name="O1_hbond" partners="0" energy_cutoff="-0.5" backbone="0" bb_bb="0" sidechain="1" atomname="O1" res_num="110"/>
+    <HbondsToAtom name="O2_hbond" partners="0" energy_cutoff="-0.5" backbone="0" bb_bb="0" sidechain="1" atomname="O2" res_num="110"/>
+    <HbondsToAtom name="N1_hbond" partners="0" energy_cutoff="-0.5" backbone="0" bb_bb="0" sidechain="1" atomname="N1" res_num="110"/>  
+  </FILTERS>
+  <MOVERS>
+
+      <AddCompositionConstraintMover name="core_arom_AA" filename="/gscratch/baker/doujy/SmalMolecule_BENCHMARK/favour_core_aromatics.comp" selector="packing_core" />
+      <ClearCompositionConstraintsMover name="clear_AA_constraints"/>
+
+      <EnzRepackMinimize name="desmin_fixrif_pocket" design="1" repack_only="0" scorefxn_minimize="beta" scorefxn_repack="beta" minimize_rb="1" minimize_sc="1" minimize_bb="0" cycles="1" minimize_lig="1" min_in_stages="0" backrub="0" task_operations="init,limchi2,fix_rifRes,resfile,design_coreLigZone_AA,design_boundLigZone_AA,repack_nonpocket_nonres_Res"/> 
+    
+     <FastDesign name="fdesign_nonpocket"
+                 task_operations="init,limchi2,resfile,fix_rifRes,includeCurrent,repack_pocketRes,design_helixCore_AA,design_strandCore_AA,design_loopCore_AA,design_helixBound_AA,design_strandBound_AA,design_loopBound_AA,design_helixSurf_AA,design_strandSurf_AA,design_loopSurf_AA"
+                 scorefxn="beta_aa"        
+                 repeats="1"
+                 clear_designable_residues="0"  />
+
+      #calculate a myriad of ligand specific scores
+     <InterfaceScoreCalculator name="add_scores" chains="B" scorefxn="beta"/>
+     
+  </MOVERS>
+  <PROTOCOLS>	
+      <Add mover_name="core_arom_AA"/>
+      <Add mover_name="desmin_fixrif_pocket"/>
+      <Add mover_name="fdesign_nonpocket"/>       
+           <Add filter_name="SC"/>
+           <Add filter_name="interfE"/>
+           <Add filter_name="res_totalscore"/>
+      <Add mover_name="desmin_fixrif_pocket"/>
+      <Add mover_name="fdesign_nonpocket"/>       
+           <Add filter_name="SC"/>
+           <Add filter_name="interfE"/>
+           <Add filter_name="res_totalscore"/>
+      <Add mover_name="desmin_fixrif_pocket"/>
+      <Add mover_name="fdesign_nonpocket"/>       
+      <Add mover_name="clear_AA_constraints"/>
+           <Add filter_name="SC"/>
+           <Add filter_name="interfE"/>
+           <Add filter_name="interf_uhb2"/>
+           Add filter_name="rwl"/>
+           <Add filter_name="res_totalscore"/>
+           <Add filter_name="O1_hbond"/>
+ 	   <Add filter_name="O2_hbond"/>
+	   <Add filter_name="N1_hbond"/>
+ 
+      <Add mover_name="add_scores"/>
+
+  </PROTOCOLS>	
+
+</ROSETTASCRIPTS>

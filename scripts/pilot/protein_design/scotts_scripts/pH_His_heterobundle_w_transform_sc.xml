@@ -1,0 +1,212 @@
+<ROSETTASCRIPTS>
+    <SCOREFXNS>
+        score12 weights=score12_full symmetric=1 />
+        score12 weights=score12_full />
+        <ScoreFunction name="hard_cst" weights="talaris2013_cst" />
+        <ScoreFunction name="soft" weights="/work/sboyken/weights/soft_rep_trp_ala_cst"/>
+        <ScoreFunction name="hard" weights="talaris2013_cst">
+          <Reweight scoretype="coordinate_constraint" weight="0.5" />
+        </ScoreFunction>
+        <ScoreFunction name="hard_ele" weights="talaris2013_cst" >
+          <Reweight scoretype="coordinate_constraint" weight="0.5" />
+        </ScoreFunction>
+        <ScoreFunction name="hard_bb" weights="/work/sboyken/weights/bb_only_cst">
+          <Reweight scoretype="coordinate_constraint" weight="2." />
+          <Reweight scoretype="cart_bonded" weight="0.5" />
+        </ScoreFunction>
+	      <ScoreFunction name="hard_no_cst" weights="talaris2013"/>
+    </SCOREFXNS>
+    <TASKOPERATIONS>
+        ReadResfile name=resfile filename="../resfile_pro40" />
+        <InitializeFromCommandline name="init"/>
+        <IncludeCurrent name="current"/>
+        <LimitAromaChi2 name="arochi" />
+        <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+        <ExtraRotamersGeneric name="ex1" ex1="1"/>
+        <RestrictAbsentCanonicalAAS name="ala_only" resnum="0" keep_aas="A" />
+	      Careful! initial helical bundle inputs are Poly-GLY!
+        RestrictIdentities name=progly identities=PRO,GLY/>
+	      <LayerDesign name="init_layers" layer="other" make_pymol_script="0">
+            <TaskLayer>
+                <SelectBySASA name="symmetric_inteface_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                <all copy_layer="core" />
+                <Helix append="NQSTHDK"/>
+            </TaskLayer>
+            <TaskLayer>
+                <SelectBySASA name="symmetric_inteface_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                <all copy_layer="surface" />
+            </TaskLayer>
+            <TaskLayer>
+                <SelectBySASA name="symmetric_inteface_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                <all copy_layer="boundary" />
+                <Helix exclude="WRE"/>
+            </TaskLayer>
+        </LayerDesign>
+            <SelectBySASA name="select_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+            <SelectBySASA name="select_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+            <SelectBySASA name="select_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+            <SelectBySASA name="select_all" state="bound" mode="mc" core="1" boundary="1" surface="1" probe_radius="2.2" core_asa="35" surface_asa="45" verbose="1"/>
+            SelectBySASA name=core mode="mc" state="bound" probe_radius=2.0 core_asa=36 surface_asa=80 core=1 boundary=0 surface=0 verbose=1 />
+        </TASKOPERATIONS>
+    <FILTERS>
+        <EnzScore name="cst_score" score_type="cstE" scorefxn="hard_cst" whole_pose="1" energy_cutoff="5"/>
+        SymUnsatHbonds name=uhb cutoff=1000/>
+    	  <BuriedUnsatHbonds name="uhb" scorefxn="hard_no_cst" task_operations="init_layers" confidence="0"/>
+	      ScoreType name=before_min_total_score_nocst scorefxn=hard_no_cst score_type=total_score threshold=1000.0/>
+        ScoreType name=before_min_total_score scorefxn=hard score_type=total_score threshold=1000.0/>
+	      Holes name=holes threshold=1.8 confidence=0/>
+        <PackStat name="packstat" threshold="0.65" confidence="0"/>
+        <PackStat name="init_pstat" threshold="0.575" confidence="0"/>
+	      ScoreType name=cart_bonded_filter scorefxn=hard_bb score_type=cart_bonded threshold=30. confidence=1.  />
+        <Geometry name="geo" omega="165" cart_bonded="35" confidence="1"/>
+    </FILTERS>
+    <MOVERS>
+        SymDofMover name=gen_config symm_file="C2_Z.sym" sym_dof_names="JUMP0_to_subunit" angles=0 radial_disps=0/>
+        SetupForSymmetry name=setup definition="/work/sboyken/shared/DavidB/C2_Z.sym"/>
+        SymPackRotamersMover name=transform_sc scorefxn=hard task_operations=ala_only />
+	      <PackRotamersMover name="transform_sc" scorefxn="hard" task_operations="ala_only" />
+	      SymPackRotamersMover name=add_pro scorefxn=hard task_operations=resfile />
+        <AddConstraintsToCurrentConformationMover name="add_cst" use_distance_cst="0" max_distance="12." coord_dev="2.5" min_seq_sep="8" />
+        <ClearConstraintsMover name="clearconstraints"/>
+        <MinMover name="hardmin_bb" scorefxn="hard_bb" type="lbfgs_armijo_nonmonotone" tolerance="0.0001"  chi="1" bb="1" bondangle="1" bondlength="1" jump="all" cartesian="1"/>
+	      SymMinMover name=hardmin_bb scorefxn=hard_bb type=lbfgs_armijo_nonmonotone tolerance=0.0001  chi=1 bb=1 bondangle=1 bondlength=1 jump=all cartesian=1/>
+        HBNetStapleInterface name=hbnet_interf design=1 hb_threshold=-0.8 upper_score_limit=2.0 write_pdbs=0 combos=2 min_staples_per_interface=1 max_staples_per_interface=5 staple_distance=5.0 sort_by_tot_unsat=1 min_network_size=3 max_unsat=0 onebody_hb_threshold=-0.4 show_task=1 task_operations=current,arochi,ex1_ex2,init_layers />
+        <HBNetStapleInterface name="hbnet_interf" hb_threshold="-0.85" pH_His="1" all_helical_interfaces="1" write_network_pdbs="1" min_helices_contacted_by_network="4" min_intermolecular_hbonds="2" min_staples_per_interface="1" max_staples_per_interface="1" sort_by_tot_unsat="1" min_network_size="4" stringent_satisfaction="1" max_unsat="2" task_operations="init,current,arochi,ex1_ex2,init_layers" />
+        <MultiplePoseMover name="MPM_design" max_input_poses="200">
+            <SELECT>
+            </SELECT>
+            <ROSETTASCRIPTS>
+                <SCOREFXNS>
+                    <ScoreFunction name="hard_cst" weights="talaris2013_cst" />
+                    <ScoreFunction name="soft" weights="/work/sboyken/weights/soft_rep_trp_ala_cst"/>
+                    <ScoreFunction name="hard" weights="talaris2013_cst" >
+                        <Reweight scoretype="coordinate_constraint" weight="0.5" />
+                    </ScoreFunction>
+                    <ScoreFunction name="hard_ele" weights="talaris2013_cst" >
+                        <Reweight scoretype="coordinate_constraint" weight="0.5" />
+                    </ScoreFunction>
+                    <ScoreFunction name="up_ele" weights="talaris2013_cst" >
+                        <Reweight scoretype="fa_elec" weight="2.0" />
+                        <Reweight scoretype="hbond_sc" weight="2.0" />
+                    </ScoreFunction>
+                    <ScoreFunction name="hard_bb" weights="/work/sboyken/weights/bb_only_cst" >
+                        <Reweight scoretype="coordinate_constraint" weight="2." />
+                        <Reweight scoretype="cart_bonded" weight="0.5" />
+                    </ScoreFunction>
+	              </SCOREFXNS>
+                <TASKOPERATIONS>
+                    <InitializeFromCommandline name="init"/>
+		    <SetIGType name="linmem_ig" lin_mem_ig="1"/>
+		    <ConstrainHBondNetwork name="hbnet_task" />
+                    <IncludeCurrent name="current"/>
+                    <LimitAromaChi2 name="arochi" />
+                    <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+                    <ExtraRotamersGeneric name="ex1" ex1="1"/>
+                    LayerDesign name=layer_all layer=core_boundary_surface />
+                    LayerDesign name=lay_core layer=core core=40 />
+                    # Don't design away pro and gly
+                    #CAREFUL! David's inputs are poly-GLY!
+                    RestrictIdentities name=progly identities=PRO,GLY/> #don't need glycine here        
+                    <LayerDesign name="all_layers" layer="other" make_pymol_script="0">
+                        <TaskLayer>
+                            <SelectBySASA name="symmetric_inteface_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                            <all copy_layer="core" />
+                            <Helix append="M"/>
+                        </TaskLayer>
+                        <TaskLayer>
+                            <SelectBySASA name="symmetric_inteface_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                            <all copy_layer="surface" />
+                        </TaskLayer>
+                        <TaskLayer>
+                            <SelectBySASA name="symmetric_inteface_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                            <all copy_layer="boundary" />
+                            <Helix exclude="D"/>
+                        </TaskLayer>
+                    </LayerDesign>
+                    <SelectBySASA name="select_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                    <SelectBySASA name="select_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                    <SelectBySASA name="select_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+                    <SelectBySASA name="select_all" state="bound" mode="mc" core="1" boundary="1" surface="1" probe_radius="2.2" core_asa="35" surface_asa="45" verbose="1"/> 
+                    SelectBySASA name=core mode="mc" state="bound" probe_radius=2.0 core_asa=36 surface_asa=80 core=1 boundary=0 surface=0 verbose=1 />
+                    SelectBySASA name=boundary mode="sc" state="bound" probe_radius=1.4 core_asa=0 surface_asa=30 core=0 boundary=1 surface=0 verbose=1 />
+                    SelectBySASA name=surface_boundary mode="mc" state="bound" probe_radius=2.0 core_asa=35 surface_asa=45 core=0 boundary=1 surface=1 verbose=1 />
+                    SelectBySASA name=all mode="sc" state="bound" probe_radius=1.4 core_asa=0 core_asa=30 core=1 boundary=1 surface=1 verbose=1 />
+                    RestrictAbsentCanonicalAAS name=ala_only resnum=0 keep_aas="A" />
+                    SetCatalyticResPackBehavior name=fixcoord />
+	              </TASKOPERATIONS>
+	              <MOVERS>
+                    <PackRotamersMover name="softpack_core" scorefxn="soft" task_operations="init,linmem_ig,all_layers,select_core,current,arochi,hbnet_task"/>
+                    <PackRotamersMover name="softpack_surface" scorefxn="soft" task_operations="init,linmem_ig,all_layers,select_surface,current,arochi,hbnet_task"/>
+                    <PackRotamersMover name="hardpack_surface" scorefxn="up_ele" task_operations="init,linmem_ig,all_layers,select_surface,current,arochi,ex1,hbnet_task"/> 
+                    <PackRotamersMover name="hardpack_core" scorefxn="hard_cst" task_operations="init,linmem_ig,all_layers,select_core,current,arochi,ex1_ex2,hbnet_task"/>
+
+                    <PackRotamersMover name="softpack_boundary" scorefxn="soft" task_operations="init,linmem_ig,all_layers,select_boundary,current,arochi,hbnet_task"/>
+                    <PackRotamersMover name="hardpack_boundary"  scorefxn="hard_cst" task_operations="init,linmem_ig,all_layers,select_boundary,current,arochi,ex1_ex2,hbnet_task"/>
+  
+                    <PackRotamersMover name="symm_pack_sasa_core_soft" scorefxn="soft" task_operations="init,current,arochi,ex1_ex2,linmem_ig,all_layers,select_core,hbnet_task"/>
+                    <PackRotamersMover name="symm_pack_sasa_core_hard" scorefxn="hard_cst" task_operations="init,current,arochi,ex1,linmem_ig,all_layers,select_core,hbnet_task"/>
+                    <MinMover name="hardmin_cart" scorefxn="hard" type="lbfgs_armijo_nonmonotone" tolerance="0.0001"  chi="1" bb="1" bondangle="1" bondlength="1" jump="all" cartesian="1"/>
+                    <AddConstraintsToCurrentConformationMover name="add_cst" use_distance_cst="0" max_distance="12." coord_dev="2.5" min_seq_sep="8" />
+                    <ClearConstraintsMover name="clearconstraints"/>
+                    <PDBReload name="reload" />
+             	      <MinMover name="hardmin_bb" scorefxn="hard_bb" type="lbfgs_armijo_nonmonotone" tolerance="0.0001"  chi="1" bb="1" bondangle="1" bondlength="1" jump="all" cartesian="1"/>
+                    <MinMover name="hardmin_sconly" scorefxn="hard" chi="1" bb="0" bondangle="0" bondlength="0" />
+                </MOVERS>
+                <APPLY_TO_POSE>
+                </APPLY_TO_POSE>
+                <PROTOCOLS>
+                    <Add mover="softpack_core"/>
+                    <Add mover="softpack_boundary"/>
+	                  <Add mover="softpack_surface"/>
+                    <Add mover="hardmin_sconly"/>
+                    <Add mover="hardpack_core"/>
+                    <Add mover="hardpack_boundary"/>
+                    <Add mover="hardpack_surface"/>
+                </PROTOCOLS>
+            </ROSETTASCRIPTS>
+        </MultiplePoseMover>
+        <MultiplePoseMover name="MPM_min_repack" max_input_poses="50">
+            <ROSETTASCRIPTS>
+    	          IMPORT filters="before_min_total_score,before_min_total_score_nocst"/>
+	              <SCOREFXNS>
+		                <ScoreFunction name="hard_no_cst" weights="talaris2013" />
+ 	                  <ScoreFunction name="talaris_cart" weights="talaris2013_cart" />
+	              </SCOREFXNS>
+	              <TASKOPERATIONS>
+             	      <RestrictToRepacking name="repack_only" />
+	              </TASKOPERATIONS>
+	              <MOVERS>
+	                  <MinMover name="hardmin_cart" scorefxn="talaris_cart" type="lbfgs_armijo_nonmonotone" tolerance="0.0001" chi="1" bb="1" bondangle="1" bondlength="1" jump="ALL" cartesian="1"/>
+                    <PackRotamersMover name="repack" scorefxn="hard_no_cst" task_operations="repack_only" />
+	              </MOVERS>
+	              <APPLY_TO_POSE>
+                </APPLY_TO_POSE>
+	              <PROTOCOLS>
+   	                Add filter=before_min_total_score/>
+	                  Add filter=before_min_total_score_nocst/>
+	                  <Add mover="hardmin_cart" />
+    		            <Add mover="repack" />
+	              </PROTOCOLS>
+            </ROSETTASCRIPTS>
+        </MultiplePoseMover>
+        <MultiplePoseMover name="MPM_filters"  max_input_poses="50">
+            <SELECT>
+		            <AndSelector>
+			              <Filter filter="cst_score"/>
+     			          <Filter filter="uhb"/>
+			              Filter filter=holes/>
+        	      </AndSelector>
+	          </SELECT>
+        </MultiplePoseMover>
+    </MOVERS>
+    <PROTOCOLS>
+        <Add mover="transform_sc"/>
+        <Add mover="add_cst"/>
+        <Add mover="hardmin_bb"/>
+        <Add mover="clearconstraints"/>
+        <Add mover_name="hbnet_interf"/>
+        <Add mover_name="MPM_design"/>
+        <Add mover_name="MPM_min_repack"/>
+        <Add mover_name="MPM_filters"/>
+    </PROTOCOLS>
+</ROSETTASCRIPTS>
