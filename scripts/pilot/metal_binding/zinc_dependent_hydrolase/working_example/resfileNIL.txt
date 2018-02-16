@@ -1,0 +1,49 @@
+#These commands will be applied to all residue positions that lack a specified behavior in the body:
+NATRO
+# allow extra chi rotamers at chi- id 1 and 2 (note: multiple commands can be on the same line.)
+#USE_INPUT_SC # allow the use of the input side chain conformation ( see below for more detailed description of commands)
+start
+#... the body continues here.
+1 A PIKAA S
+2 A PIKAA E
+3 A PIKAA E
+4 A PIKAA L
+5 A PIKAA R
+6 A PIKAA A
+7 A PIKAA V
+8 A PIKAA A
+9 A PIKAA D
+10 A PIKAA L
+11 A PIKAA Q
+12 A PIKAA R
+13 A PIKAA L
+14 A PIKAA N
+15 A PIKAA I
+16 A PIKAA E
+17 A PIKAA L
+18 A PIKAA A
+19 A PIKAA R
+20 A PIKAA K
+73 B PIKAA E
+74 B PIKAA E
+75 B PIKAA I
+76 B PIKAA R
+77 B PIKAA R
+78 B PIKAA A
+79 B PIKAA K
+80 B PIKAA E
+81 B PIKAA E
+82 B PIKAA S
+83 B PIKAA R
+84 B PIKAA K
+85 B PIKAA I
+86 B PIKAA A
+87 B PIKAA D
+88 B PIKAA E
+89 B PIKAA S
+90 B PIKAA R
+
+
+
+
+

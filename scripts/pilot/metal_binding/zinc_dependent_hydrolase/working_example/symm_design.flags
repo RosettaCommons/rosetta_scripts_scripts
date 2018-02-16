@@ -1,0 +1,11 @@
+-extra_res_fa /home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/Zn_Td_dummy.params /home/rcacho/Projects/zn_dependent_hydrolase/11_symmetric_design_full_run/design_files/HID.params
+-run::preserve_header
+-chemical:exclude_patches LowerDNA  UpperDNA Cterm_amidation VirtualBB ShoveBB VirtualDNAPhosphate VirtualNTerm CTermConnect sc_orbitals pro_hydroxylated_case1 pro_hydroxylated_case2 ser_phosphorylated thr_phosphorylated  tyr_phosphorylated tyr_sulfated lys_dimethylated lys_monomethylated  lys_trimethylated lys_acetylated glu_carboxylated cys_acetylated tyr_diiodinated N_acetylated C_methylamidated MethylatedProteinCterm metal
+-output_virtual 1
+#-parser_read_cloud_pdb 1
+-packing:flip_HNQ
+-packing:fix_his_tautomer 39
+-packing:fix_his_tautomer 120
+-packing:fix_his_tautomer 221
+-beta
+-out:prefix des_
