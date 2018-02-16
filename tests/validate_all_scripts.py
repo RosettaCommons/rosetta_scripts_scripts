@@ -16,7 +16,7 @@ import subprocess
 import json
 import imp
 import sys
-
+import uuid
 
 def test_script_file_commands( rosetta_executable, filename ) :
     assert filename.endswith('.xml')
@@ -94,7 +94,8 @@ def main( input_args ):
 
     scripts_to_validate = imp.load_source('scripts_to_validate', './../scripts_to_validate.py')
 
-    work = { fname.replace( "/", "." ) : test_script_file_commands( rosetta_executable, fname ) for fname in scripts_to_validate.scripts_to_be_validated }
+    work_uuids = { fname.replace( "/", "." ) : fname.replace( "/", "." ) if len( fname ) < 200 else fname[:50].replace( "/", "." ) + str( uuid.uuid4() )[0:10] + fname[-100:].replace( "/", "." ) for fname in scripts_to_validate.scripts_to_be_validated }
+    work = { work_uuids[ fname.replace( "/", "." ) ] : test_script_file_commands( rosetta_executable, fname ) for fname in scripts_to_validate.scripts_to_be_validated }
     if args.test:
         for key, res in work.items():
             if args.test not in key:
@@ -106,15 +107,16 @@ def main( input_args ):
 
     results = {}
     state = 'passed'
-    for test in parallel_results:
-        key = test[:-len('.xml')] if test.endswith('.xml') else test
+    for fname in work_uuids:
+        fname_uuid = work_uuids[ fname ]
+        key = fname[:-len('.xml')] if fname.endswith('.xml') else test
         key = key[len('scripts.'):]
 
-        results[key] = dict( state = 'failed' if parallel_results[test]['result'] else 'passed',
-                             log = parallel_results[test]['output'],
+        results[key] = dict( state = 'failed' if parallel_results[fname_uuid]['result'] else 'passed',
+                             log = parallel_results[fname_uuid]['output'],
         )
 
-        if parallel_results[test]['result']: state = 'failed'
+        if parallel_results[fname_uuid]['result']: state = 'failed'
 
     results = dict(tests=results, state=state, log='')
 

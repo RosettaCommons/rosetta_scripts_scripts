@@ -19,6 +19,7 @@ import subprocess
 import json
 import imp
 import sys
+import uuid
 from verify_all_scripts_accounted_for import *
 from validate_all_scripts import *
 
@@ -157,7 +158,9 @@ def main( input_args ):
     print( "Unregistered scripts:", scripts_not_listed )
 
     worknames = { fname :  fname.replace( "/", "." ) for fname in scripts_not_listed }
-    work = { worknames[ fname ] : test_script_file_commands( rosetta_executable, fname ) for fname in scripts_not_listed }
+    work_uuids = { fname.replace( "/", "." ) : fname.replace( "/", "." ) if len( fname ) < 200 else fname[:50].replace( "/", "." ) + str( uuid.uuid4() )[0:10] + fname[-100:].replace( "/", "." ) for fname in scripts_not_listed }
+    work = { work_uuids[ worknames[ fname ] ] : test_script_file_commands( rosetta_executable, fname ) for fname in scripts_not_listed }
+
 
     parallel = imp.load_source('parallel', parallel_source)
     runner = parallel.Runner( args.jobs, args.quiet, args.silent )
@@ -165,8 +168,8 @@ def main( input_args ):
 
     new_files_that_validate = []
     new_files_that_dont_validate = []
-    for fname, testname in worknames.iteritems():
-        
+    for fname, fname_munged in worknames.iteritems():
+        testname = work_uuids[ fname_munged ]
         if parallel_results[ testname ][ 'result' ] :
             new_files_that_dont_validate.append( fname )
         else :
