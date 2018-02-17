@@ -1,0 +1,106 @@
+<ROSETTASCRIPTS>
+	Aim: filter hbnet outputs Scott hasn't tested it with symmetric cases
+	<SCOREFXNS>
+		<ScoreFunction name="hard_cst" weights="beta_cst" symmetric="1"/>
+		<ScoreFunction name="hard" weights="beta" symmetric="1"/>
+		<ScoreFunction name="beta" weights="beta" symmetric="1"/>
+
+	</SCOREFXNS>
+	<RESIDUE_SELECTORS>
+		<ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet"/>
+
+		core_around_hbnet
+		<Neighborhood name="around_hbnet" selector="hbnet_residues" distance="5.0" />
+		<Layer name="hbnet_core" select_core="true" core_cutoff="3.6" />
+		<And name="core_around_hbnet" selectors="hbnet_core,around_hbnet"/>
+		</RESIDUE_SELECTORS>
+	<TASKOPERATIONS></TASKOPERATIONS>
+	<FILTERS>
+
+		Report on
+		<!-- <Sasa name="sasa_int_area" threshold="0" upper_threshold="10000" hydrophobic="0" polar="0" jump="1" confidence="0"/> --> doesnt work with current scott compile
+		<ShapeComplementarity name="sc_filt" jump="1" verbose="1" min_sc="0.5" write_int_area="1" confidence="0"/>
+		<Ddg name="ddG_filt" scorefxn="hard" jump="1" repack="0" repeats="1" threshold="0" confidence="0"/>
+		<SymUnsatHbonds name="unsat_pols" jump="1" cutoff="5" verbose="1" write2pdb="1" confidence="0"/>
+
+		#old unsats
+		<!-- <BuriedUnsatHbonds3 name="buns3" scorefxn="sfx_symm_hard" cutoff="10" print_out_info_to_pdb="true" use_hbnet_behavior="true" confidence="0"/> -->doesnt work with current scott compile: attribute use_hbnet_behavior
+
+		#score
+		<ScoreType name="scorefilter" scorefxn="hard_cst" score_type="total_score" threshold="0.0" confidence="1"/>
+
+		#hbnet new_buns #ignore bb heavy just in case; only want to assess HBnet sc first
+		<BuriedUnsatHbonds3 name="new_buns_HBNet" scorefxn="hard" cutoff="20" print_out_info_to_pdb="true" ignore_surface_res="true" residue_surface_cutoff="20.0" ignore_bb_heavy_unsats="true" residue_selector="hbnet_residues" confidence="1"/>
+		new_buns_sc_heavy
+		<BuriedUnsatHbonds3
+			name="new_buns_sc_heavy"
+			scorefxn="hard"
+			cutoff="0"
+			use_reporter_behavior="true"
+			report_sc_heavy_atom_unsats="true"
+			print_out_info_to_pdb="true"
+			ignore_surface_res="true"
+			residue_surface_cutoff="20.0"
+			ignore_bb_heavy_unsats="false"
+			confidence="1"/>
+		new_buns_bb_heavy
+		<BuriedUnsatHbonds3
+			name="new_buns_bb_heavy"
+			scorefxn="hard"
+			cutoff="2"
+			use_reporter_behavior="true"
+			report_bb_heavy_atom_unsats="true"
+			print_out_info_to_pdb="true"
+			ignore_surface_res="true"
+			residue_surface_cutoff="20.0"
+			ignore_bb_heavy_unsats="false"
+			confidence="1"/>
+			network_holes
+			<Holes name="network_holes" threshold="1.8" residue_selector="core_around_hbnet" normalize_per_atom="true" exclude_bb_atoms="true" confidence="0"/>
+			ss_sc
+			<SSShapeComplementarity name="ss_sc" verbose="0" loops="0" helices="1" confidence="1" min_sc="0.65"/>
+			#use cutoff 0.7 #aa composition check
+			<ExposedHydrophobics name="exposedhydrop" sasa_cutoff="20" threshold="0" confidence="0"/>
+			<ResidueCount name="ala_count" residue_types="ALA" confidence="0"/>
+		</FILTERS>
+	<MOVERS>
+
+		<!-- <SetupForSymmetry   name="setup_symm" definition="C6_Z.sym"/> -->
+			#satisfy unsats
+			<!-- <Satisfier name="satisfy" scorefxn="beta" repack="false" design="true" residue_surface_cutoff="20.0"/> --> doesnt work with current scott compile
+			#interface analyzer
+			<InterfaceAnalyzerMover name="interface_analyzer" scorefxn="hard_cst" pack_separated="true" pack_input="false" packstat="true" interface_sc="true" use_jobname="true" jump="1" />
+
+		</MOVERS>
+	<APPLY_TO_POSE></APPLY_TO_POSE>
+	<PROTOCOLS>
+		<!-- <Add mover="setup_symm"/> -->
+		<Add filter="scorefilter"/>
+		#hbnet stuff
+		<!-- <Add mover="satisfy"/> -->
+		<Add filter="new_buns_HBNet"/>
+		<Add filter="new_buns_sc_heavy"/>
+		<Add filter="new_buns_bb_heavy"/>
+		<Add filter="network_holes"/>
+		<!-- <Add filter="ss_sc"/> -->
+
+		#aa compositions
+		<Add filter="ala_count"/>
+		<Add filter="exposedhydrop"/>
+
+		#interface only
+		<Add mover="interface_analyzer"/>
+
+		#report only
+		<!-- <Add filter="sasa_int_area"/> -->
+		<Add filter="sc_filt"/>
+		<Add filter="ddG_filt"/>
+		<Add filter="unsat_pols"/>
+		<!-- <Add filter="buns3"/> --> doesnt't work with current scott compile
+
+		#stringent ========== ss_sc g 0.7 network holes l -1.4 new_buns_bb_heavy = 0 new_buns_sc_heavy = 0 #lax ========== ss_sc g 0.65 network holes l -1.0 new_buns_bb_heavy = 2 new_buns_sc_heavy = 0 DSasaPolar at the interface (reported by InterfaceAnalyzer)
+rosetta/main/source/src/protocols/anchored_design/InterfaceAnalyzerMover
+		 You need holes option
+	</PROTOCOLS>
+	<OUTPUT/>
+</ROSETTASCRIPTS>

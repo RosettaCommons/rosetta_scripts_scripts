@@ -1,0 +1,183 @@
+<ROSETTASCRIPTS>
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://www.w3schools.com 0911_Scott_NewBuns.xsd">
+
+  skmarx 10-18 // filter docked geometries based on hb-network possibilies
+  XML 1: test span all helices and start at native network
+  Use side chain neighbors for layers
+
+  <SCOREFXNS>
+    <ScoreFunction name="sfx_symm_hard" weights="beta" symmetric="1"/>
+  </SCOREFXNS>
+
+  <TASKOPERATIONS>
+    //legacy interface detection code that does not work with ResidueSelectors. See RESIDUE_SELECTORS section.
+    <BuildingBlockInterface name="bbi" nsub_bblock="1" fa_rep_cut="3.0" contact_dist="8.5" bblock_dist="2.5"/>
+    //detects residues between building blocks #note single component notation!! Also in this case using smaller than default values
+    <SelectBySASA name="bb_surf" mode="sc" state="monomer" core_asa="0" surface_asa="0" core="0" boundary="1" surface="1" verbose="0"/>
+    //selects surface and boundary residues of BUILDING BLOCK
+  </TASKOPERATIONS>
+
+  <RESIDUE_SELECTORS>
+    #features
+    <Index name="native_net_HB3" resnums="9,12,75,94,97,160,179,182,245,27,30,57,112,115,142,197,200,227"/>
+    <SecondaryStructure name="loops" overlap="2" include_terminal_loops="true" ss="L"/>
+
+    #interface selection
+    <Task name="bbi_selector" designable="true" task_operations="bbi"/>
+    <Task name="bb_surf_selector" designable="true" task_operations="bb_surf"/>
+    <And name="interface_all" selectors="bbi_selector,bb_surf_selector"/>
+    <Or name="interface_all_wnative" selectors="interface_all,native_net_HB3"/>
+    <Not name="not_interface" selector="interface_all_wnative"/>
+
+    #side-chain-neighbors and interface subsets
+    <Layer name="surf_bound" select_boundary="true" select_surface="true" core_cutoff="3.6"/>
+    <Layer name="core" select_core="true" core_cutoff="3.6"/>
+    <And name="interface_surface_boundary" selectors="surf_bound,interface_all_wnative"/>
+    <And name="interface_core" selectors="core,interface_all_wnative"/>
+
+
+
+  </RESIDUE_SELECTORS>
+
+  <TASKOPERATIONS>
+    #polyA_interface
+    <OperateOnResidueSubset name="design_interface_all" selector="interface_all">
+      <RestrictAbsentCanonicalAASRLT aas="A"/>
+    </OperateOnResidueSubset>
+
+    #hbnet aminos
+    <OperateOnResidueSubset name="design_int_hbnet_core" selector="interface_core">
+      <RestrictAbsentCanonicalAASRLT aas="HSTYNQ"/>
+    </OperateOnResidueSubset>
+    //no charged
+    <OperateOnResidueSubset name="design_int_hbnet_surf" selector="interface_surface_boundary">
+      <RestrictAbsentCanonicalAASRLT aas="HSTYNQD"/>
+    </OperateOnResidueSubset>
+    //no EKRW
+    <OperateOnResidueSubset name="repack_native_net_HB3" selector="native_net_HB3">
+      <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+    <!-- #hbnet aminos for extended networks (not restricted to interface just all core and interface)
+    <OperateOnResidueSubset name="design_hbnet_core" selector="core">
+      <RestrictAbsentCanonicalAASRLT aas="HSTYNQ"/>
+    </OperateOnResidueSubset>
+    //no charged
+    <OperateOnResidueSubset name="design_hbnet_surf" selector="surf_bound">
+      <RestrictAbsentCanonicalAASRLT aas="HSTYNQD"/>
+    </OperateOnResidueSubset>
+    //no EKRW -->
+
+    #interface residues or native net allowed to be designed
+    TBD
+
+    #not (of the above) not allowed to be designed
+    TBD
+
+    #dont lock native net
+
+    using
+    Or name="interface_outer_wnative" selectors="interface_surface_boundary,native_net_HB3">
+    Or name="interface_inner_wnative" selectors="interface_core,native_net_HB3">
+
+    #lock features
+    <OperateOnResidueSubset name="lock_not_interface" selector="not_interface">
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="lock_design_native_net" selector="native_net_HB3">
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="lock_loops" selector="loops">
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="lock_not_hbnet_core" selector="interface_core">
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    //lock_not_hbnet_core, for resfile
+
+    #General design Ops
+    <IncludeCurrent name="IC"/>
+    //includes input pdb's rotamers
+    <LimitAromaChi2 name="limitaro" chi2max="110" chi2min="70"/>
+    //disallow extreme aromatic rotamers
+    <ExtraRotamersGeneric name="extra_chi" ex1="1" ex2="1" ex3="0" ex4="0" ex1aro="1" ex2aro="1" ex1aro_exposed="0" ex2aro_exposed="0" ex1_sample_level="1" ex2_sample_level="1" ex1aro_sample_level="1" ex2aro_sample_level="1" extrachi_cutoff="18"/>
+    //use ex1 ex2 rotamers
+
+    list of taskops:design_int_hbnet_core,design_int_hbnet_surf,lock_not_interface,lock_design_native_net,lock_loops
+
+  </TASKOPERATIONS>
+
+  <FILTERS>
+
+    #Eyes in the log
+    <SaveResfileToDisk name="resfile_interface_all" task_operations="lock_not_interface,design_interface_all" designable_only="0" resfile_prefix="interface_all" resfile_suffix="a" resfile_general_property="NATRO"/>
+    <SaveResfileToDisk name="resfile_hbnet_interface" task_operations="design_int_hbnet_core,design_int_hbnet_surf,lock_not_interface,lock_design_native_net,lock_loops" designable_only="0" resfile_prefix="hbnet_interface" resfile_suffix="b" resfile_general_property="NATRO"/>
+    <SaveResfileToDisk name="resfile_hbnet_core" task_operations="design_int_hbnet_core,lock_not_hbnet_core" designable_only="0" resfile_prefix="hbnet_core" resfile_suffix="c" resfile_general_property="NATRO"/>
+  </FILTERS>
+
+  <MOVERS>
+    <Symmetrizer name="gen_docked_config" symm_file="%%symmfile%%" radial_disp_max="3.0" angle_max="10.0"/> // use high nstruct
+    <!-- <SymPackRotamersMover name="polyA_interface" scorefxn="sfx_symm_hard" task_operations="design_interface_all,lock_not_interface,lock_design_native_net,lock_loops"/> -->
+    <!-- <Symmetrizer name="gen_docked_config" symm_file="%%symmfile%%" axis="z" sampling_mode="gaussian" angle_delta="2" radial_disp_delta="1"  /> -->
+    <HBNetStapleInterface
+      name="hbnet_intermolecular"
+      scorefxn="sfx_symm_hard"
+      hb_threshold="-0.5"
+      min_connectivity="0.5"
+      min_helices_contacted_by_network="3"
+      min_core_res="3"
+      min_network_size="3"
+      min_intermolecular_hbonds="3"
+      min_networks_per_pose="1"
+      span_all_helices="0"
+      secondary_search="0"
+      max_networks_per_pose="4"
+      combos="3"
+      only_start_at_interface_pairs="false"
+      start_selector="native_net_HB3"
+      use_only_input_rot_for_start_res="true"
+      use_aa_dependent_weights="true"
+      design_residues="STHYWNQD"
+      core_selector="core"
+      task_operations="repack_native_net_HB3,design_int_hbnet_core,design_int_hbnet_surf,lock_loops,lock_not_interface"
+      minimize="true"
+      verbose="1"
+      show_task="1"
+      write_network_pdbs="1"
+      write_cst_files="1"
+      output_poly_ala_background="false"
+      max_unsat="5"
+      no_heavy_unsats_allowed="1"
+      max_replicates="1"
+      max_replicates_before_branch="5"
+      max_replicates_before_unsat_check="5"
+      />
+      //network design: start at native net, and contain at least 3 residues in network across 3 helices
+      //question: max unsat per pose or per network
+      //what about combining start res selector with start at interface
+
+      <SymPackRotamersMover name="polyA_interface" scorefxn="sfx_symm_hard" task_operations="repack_native_net_HB3,lock_not_interface,design_interface_all,lock_loops"/>
+      <DumpPdb name="dump_polyA" scorefxn="sfx_symm_hard" fname="dump_polyA_interface_all.pdb" tag_time="true"/>
+
+  </MOVERS>
+
+  <PROTOCOLS>
+
+
+    //generate docked configuration
+    <Add mover_name="gen_docked_config"/>
+
+    //polyA interface; interface selection based on bbi values is excellent. Doesn't target the core of the bundle.
+    <Add mover ="polyA_interface"/>
+    <!-- <Add mover="dump_polyA"/> -->
+
+    <!-- //check interface selection
+    <Add filter="resfile_interface_all"/>
+    <Add filter="resfile_hbnet_interface"/>
+    <Add filter="resfile_hbnet_core"/> -->
+
+    //hbnet design
+    <Add mover_name="hbnet_intermolecular"/>
+
+  </PROTOCOLS>
+
+</ROSETTASCRIPTS>

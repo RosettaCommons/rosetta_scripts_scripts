@@ -1,0 +1,280 @@
+<ROSETTASCRIPTS>
+
+	<SCOREFXNS>
+		<ScoreFunction name="sfxn_clean_hbnet" weights="beta" symmetric="1" />
+	</SCOREFXNS>
+	
+	<TASKOPERATIONS> //legacy interface detection code that does not work with ResidueSelectors. See RESIDUE_SELECTORS section.
+        <BuildingBlockInterface name="design_bbi" multicomp="0" sym_dof_names="%%symdof%%" nsub_bblock="1" fa_rep_cut="3.0" contact_dist="8.5" bblock_dist="2.5" /> //detects residues between building blocks #note single component notation!!
+        <SelectBySASA name="bb_surf" mode="sc" state="monomer" core_asa="0" surface_asa="0" core="0" boundary="1" surface="1" verbose="0" /> //selects surface and boundary residues of BUILDING BLOCK
+		<RestrictNativeResidues name="nonnative" prevent_repacking="1" invert="0" />
+	</TASKOPERATIONS>
+
+	<RESIDUE_SELECTORS> //minimal for hbnet
+		<Task name="design_bbi_selector" designable="true" task_operations="design_bbi" />
+		<Task name="bb_surf_selector" designable="true" task_operations="bb_surf" />	
+			
+		<ResidueName name="CPG" residue_name3="CYS,PRO,GLY" /> //selects CPG residues
+			<Not name="not_CPG" selector="CPG" />
+
+		<And name="design_int" selectors="design_bbi_selector,bb_surf_selector,not_CPG" />
+			<Not name="not_design_int" selector="design_int" />
+			
+		<Layer name="bdry" select_boundary="true" select_surface="true" />
+		<Layer name="core" select_core="true" />
+		
+		<And name="design_bdry" selectors="bdry,design_int" />
+		<And name="design_core" selectors="core,design_int" />
+		
+		//SScount_filter
+		<Chain name="chain1" chains="1" />
+		<Or name="design_core_bdry" selectors="design_core,design_bdry" />
+		<And name="design_int_1" selectors="design_core_bdry,chain1" />
+	</RESIDUE_SELECTORS>
+	
+	<TASKOPERATIONS>
+		<OperateOnResidueSubset name="design_int_hbnet_core" selector="design_core" >
+			<RestrictAbsentCanonicalAASRLT aas="THYWNQ" /> </OperateOnResidueSubset>		//no DEKR 
+		<OperateOnResidueSubset name="design_int_hbnet_bdry" selector="design_bdry" >
+			<RestrictAbsentCanonicalAASRLT aas="TRKHYWNQDE" /> </OperateOnResidueSubset>	//all polar 
+		<OperateOnResidueSubset name="lock_rem_resis" selector="not_design_int" >
+			<PreventRepackingRLT/> </OperateOnResidueSubset>
+	</TASKOPERATIONS>
+
+	<FILTERS>
+		<ClashCheck name="clash_check" nsub_bblock="1" verbose="1" write2pdb="1" cutoff="6" confidence="1" /> Note: Used cutoff of 8 with original T3N designs with nstruct 50.
+		<SecondaryStructureCount name="ss_count_A" filter_helix_sheet="1" num_helix_sheet="2" min_helix_length="4" min_sheet_length="3" min_loop_length="1" return_total="1" confidence="1" residue_selector="design_int_1" min_element_resis="3" />
+	</FILTERS>
+	
+	<MOVERS>
+		<Symmetrizer name="gen_docked_config" symm_file="%%sym%%" axis="z" sampling_mode="gaussian" angle_delta="2" radial_disp_delta="1"  />
+					
+		<HBNetStapleInterface name="hbnet_mover" scorefxn="sfxn_clean_hbnet"
+			hb_threshold="-0.5"
+			min_network_size="3"
+			min_core_res="2"
+			max_unsat="1"
+			write_network_pdbs="0" write_cst_files="0"
+			no_heavy_unsats_allowed="0"
+			find_native_networks="0"
+			keep_existing_networks="0"
+			extend_existing_networks="0"
+			task_operations="design_int_hbnet_core,design_int_hbnet_bdry,lock_rem_resis" />
+		
+		<MultiplePoseMover name="MPM_design" max_input_poses="20" >
+    		<ROSETTASCRIPTS>
+				<SCOREFXNS>
+					<ScoreFunction name="sfxn" weights="beta" symmetric="1" >
+						<Reweight scoretype="aa_composition" weight="1.0" />
+						Reweight scoretype="res_type_constraint" weight="1.0" />
+					</ScoreFunction>
+		
+					<ScoreFunction name="sfxn_soft" weights="beta_soft" symmetric="1" >
+						<Reweight scoretype="aa_composition" weight="1.0" />
+						Reweight scoretype="res_type_constraint" weight="1.0" />
+					</ScoreFunction>
+				
+					<ScoreFunction name="sfxn_up_ele" weights="beta" symmetric="1" >
+						<Reweight scoretype="aa_composition" weight="1.0" />
+						Reweight scoretype="res_type_constraint" weight="1.0" />
+						<Reweight scoretype="fa_elec" weight="1.4" />
+						<Reweight scoretype="hbond_sc" weight="2.0" />
+					</ScoreFunction>
+
+					<ScoreFunction name="sfxn_clean" weights="beta" symmetric="1" />
+				</SCOREFXNS>
+
+				<TASKOPERATIONS> //legacy interface detection code that does not work with ResidueSelectors. See RESIDUE_SELECTORS section.
+					<BuildingBlockInterface name="design_bbi" multicomp="0" sym_dof_names="%%symdof%%" nsub_bblock="1" fa_rep_cut="3.0" contact_dist="8.5" bblock_dist="2.5" /> //detects residues between building blocks #note single component notation!!
+					<SelectBySASA name="bb_surf" mode="sc" state="monomer" core_asa="0" surface_asa="0" core="0" boundary="1" surface="1" verbose="0" /> //selects surface and boundary residues of BUILDING BLOCK
+					<RestrictNativeResidues name="nonnative" prevent_repacking="1" invert="0" />
+				</TASKOPERATIONS>
+
+				<RESIDUE_SELECTORS>		
+					<Task name="design_bbi_selector" designable="true" task_operations="design_bbi" />
+					<Task name="bb_surf_selector" designable="true" task_operations="bb_surf" />	
+		
+					<Task name="nonnative_selector" designable="true" task_operations="nonnative" /> //selects all mutants
+					<Neighborhood name="mutant_neighborhood" selector="nonnative_selector" distance="10" include_focus_in_subset="false" /> //to repack all neighbors of mutants
+					<Neighborhood name="mutant_neighborhood_include" selector="nonnative_selector" distance="10" include_focus_in_subset="true" />
+						<Not name="native_outside" selector="mutant_neighborhood_include" /> //used to select anything that is not a mutant or a neighbor of a mutant
+		
+					<ResidueName name="CPG" residue_name3="CYS,PRO,GLY" /> //selects CPG residues
+						<Not name="not_CPG" selector="CPG" />
+
+					<And name="design_int_no_nonnative" selectors="design_bbi_selector,bb_surf_selector,not_CPG" />
+					<Or name="design_int" selectors="design_int_no_nonnative,nonnative_selector" /> //selects full interface
+						<Not name="not_design_int" selector="design_int" />
+		
+					<Layer name="surf" select_surface="true" />
+					<Layer name="bdry" select_boundary="true" />
+					<Layer name="core" select_core="true" />
+	
+					<And name="design_surf" selectors="surf,design_int" />
+					<And name="design_bdry" selectors="bdry,design_int" />
+					<And name="design_core" selectors="core,design_int" />
+					
+					//SScount_filter
+					<Chain name="chain1" chains="1" />
+					<Or name="design_core_bdry" selectors="design_core,design_bdry" />
+					<And name="design_int_1" selectors="design_core_bdry,chain1" />
+							
+					//test_charges
+					<ResidueName name="charged_residues" residue_name3="LYS,ARG,ASP,GLU" />
+					<And name="int_charged" selectors="design_core_bdry,charged_residues" />
+					<ScoreTermValueBased name="hbond_residues_sc" score_type="hbond_sc" lower_threshold="-99" upper_threshold="-0.1" score_fxn="sfxn_clean" selector="int_charged" />
+					<ScoreTermValueBased name="hbond_residues_bb_sc" score_type="hbond_bb_sc" lower_threshold="-99" upper_threshold="-0.1" score_fxn="sfxn_clean" selector="int_charged" />
+						<Or name="charged_no_hbond" selectors="hbond_residues_sc,hbond_residues_bb_sc" />
+							<Not name="not_charged_no_hbond" selector="charged_no_hbond" />
+					<ResidueName name="polar_residues" residue_name3="SER,THR,TYR,TRP,HIS,ASN,GLN" />
+					<And name="int_polar" selectors="design_core_bdry,polar_residues" />
+					<Or name="int_charged_or_int_polar" selectors="int_charged,int_polar" /> 
+						<Not name="not_polar" selector="int_charged_or_int_polar" />
+			
+					//HBNet
+					<ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet" />
+				</RESIDUE_SELECTORS>
+
+				<TASKOPERATIONS>
+					<IncludeCurrent name="ic" />									//includes input pdb's rotamers
+					<LimitAromaChi2 name="limitaro" chi2max="110" chi2min="70" />	//disallow extreme aromatic rotamers
+					<RestrictToRepacking name="repack_only" />						//for minimize/repack
+			       	<ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1" />			//use ex1 ex2 rotamers
+
+					<OperateOnResidueSubset name="lock_rem_resis" selector="not_design_int" >
+						<PreventRepackingRLT/> </OperateOnResidueSubset>
+					<OperateOnResidueSubset name="design_int_full" selector="design_int" >
+						<RestrictAbsentCanonicalAASRLT aas="AWYHDENQKRSTILVMF" /> </OperateOnResidueSubset>
+					<OperateOnResidueSubset name="repack_core" selector="design_core" >
+						<RestrictToRepackingRLT/> </OperateOnResidueSubset>
+					<OperateOnResidueSubset name="design_int_core" selector="design_core" >
+						<RestrictAbsentCanonicalAASRLT aas="ILVAMF" /> </OperateOnResidueSubset> 			//disallow:  W,YH,CPG,DENQKR, ,   ,ST
+					<OperateOnResidueSubset name="design_int_bdry" selector="design_bdry" >
+						<RestrictAbsentCanonicalAASRLT aas="ILVAMSTF" /> </OperateOnResidueSubset> 	  	  //disallow:    W,YH,CPG,DENQKR
+					<OperateOnResidueSubset name="design_int_surf" selector="design_surf" >
+						<RestrictAbsentCanonicalAASRLT aas="ASTDENQKR" /> </OperateOnResidueSubset>			//disallow: FW,YH,CPG,      ,M,ILV
+
+					//test_charges
+					<OperateOnResidueSubset name="lock_not_polar" selector="not_polar" >
+						<PreventRepackingRLT/> </OperateOnResidueSubset>
+					<OperateOnResidueSubset name="repack_polar" selector="not_charged_no_hbond" >
+						<RestrictToRepackingRLT/> </OperateOnResidueSubset>			
+					<OperateOnResidueSubset name="design_charged" selector="charged_no_hbond" >
+						<RestrictAbsentCanonicalAASRLT aas="STYWHNQKDE" /> </OperateOnResidueSubset> //all polars except: R
+
+					<JointSequence name="revert" use_current="true" use_native="true" use_natro="true" />
+	
+					<OperateOnResidueSubset name="lock_native" selector="native_outside" >
+						<PreventRepackingRLT/> </OperateOnResidueSubset>
+					<OperateOnResidueSubset name="repack_neighbor" selector="mutant_neighborhood" >
+						<RestrictToRepackingRLT/> </OperateOnResidueSubset>
+						
+					<OperateOnResidueSubset name="hbnet_task" selector="hbnet_residues" >
+						<PreventRepackingRLT/> </OperateOnResidueSubset>
+				</TASKOPERATIONS>
+
+				<MOVERS>
+					<AddCompositionConstraintMover name="add_aa_comp" filename="input/aa_comp.comp" selector="design_int" />
+					<AddHelixSequenceConstraints name="add_helix_cts" residue_selector="design_int" add_hydrophobic_constraints="false" min_c_terminal_charges="1" min_n_terminal_charges="1" />
+					<ClearCompositionConstraintsMover name="clear_cts" />
+					FavorSequenceProfile name="favNative" scaling="prob" weight="0.5" chain="0" use_starting="1" matrix="MATCH" scorefxns="sfxn,sfxn_soft,sfxn_up_ele" />
+	
+					<SymPackRotamersMover name="design_soft"	scorefxn="sfxn_soft"	task_operations="design_int_core,design_int_bdry,design_int_surf,lock_rem_resis,limitaro,ic,ex1_ex2,hbnet_task" />
+					<SymPackRotamersMover name="design_hard"	scorefxn="sfxn"			task_operations="design_int_core,design_int_bdry,design_int_surf,lock_rem_resis,limitaro,ic,ex1_ex2,hbnet_task" />		
+					<SymPackRotamersMover name="design_surf"	scorefxn="sfxn_up_ele"	task_operations="repack_core,design_int_bdry,design_int_surf,lock_rem_resis,limitaro,ic,ex1_ex2,hbnet_task" />		
+					<SymPackRotamersMover name="test_charges"	scorefxn="sfxn_up_ele"	task_operations="lock_not_polar,repack_polar,design_charged,limitaro,ic,ex1_ex2,hbnet_task" />		
+					<SymPackRotamersMover name="revert_resis"	scorefxn="sfxn_clean"	task_operations="revert,repack_neighbor,lock_native,limitaro,ic,ex1_ex2,hbnet_task" />
+											
+					<TaskAwareSymMinMover name="rb_min_design_int_hard" scorefxn="sfxn_clean" bb="0" chi="1" rb="1" task_operations="design_int_full,lock_rem_resis" /> //bb=backbone, chi=sidechain, rb=rigidbody
+					<SymPackRotamersMover name="repack_design_int_hard" scorefxn="sfxn_clean" task_operations="design_int_full,lock_rem_resis,limitaro,ic,repack_only,ex1_ex2" />
+	
+					<ParsedProtocol name="rb_min_repack_rb_min_hard" >
+						<Add mover="rb_min_design_int_hard" />
+						<Add mover="repack_design_int_hard" />
+						<Add mover="rb_min_design_int_hard" /> </ParsedProtocol>
+
+					<TaskAwareSymMinMover name="min_full_int" scorefxn="sfxn_clean" bb="0" chi="1" rb="0" task_operations="design_int_full,lock_rem_resis,limitaro,ic" /> //this is for ddG
+				</MOVERS>
+
+				<FILTERS>
+					<ShapeComplementarity name="sc1" multicomp="0" verbose="1" min_sc="0.6" jump="1" confidence="1" />
+					<SymUnsatHbonds name="uhb" jump="1" cutoff="3" verbose="0" write2pdb="0" confidence="0" />	
+					<BuriedUnsatHbonds3 name="buns3" scorefxn="sfxn_clean" cutoff="3" print_out_info_to_pdb="true" use_hbnet_behavior="false" residue_selector="design_int" confidence="1" />
+					<Sasa name="sasa" threshold="700" upper_threshold="2500" hydrophobic="0" polar="0" jump="1" confidence="1" />
+					<Ddg name="ddG" translate_by="1000" scorefxn="sfxn_clean" task_operations="design_int_full,lock_rem_resis,repack_only" repack="1" repeats="1" threshold="-20" relax_mover="min_full_int" repack_bound="1" relax_bound="1" confidence="1" />
+					<InterfaceBindingEnergyDensityFilter name="ddG_sasa" sasa_filter="sasa"  ddG_filter="ddG" threshold="-0.010" confidence="1" />
+					<AverageDegree name="avgdeg" threshold="0" distance_threshold="10" task_operations="design_int_full,lock_rem_resis" confidence="0" />
+					<SecondaryStructureCount name="ss_count_A" filter_helix_sheet="1" num_helix_sheet="2" min_helix_length="4" min_sheet_length="3" min_loop_length="1" return_total="1" confidence="1" residue_selector="design_int_1" min_element_resis="3" />
+					<Mutations name="mutations" rate_threshold="0.0" mutation_threshold="60" report_mutations="1" verbose="1" write2pdb="1" task_operations="design_int_full" confidence="0" />
+					<ClashCheck name="clash_check" nsub_bblock="1" verbose="1" write2pdb="1" cutoff="3" confidence="1" /> //this is there to re-filter clashes
+					<ResidueCount name="AlaCount" residue_types="ALA" 				residue_selector="design_int" confidence="0" />
+					<ResidueCount name="MetCount" residue_types="MET" 				residue_selector="design_int" confidence="0" />
+					<ResidueCount name="HPcCount" residue_types="VAL,LEU,ILE"		residue_selector="design_int" confidence="0" />
+					<ResidueCount name="AroCount" residue_types="TRP,PHE,TYR,HIS" 	residue_selector="design_int" confidence="0" />
+					<EnzScore name="hbnet_cst_sc" score_type="cstE" scorefxn="sfxn_clean" whole_pose="1" energy_cutoff="20" confidence="1" />
+				</FILTERS>
+
+				<APPLY_TO_POSE>
+				</APPLY_TO_POSE>
+
+				<PROTOCOLS>		
+					//apply score profiles
+					<Add mover_name="add_aa_comp" />
+					<Add mover_name="add_helix_cts" />
+					Add mover_name="favNative" />
+
+					//first round interface design with soft rep
+					<Add mover_name="design_soft" />
+					<Add mover_name="rb_min_repack_rb_min_hard" />
+
+					//second round layer design
+					<Add mover_name="design_hard" />
+					<Add mover_name="rb_min_repack_rb_min_hard" />
+
+					//third round boundary/surface design with up_ele
+					<Add mover_name="design_surf" />
+					<Add mover_name="rb_min_repack_rb_min_hard" />
+
+					//revert
+					<Add mover_name="clear_cts" />
+					<Add mover_name="revert_resis" />
+					<Add mover_name="rb_min_repack_rb_min_hard" />
+
+					//**TEST** test to see if charged residues can be more complementary
+					<Add mover_name="test_charges" />
+					<Add mover_name="rb_min_repack_rb_min_hard" />
+	
+					//filters
+					<Add filter_name="sc1" />
+					<Add filter_name="uhb" />
+					<Add filter_name="buns3" />
+					<Add filter_name="sasa" />
+					<Add filter_name="ddG" />
+					<Add filter_name="ddG_sasa" />
+					<Add filter_name="avgdeg" />
+					<Add filter_name="ss_count_A" />
+					<Add filter_name="clash_check" />
+					<Add filter_name="mutations" />
+					<Add filter_name="AlaCount" />
+					<Add filter_name="MetCount" />
+					<Add filter_name="HPcCount" />
+					<Add filter_name="AroCount" />
+					<Add filter_name="hbnet_cst_sc" />
+				</PROTOCOLS>
+			</ROSETTASCRIPTS>
+		</MultiplePoseMover>
+	</MOVERS>
+    
+	<PROTOCOLS>
+		//generate docked configuration
+		<Add mover_name="gen_docked_config" />
+		
+		//pre-design filters
+		<Add filter_name="clash_check" />
+		<Add filter_name="ss_count_A" />
+  		
+  		//hbnet design
+  		<Add mover_name="hbnet_mover" />
+  		<Add mover_name="MPM_design" />
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

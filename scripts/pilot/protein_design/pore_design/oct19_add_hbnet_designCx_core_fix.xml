@@ -1,0 +1,261 @@
+<ROSETTASCRIPTS>
+
+    =======PURPOSE=============
+    oct 18: added mono_core
+    changed hb min networks = 2 
+    =====
+
+    <SCOREFXNS>
+        <ScoreFunction name="beta" weights="beta" symmetric="1"/>
+    </SCOREFXNS>
+
+    <RESIDUE_SELECTORS>
+        <Index name="native_net" resnums="9,12,75,94,97,160,179,182,245,27,30,57,112,115,142,197,200,227"/>
+        <!-- <Index name="loop_residues" resnums="33-40,72-79,109-115"/> -->
+        <SecondaryStructure name="loops" overlap="2" include_terminal_loops="true" ss="L"/>
+        <Layer name="hbnet_core" select_core="true" core_cutoff="3.6"/>
+    </RESIDUE_SELECTORS>
+
+    <TASKOPERATIONS>
+        <IncludeCurrent name="current"/>
+        <LimitAromaChi2 name="arochi"/>
+        <ConsensusLoopDesign name="disallow_non_abego_aas"/>
+        <LayerDesign name="init_layers_hbnet" layer="Nterm_core_boundary_surface_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="3.6">
+            <core>
+                <Helix append="HNQYSTD"/>
+            </core>
+            <boundary>
+                <Helix exclude="EKRW"/>
+            </boundary>
+            <surface>
+                <Helix exclude="KR"/>
+            </surface>
+        </LayerDesign>
+        SELECT OUT FROM PACK AND DESIGN
+        <OperateOnResidueSubset name="no_design_hbnet" selector="native_net">
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="no_loops" selector="loops">
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+        SELECT THE INTERFACE
+        <BuildingBlockInterface name="hbnet_bbi" nsub_bblock="1"/>
+    </TASKOPERATIONS>
+
+    <FILTERS>
+        <DesignableResidues name="hb_des_pos" task_operations="current,arochi,init_layers_hbnet,disallow_non_abego_aas,no_design_hbnet,no_loops,hbnet_bbi" designable="1" packable="1" />
+    </FILTERS>
+    <MOVERS>
+        The input pose contains chain A from docks. Docks were generated from scotts hbnet designed bundles. Symmetrize uniform perturbation search
+        <Symmetrizer name="gen_docked_config" symm_file="%%symmfile%%" radial_disp_max="0.5" angle_max="2.0"/>
+        <!-- <DumpPdb name="symmetrized" fname="symmetrized.pdb" scorefxn="beta"/> -->
+        Let's fix native networks and find new interface ones restricted to bbi
+        #try scott's suggestion of -0.1 and filters
+        <HBNetStapleInterface
+            name="hbnet_intermolecular_bbi"
+            scorefxn="beta"
+            hb_threshold="-0.5"
+            min_connectivity="0.5"
+            min_helices_contacted_by_network="3"
+            min_core_res="3"
+            min_network_size="3"
+            min_intermolecular_hbonds="3"
+            max_replicates="1"
+            max_replicates_before_branch="3"
+            min_networks_per_pose="2"
+            max_networks_per_pose="2"
+            combos="2"
+            max_unsat="3"
+            minimize="true"
+            design_residues="STNQHWY"
+            core_selector="hbnet_core"
+            use_aa_dependent_weights="true"
+            secondary_search="0"
+            show_task="1"
+            write_network_pdbs="1"
+            write_cst_files="1"
+            task_operations="arochi,init_layers_hbnet,no_design_hbnet,no_loops,hbnet_bbi"/>
+
+        Design for docked interfaces based on motif table. How should we determine max input poses?
+        <MultiplePoseMover name="MPM_design_dockedconfigs" max_input_poses="500">
+            <ROSETTASCRIPTS>
+                <SCOREFXNS>
+                    <ScoreFunction name="sfx_symm_hard" weights="beta" symmetric="1" />
+                    <ScoreFunction name="sfx_symm_elec" weights="beta" symmetric="1">
+                        <Reweight scoretype="fa_elec" weight="2.0"/>
+                    </ScoreFunction>
+                    <ScoreFunction name="sfx_symm_norep" weights="beta" symmetric="1">
+                        <Reweight scoretype="fa_rep" weight="0.05"/>
+                    </ScoreFunction>
+                </SCOREFXNS>
+                <RESIDUE_SELECTORS>
+                    <!-- <ResidueName name="all_ala" residue_name3="ALA"/>
+                         <Not name="not_ala" selector="all_ala"/> -->
+                    <Index name="native_net" resnums="9,12,75,94,97,160,179,182,245,27,30,57,112,115,142,197,200,227"/>
+                    <ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet"/>
+                    <SecondaryStructure name="loops" overlap="2" include_terminal_loops="true" ss="L"/>
+            		core_around_hbnet
+            		<Neighborhood name="around_hbnet" selector="hbnet_residues" distance="5.0" />
+            		<Layer name="hbnet_core" select_core="true" core_cutoff="3.6" />
+            		<And name="core_around_hbnet" selectors="hbnet_core,around_hbnet"/>
+                </RESIDUE_SELECTORS>
+
+                <TASKOPERATIONS>
+                    <!-- <InitializeFromCommandline name="init"/> -->
+                    <ReadResfile name="surf_resfile" filename="%%surffile%%"/>
+
+                    <BuildingBlockInterface name="bbi" nsub_bblock="1"/>
+
+                    <SelectBySASA name="core" mode="sc" state="bound" core_asa="30" surface_asa="0" core="1" boundary="0" surface="0" verbose="1"/>
+                    <SelectBySASA name="surf" mode="sc" state="bound" core_asa="0" surface_asa="30" core="0" boundary="0" surface="1" verbose="1"/>
+
+                    <OperateOnResidueSubset name="hbnet_task" selector="hbnet_residues">
+                        <PreventRepackingRLT/>
+                    </OperateOnResidueSubset>
+
+                    <OperateOnResidueSubset name="no_design_hbnet" selector="native_net">
+                        <PreventRepackingRLT/>
+                    </OperateOnResidueSubset>
+
+                    <OperateOnResidueSubset name="no_loops" selector="loops">
+                        <PreventRepackingRLT/>
+                    </OperateOnResidueSubset>
+<!-- try layer sasa for dd later...
+                    <LayerDesign name="layer_SASA" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="0" core="35" surface="45">
+                        <core>
+                            <Helix append="M"/>
+                            <all exclude="WY"/>
+                        </core>
+                        <boundary>
+                            <Helix exclude="DRHQ"/>
+                            letting Rosetta add these results in too many unsats; HBNets already have them
+                            <all exclude="WF"/>
+                        </boundary>
+                        <surface>
+                            <all exclude="WF"/>
+                        </surface>
+                    </LayerDesign> -->
+                    <SelectBySASA name="no_mono_core" mode="sc" state="monomer" core_asa="0" surface_asa="25" core="0" boundary="0" surface="1" verbose="1" /> ##selects surface residues of BUILDING BLOCK
+
+                </TASKOPERATIONS>
+
+                <FILTERS>
+                    <ShapeComplementarity name="sc_filt" jump="1" verbose="1" min_sc="0.6" write_int_area="1" confidence="1"/>
+                    <Ddg name="ddG_filt" scorefxn="sfx_symm_hard" jump="1" repack="0" repeats="1" threshold="0" confidence="0"/>
+                    <SymUnsatHbonds name="unsat_pols" jump="1" cutoff="5" verbose="1" write2pdb="1" confidence="0"/>
+                    <DesignableResidues name="motif_des_pos" task_operations="bbi" designable="1" packable="1" />
+                    <Sasa name="sasa_int_area" threshold="0" upper_threshold="10000" hydrophobic="0" polar="0" jump="1" confidence="0"/>
+                    <SequenceRecovery name="mutations" rate_threshold="0.0" mutation_threshold="50" report_mutations="1" verbose="1" write2pdb="1" task_operations="bbi" confidence="0"/>
+                    <ResidueCount name="ala_count" residue_types="ALA" task_operations="bbi" confidence="0"/>
+                    <!-- <BuriedUnsatHbonds3 name="buns3" scorefxn="sfx_symm_hard" cutoff="10" print_out_info_to_pdb="true" use_hbnet_behavior="true" confidence="0"/> -->
+
+
+                    #score
+                    <ScoreType name="scorefilter" scorefxn="sfx_symm_hard" score_type="total_score" threshold="0.0" confidence="1"/>
+
+                    #hbnet new_buns #ignore bb heavy just in case; only want to assess HBnet sc first
+                    <BuriedUnsatHbonds3 name="new_buns_HBNet" scorefxn="sfx_symm_hard" cutoff="20" print_out_info_to_pdb="true" ignore_surface_res="true" residue_surface_cutoff="20.0" ignore_bb_heavy_unsats="true" residue_selector="hbnet_residues" confidence="1"/>
+                    new_buns_sc_heavy
+                    <BuriedUnsatHbonds3
+                        name="new_buns_sc_heavy"
+                        scorefxn="sfx_symm_hard"
+                        cutoff="0"
+                        use_reporter_behavior="true"
+                        report_sc_heavy_atom_unsats="true"
+                        print_out_info_to_pdb="true"
+                        ignore_surface_res="true"
+                        residue_surface_cutoff="20.0"
+                        ignore_bb_heavy_unsats="false"
+                        confidence="1"/>
+                    new_buns_bb_heavy
+                    <BuriedUnsatHbonds3
+                        name="new_buns_bb_heavy"
+                        scorefxn="sfx_symm_hard"
+                        cutoff="2"
+                        use_reporter_behavior="true"
+                        report_bb_heavy_atom_unsats="true"
+                        print_out_info_to_pdb="true"
+                        ignore_surface_res="true"
+                        residue_surface_cutoff="20.0"
+                        ignore_bb_heavy_unsats="false"
+                        confidence="1"/>
+                        network_holes
+                        <Holes name="network_holes" threshold="1.8" residue_selector="core_around_hbnet" normalize_per_atom="true" exclude_bb_atoms="true" confidence="0"/>
+                        ss_sc
+                        <SSShapeComplementarity name="ss_sc" verbose="0" loops="0" helices="1" confidence="1" min_sc="0.65"/>
+                        #use cutoff 0.7 #aa composition check
+                        <ExposedHydrophobics name="exposedhydrop" sasa_cutoff="20" threshold="0" confidence="0"/>
+
+                </FILTERS>
+                <MOVERS>
+                    <!-- <DumpPdb name="predock" fname="predock.pdb" scorefxn="sfx_symm_hard"/>
+            					<DumpPdb name="docked" fname="docked.pdb" scorefxn="sfx_symm_hard"/>
+            					<DumpPdb name="motifed" fname="motifed.pdb" scorefxn="sfx_symm_hard"/>
+            					<DumpPdb name="surfed" fname="surfed.pdb" scorefxn="sfx_symm_hard"/> -->
+
+                    Added hbnet_task
+                    <SchemePlaceMotifs name="place_motifs" mode="symmetric_interface" allowed_aas="motifs" task_operations="bbi,core,hbnet_task,no_mono_core,no_design_hbnet,no_loops" scorefxn="sfx_symm_norep" motif_sets="xs_bb_ss_AILV_max_std.rpm.bin.gz"/>
+                    added hbnet_task
+                    <SymPackRotamersMover name="design_surf" scorefxn="sfx_symm_elec" task_operations="surf,surf_resfile,hbnet_task,bbi,no_mono_core,no_design_hbnet,no_loops"/>
+                    #try surf=45
+                    <!--turned off b/c i dont know how to not overwrite taskops with resfile -->
+                    <!-- added hbnet_task -->
+                    <!-- <SymPackRotamersMover name="repack" scorefxn="sfx_symm_hard" task_operations="hbnet_task,bbi,repack_only" /> -->
+                    <TaskAwareSymMinMover name="min" scorefxn="sfx_symm_hard" bb="0" chi="1" rb="1" task_operations="bbi,hbnet_task,no_design_hbnet,no_loops,no_mono_core"/>
+                    #interface analyzer
+                    <InterfaceAnalyzerMover name="interface_analyzer" scorefxn="sfx_symm_hard" pack_separated="true" pack_input="false" packstat="true" interface_sc="true" use_jobname="true" jump="1" />
+
+                </MOVERS>
+                <PROTOCOLS>
+                    Movers
+                    <Add mover_name="place_motifs"/>
+                    <!-- <Add mover_name="motifed" /> -->
+                    <Add mover_name="min"/>
+                    <!-- <Add mover_name="minimized" /> -->
+                    <Add mover_name="design_surf"/>
+                    <!-- <Add mover_name="surfed" /> -->
+                    <Add mover_name="min"/>
+                    <!-- <Add mover_name="minimized2" /> -->
+
+                    <Add filter="scorefilter"/>
+                    #hbnet stuff
+                    <!-- <Add mover="satisfy"/> -->
+                    <Add filter="new_buns_HBNet"/>
+                    <Add filter="new_buns_sc_heavy"/>
+                    <Add filter="new_buns_bb_heavy"/>
+                    <Add filter="network_holes"/>
+                    <!-- <Add filter="ss_sc"/> -->
+
+                    #aa compositions
+                    <Add filter="ala_count"/>
+                    <Add filter="exposedhydrop"/>
+
+                    #interface only
+                    <Add mover="interface_analyzer"/>
+
+                    #report only
+                    <!-- <Add filter="sasa_int_area"/> -->
+                    <Add filter_name="mutations"/>
+                    <Add filter="sc_filt"/>
+                    <Add filter="ddG_filt"/>
+                    <Add filter="unsat_pols"/>
+                    <Add filter_name="sasa_int_area"/>
+
+                </PROTOCOLS>
+            </ROSETTASCRIPTS>
+        </MultiplePoseMover>
+    </MOVERS>
+    <PROTOCOLS>
+        <!-- This is a - - comment -->
+        #is this a comment?
+        <Add mover="gen_docked_config"/>
+        <!--Add mover="dump1"/-->
+        <Add mover="hbnet_intermolecular_bbi"/>
+
+        <!--Add mover="hbnet_extend"/-->
+        <Add mover="MPM_design_dockedconfigs"/>
+        <!-- <Add filter_name="interface_pos" />
+         <Add filter_name="des_pos" /> -->
+
+    </PROTOCOLS>
+</ROSETTASCRIPTS>

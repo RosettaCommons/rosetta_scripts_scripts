@@ -1,0 +1,111 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+    <sfx_symm_soft weights=talaris2013 symmetric=1 >
+     ``                 <Reweight scoretype=fa_rep weight=0.05 />
+                </sfx_symm_soft>
+    <sfx_soft weights=talaris2013 >
+                      <Reweight scoretype=fa_rep weight=0.05 />
+                </sfx_soft>
+    <sfx_cart_symm weights=talaris2013_cart symmetric=1 >
+                </sfx_cart_symm>
+    <sfx_hard_symm weights=talaris2013 symmetric=1 >
+                </sfx_hard_symm>
+    <sfx_hard weights=talaris2013 >
+                </sfx_hard>
+    <sfx_elec_symm weights=talaris2013 symmetric=1 >
+                      <Reweight scoretype=fa_elec weight=2.0 />
+                </sfx_elec_symm>
+    <sfx_elec weights=talaris2013 >
+                      <Reweight scoretype=fa_elec weight=2.0 />
+                </sfx_elec>
+    <sfx_norep weights=talaris2013 symmetric=1 >
+                      <Reweight scoretype=fa_rep weight=0.05 />
+                </sfx_norep>
+
+	</SCOREFXNS>
+
+	<TASKOPERATIONS>
+		ReadResfilename=core_resfile filename="%%resfile%%" />
+		ReadResfile name=surf_resfile filename="/work/gtueda/Cn/asym_C2/util/surf.resfile" />
+		<DisallowIfNonnative name=dsgn_aa_core disallow_aas=CG />
+		<DisallowIfNonnative name=dsgn_aa_surf disallow_aas=CGP />
+		<BuildingBlockInterface name=bbi nsub_bblock=1 contact_dist=10.0 />
+		<LimitAromaChi2 name=limitaro chi2max=110 chi2min=70 />
+		<RetrieveStoredTask name=design_task task_name="design_task" />
+		<RetrieveStoredTask name=scan_task task_name="scan_task" />
+		<RestrictToRepacking name=repack_only />
+		<SelectBySASA name=core mode="sc" state="bound" core_asa=30 surface_asa=0 core=1 boundary=0 surface=0 verbose=1 />
+                <SelectBySASA name=surf mode="sc" state="bound" core_asa=0 surface_asa=30 core=0 boundary=0 surface=1 verbose=1 />
+		<RestrictIdentities name=restr_resi_repack identities="PRO,GLY" prevent_repacking=0 />
+		<RestrictToInterface name=restr_interface jump=1 distance=10.0 />
+		<RestrictNativeResidues name=nonnative prevent_repacking=1 />
+		
+	</TASKOPERATIONS>
+
+	<FILTERS>
+		<ShapeComplementarity name=sc_filt jump=1 verbose=1 min_sc=0.65 write_int_area=1 />
+		TaskAwareAlaScan name=ala_scan task_operations=design_task jump=1 repeats=1 scorefxn=sfx_hard_symm repack=1 report_diffs=0 exempt_identities="PRO,GLY" write2pdb=1 />
+		<Ddg name=ddG_filt scorefxn=sfx_hard_symm jump=1 repack=0 repeats=0 threshold=-20 />
+		<SymUnsatHbonds name=unsat_pols jump=1 cutoff=5 verbose=1 write2pdb=1 />
+		<DesignableResidues name=des_pos task_operations=design_task designable=1 packable=1 />
+		<Sasa name=sasa_int_area threshold=700 upper_threshold=10000 hydrophobic=0 polar=0 jump=1 confidence=0 />
+		<SequenceRecovery name=mutations rate_threshold=0.0 mutation_threshold=50 report_mutations=1 verbose=1 write2pdb=1 task_operations=design_task />
+		<ResidueCount name=ala_count residue_types="ALA" task_operations=nonnative />
+		<TaskAwareScoreType name=per_res_fa_rep task_operations=nonnative scorefxn=sfx_hard_symm score_type=fa_rep bb_bb=0 confidence=0 mode=individual threshold=2.5 write2pdb=1 />
+	</FILTERS>
+
+	<MOVERS>
+    <Symmetrizer name=gen_docked_config symm_file="%%symmfile%%" radial_disp_max=0.5 angle_max=2.0  />
+			Symmetrizer name=second_docked_config symm_file="%%symmfile%%" /> 			
+			SetupForSymmetry name=setup_symm definition="%%symmfile_int%%" />
+			SetupForSymmetry name=second_symm definition="%%symmfile%%" />
+    <SchemePlaceMotifs name=place_motifs   allowed_aas=motifs  task_operations=core   scorefxn=sfx_norep  motif_sets="xsmax_bb_ss_AILMV_resl0.8_msc0.3.rpm.bin.gz" /> dumpfile="post_small_move" 
+		<StoreTaskMover name=store_design_task task_name="design_task" task_operations=bbi,limitaro />
+		<StoreTaskMover name=store_scan_task task_name="scan_task" task_operations=dsgn_aa_core,restr_interface,limitaro />
+         	<SymPackRotamersMover name=design_hard scorefxn=sfx_hard_symm task_operations=design_task,core,dsgn_aa_core />
+         	<SymPackRotamersMover name=design_elec scorefxn=sfx_elec_symm task_operations=design_task,surf,restr_resi_repack />
+		<SymPackRotamersMover name=repack scorefxn=sfx_hard_symm task_operations=design_task,repack_only />
+		PackRotamersMove name=
+    <SymMinMover name=cart_min scorefxn=sfx_cart_symm bb=0 chi=0 jump=1 cartesian=1  />
+    <TaskAwareSymMinMover name=min scorefxn=sfx_hard_symm bb=0 chi=1 rb=0 task_operations=design_task />
+    TaskAwareSymMinMover name=mins scorefxn=sfx_symm_soft bb=0 chi=1 rb=1 task_operations=design_task,core />
+    TaskAwareSymMinMover name=mins scorefxn=sfx_soft_symm bb=0 chi=1 rb=0 task_operations=design_task,core />
+    TaskAwareSymMinMover name=mine scorefxn=sfx_elec bb=0 chi=1 rb=1 task_operations=design_task,surf  />
+                <ParsedProtocol name=design_surf>
+                        <add mover_name=design_elec />
+                        <add mover_name=min />
+                </ParsedProtocol>
+		FavorSequenceProfile name=fsp  scaling=global use_current=1 weight=2.0  /> pssm="%%pssmfile%%"
+	</MOVERS>
+
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+
+	<PROTOCOLS>
+    <Add mover_name=gen_docked_config />
+		<Add mover_name=store_design_task />
+		Add mover_name=fsp />
+		<Add mover_name=place_motifs />
+    <Add mover_name=cart_min />
+    <Add mover_name=min />
+		<Add mover_name=design_surf />
+		<Add filter_name=ddG_filt />
+		<Add filter_name=sc_filt />
+		<Add filter_name=sasa_int_area />
+		<Add filter_name=mutations />
+		Add mover_name=extract_asu />
+		Add mover_name=second_docked_config />
+		Add filter_name=avg_deg />
+    Add filter_name=ala_scan />
+    <Add filter_name=unsat_pols />
+		Add filter_name=air_energy />
+		Add filter_name=air_fa_atr />
+		Add filter_name=air_fa_rep />
+		Add filter_name=air_fa_dun />
+		Add filter_name=des_pos />
+    <Add filter_name=mutations />
+		<Add filter_name=ala_count />
+    <Add filter_name=per_res_fa_rep />
+	</PROTOCOLS>
+
+</ROSETTASCRIPTS>

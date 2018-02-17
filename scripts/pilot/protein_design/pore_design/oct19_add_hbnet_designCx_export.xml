@@ -1,0 +1,177 @@
+<ROSETTASCRIPTS>
+    =======PURPOSE=============
+    Oct12: adding in res selectors, taskOps same like cyclic oligomers. Might consider taskOps like bundle design (with a boundary)
+    ===========================
+    <SCOREFXNS>
+        <ScoreFunction name="beta" weights="beta" symmetric="1"/>
+        <ScoreFunction name="sfx_symm_hard" weights="beta" symmetric="1"/>
+        <ScoreFunction name="sfx_symm_elec" weights="beta" symmetric="1">
+            <Reweight scoretype="fa_elec" weight="2.0"/>
+        </ScoreFunction>
+        <ScoreFunction name="sfx_symm_norep" weights="beta" symmetric="1">
+            <Reweight scoretype="fa_rep" weight="0.05"/>
+        </ScoreFunction>
+    </SCOREFXNS>
+
+    <TASKOPERATIONS> ##selecting interface via task-ops
+  		<BuildingBlockInterface name="bbi" multicomp="0" nsub_bblock="1" fa_rep_cut="3.0" contact_dist="10.0" bblock_dist="5.0" /> ##detects residues between building blocks #note single component notation!! Using default cuts
+      <!-- <BuildingBlockInterface name="design_bbi" multicomp="0" sym_dof_names="%%symdof%%" nsub_bblock="1" fa_rep_cut="3.0" contact_dist="8.5" bblock_dist="2.5" /> ##detects residues between building blocks #note single component notation!! -->
+  		<SelectBySASA name="bb_surf" mode="sc" state="monomer" core_asa="0" surface_asa="25" core="0" boundary="0" surface="1" verbose="1" /> ##selects surface residues of BUILDING BLOCK
+        <!-- <SelectBySASA name="bb_core" mode="sc" state="bound" probe_radius="2.2" core_asa="0" surface_asa="30" core="0" boundary="1" surface="1" verbose="1" /> -->
+  	</TASKOPERATIONS>
+
+
+    <RESIDUE_SELECTORS>
+
+        #Interface ##set of all interface residues
+        <Task name="bbi_selector" designable="true" task_operations="bbi" />
+        <Task name="bb_surf_selector" designable="true" task_operations="bb_surf" />
+        <And name="interface_all" selectors="bbi_selector,bb_surf_selector" /> ##interface_all
+        <Not name="not_interface" selector="interface_all" />
+
+        #Layers
+        <Layer name="surf" select_surface="true" use_sidechain_neighbors="false" ball_radius="2" core_cutoff="30" surface_cutoff="30" />
+      	<!-- <Layer name="bdry" select_boundary="true" use_sidechain_neighbors="false" ball_radius="2" core_cutoff="30" surface_cutoff="30" /> -->
+      	<Layer name="core" select_core="true" use_sidechain_neighbors="false" ball_radius="2" core_cutoff="30" surface_cutoff="30" />
+
+        #Interface design subsets
+        <And name="interface_surface" selectors="surf,interface_all" />
+		    <!-- <And name="design_bdry" selectors="bdry,design_int" /> -->
+		<And name="interface_core" selectors="core,interface_all" />
+
+        #select interface for hbnet finder
+        <And name="int_hbnet" selectors="core,interface_all"/>
+        <Not name="not_int_hbnet" selector="int_hbnet"/>
+
+        #feature select
+        <ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet" />
+        <SecondaryStructure name="loops" overlap="2" include_terminal_loops="true" ss="L"/>
+        <Index name="native_net_HB3" resnums="9,12,75,94,97,160,179,182,245,27,30,57,112,115,142,197,200,227"/>
+
+    </RESIDUE_SELECTORS>
+
+    <TASKOPERATIONS>
+        ##general design ops
+        <IncludeCurrent name="IC"/>  ##includes input pdb's rotamers
+        <LimitAromaChi2 name="limitaro" chi2max="110" chi2min="70" /> ##disallow extreme aromatic rotamers
+        <ExtraRotamersGeneric name="extra_chi" ex1="1" ex2="1" ex3="0" ex4="0" ex1aro="1" ex2aro="1" ex1aro_exposed="0" ex2aro_exposed="0" ex1_sample_level="1" ex2_sample_level="1" ex1aro_sample_level="1" ex2aro_sample_level="1" extrachi_cutoff="18"/> ##use ex1 ex2 rotamers
+        <RestrictToRepacking name="repack_only" />						##for minimize/repack
+
+
+        ##prevent features redesign
+        #general loop design taskOp
+        <ConsensusLoopDesign name="disallow_nonnative_loop_sequences" include_adjacent_residues="1" enrichment_threshold="0.3" use_dssp="1" />
+        #prevent design on native network
+        <OperateOnResidueSubset name="no_design_native_net" selector="native_net_HB3">
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+        #Prevent design on loops
+        <OperateOnResidueSubset name="no_loops" selector="loops">
+            <PreventRepackingRLT/>
+        </OperateOnResidueSubset>
+
+            #prevent the design of not-interface
+            <OperateOnResidueSubset name="lock_not_interface" selector="not_interface" >
+              <PreventRepackingRLT/>
+            </OperateOnResidueSubset>
+
+            ## for ala packer
+            select all the interface
+            select res type ala only
+
+            <OperateOnResidueSubset name="design_interface_all" selector="interface_all" >
+                <RestrictAbsentCanonicalAASRLT aas="A" />
+            </OperateOnResidueSubset>
+
+             ## for motifs:
+            ## do you want to adjust the surface while you place motifs?
+            ## or just minimize and repack via fastDesign
+
+            <!-- <OperateOnResidueSubset name="design_interface_core" selector="interface_core" >
+                <RestrictAbsentCanonicalAASRLT aas="LV" />
+            </OperateOnResidueSubset>
+            ## might use this for messing with interface_core via fast design -->
+            <OperateOnResidueSubset name="sbtrkt_interface_surface" selector="interface_surface" >
+                <PreventRepackingRLT/>
+            </OperateOnResidueSubset>
+
+
+             ## for HBNET initially
+             select hbnet core + interface, say you want to attempt layer design like thing
+             ##for around HBNET
+
+            ##this includes interface positions, and side-chain neighbors core positions
+
+             <OperateOnResidueSubset name="sbtrkt_not_hbnet" selector="not_int_hbnet" >
+                 <PreventRepackingRLT/>
+             </OperateOnResidueSubset>
+
+            int_hbnet layers?!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+             ##for surface design
+             select interface+surface, say you want to design with aas
+             select interface+core, say only repack
+             select not interface, no design
+
+             #lock
+
+             #design surface of interface
+             <OperateOnResidueSubset name="design_interface_surface" selector="interface_surface" >
+                 <RestrictAbsentCanonicalAASRLT aas="DENQRST" /> ## disallow:
+             </OperateOnResidueSubset>
+             <OperateOnResidueSubset name="sbtrkt_interface_core" selector="interface_core" >
+                 <PreventRepackingRLT/>
+             </OperateOnResidueSubset>
+
+            <!--
+            #for minimization
+                     <OperateOnResidueSubset name="repack_core" selector="interface_core" >
+                       <RestrictToRepackingRLT/>
+                     </OperateOnResidueSubset> -->
+
+                    </TASKOPERATIONS>
+
+    <FILTERS>
+        #Eyes in the log
+
+        <Sasa name="sasa_int_area" threshold="0" upper_threshold="10000" hydrophobic="0" polar="0" jump="1" confidence="0"/>
+
+        <SaveResfileToDisk name="resfile_interface_all" task_operations="lock_not_interface,design_interface_all" designable_only="0" resfile_prefix="interface_all" resfile_suffix="a" resfile_general_property="NATRO" />
+        <SaveResfileToDisk name="resfile_interface_core" task_operations="lock_not_interface,design_interface_core,sbtrkt_interface_surface" designable_only="0" resfile_prefix="interface_core" resfile_suffix="b" resfile_general_property="NATRO" />
+        <SaveResfileToDisk name="resfile_interface_surface" task_operations="lock_not_interface,design_interface_surface,sbtrkt_interface_core" designable_only="0" resfile_prefix="interface_surface" resfile_suffix="c" resfile_general_property="NATRO" />
+        <SaveResfileToDisk name="resfile_interface_hbnet" task_operations="sbtrkt_not_hbnet" designable_only="0" resfile_prefix="interface_hbnet" resfile_suffix="d" resfile_general_property="NATRO" />
+
+
+
+            </FILTERS>
+    <MOVERS>
+        #visual contact
+        <!-- <PyMOLMover name="pmm" keep_history="1" /> -->
+        #input is only chainA from sic-docked monomer
+        #all monomers on deck
+        <Symmetrizer name="gen_docked_config" symm_file="%%symmfile%%" radial_disp_max="0.5" angle_max="2.0"/>
+        #check your iface
+        <!-- <SymPackRotamersMover name="polyA" scorefxn="beta" task_operations="ALA"/> -->
+        #make it so!
+        #hbnet
+        #mpm
+        <!-- <SymPackRotamersMover name="polyA" scorefxn="beta" task_operations="bbi,no_loops,only_design_core,ALA"/> -->
+        <!-- <MakePolyX name="polyL" aa="L" keep_pro="false" keep_gly="false" keep_disulfide_cys="false" residue_selector="bbi_noloops_core" /> -->
+        <!-- <SymPackRotamersMover name="polyL" scorefxn="beta" task_operations="bbi,no_loops,only_design_surface,LEU"/> -->
+        #verbal out
+        <WriteFiltersToPose name="write_to_pose" prefix="interface" include_type="true"/>
+    </MOVERS>
+
+    <PROTOCOLS>
+        <Add mover="gen_docked_config" />
+        <Add filter ="resfile_interface_all" />
+        <Add filter ="resfile_interface_core" />
+        <Add filter ="resfile_interface_surface" />
+        <Add filter ="resfile_interface_hbnet" />
+
+
+
+    </PROTOCOLS>
+
+</ROSETTASCRIPTS>

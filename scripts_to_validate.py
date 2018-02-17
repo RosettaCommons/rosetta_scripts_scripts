@@ -147,7 +147,10 @@ scripts_to_be_validated = [
     "scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_DeNovo_scaffolds_DeNovoStrands_add_2nd_helix_back_designs_c_pass_gba.bp_pass__20161129210726.pdb.bp_20161219173002_0001_0001_selected_input2.bp_pass_20170207172929.pdb.bp_pass_20170207200957_bpb2_csts.xml",
     "scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_DeNovo_scaffolds_DeNovoStrands_add_2nd_helix_back_designs_c_pass_gba.bp_pass__20161129210228.pdb.bp_20161219172446_0001_0001_selected_build.bp_pass_20170209105717_bpb2_csts.xml",
     "scripts/pilot/protein_design/de_novo_heterodimers/heterodimer_final_design.xml",
-    "scripts/pilot/protein_design/de_novo_heterodimers/heterodimer_LSAS_final_design_close_loops_only.xml"
+    "scripts/pilot/protein_design/de_novo_heterodimers/heterodimer_LSAS_final_design_close_loops_only.xml",
+    "scripts/pilot/protein_design/pore_design/nov13_mchbnet_extend_hbnet_on_docks.xml",
+    "scripts/pilot/protein_design/pore_design/nov13_mchbnet_extend_hbnet_on_docks_con.xml",
+    "scripts/pilot/protein_design/pore_design/oct19_add_hbnet_designCx_export.xml"
 ]
 
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world

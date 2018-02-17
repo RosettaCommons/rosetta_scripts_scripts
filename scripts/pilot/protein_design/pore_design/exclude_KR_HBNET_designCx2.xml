@@ -1,0 +1,164 @@
+ <ROSETTASCRIPTS>
+      <SCOREFXNS>
+              <beta weights=beta/>
+      </SCOREFXNS>
+      <RESIDUE_SELECTORS>
+          <Layer name=core select_core=true core_cutoff=3.6 />
+          <ResidueName name=all_ala residue_name3="ALA"/>
+          <Not name=not_ala selector=all_ala/>
+          <ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet" />
+      </RESIDUE_SELECTORS>
+      <TASKOPERATIONS>
+          <IncludeCurrent name=current/>
+          <LimitAromaChi2 name=arochi />
+          <LayerDesign name=init_layers_hbnet layer=Nterm_core_boundary_surface_Cterm make_pymol_script=0 use_sidechain_neighbors=True core=3.6 >
+                    <core>
+                    <Helix append="HNQYSTD"/>
+                    Helix exclude="KR"
+                    </core>
+                    <boundary>
+                    <Helix exclude="KRW"/>
+                    </boundary>
+                    <surface>
+                      <Helix exclude="KR"/>
+                    </surface>
+          </LayerDesign>
+
+            <OperateOnResidueSubset name=hbnet_task selector=hbnet_residues>
+              <PreventRepackingRLT/>
+            </OperateOnResidueSubset>
+            <ConsensusLoopDesign name="disallow_non_abego_aas"/>
+       </TASKOPERATIONS>
+      <MOVERS>
+            The input pose contains chain A from docks. Docks were generated from scotts hbnet designed bundles.
+
+            ##Symmetrize
+            <Symmetrizer name=gen_docked_config symm_file="%%symmfile%%" radial_disp_max=0.5 angle_max=2.0  />
+
+            ## Let's find Native networks
+            <HBNetStapleInterface scorefxn=beta name=hbnet_find hb_threshold=-0.75 all_helical_interfaces=true find_native_networks=true write_network_pdbs=0 task_operations=arochi,init_layers_hbnet,disallow_non_abego_aas,hbnet_task />
+
+            ##Let's extend those networks, and only ouput extended models
+            <HBNetStapleInterface scorefxn=beta name=hbnet_extend hb_threshold=-0.75 extend_existing_networks=true write_network_pdbs=1 task_operations=arochi,init_layers_hbnet,disallow_non_abego_aas,hbnet_task />
+
+            ##Let's detect networks (Find existing ones, and find new ones with adjacent oligomers)
+            HBNetStapleInterface scorefxn=beta name=hbnet_interf_addon hb_threshold=-0.75 all_helical_interfaces=true find_native_networks=true extend_existing_networks=true write_network_pdbs=1 task_operations=arochi,init_layers_hbnet,disallow_non_abego_aas,hbnet_task />
+
+
+            #Design for docked interfaces based on motif table. How should we determine max input poses?
+            <MultiplePoseMover name=MPM_design_dockedconfigs max_input_poses=100>
+              <ROSETTASCRIPTS>
+                    <SCOREFXNS>
+                          <sfx_symm_soft weights=beta symmetric=1 >
+                                            <Reweight scoretype=fa_rep weight=0.05 />
+                                      </sfx_symm_soft>
+                          <sfx_soft weights=beta >
+                                            <Reweight scoretype=fa_rep weight=0.05 />
+                                      </sfx_soft>
+                          <sfx_cart_symm weights=beta_cart symmetric=1 >
+                                      </sfx_cart_symm>
+                          <sfx_hard_symm weights=beta symmetric=1 >
+                                      </sfx_hard_symm>
+                          <sfx_hard weights=beta >
+                                      </sfx_hard>
+                          <sfx_elec_symm weights=beta symmetric=1 >
+                                            <Reweight scoretype=fa_elec weight=2.0 />
+                                      </sfx_elec_symm>
+                          <sfx_elec weights=beta >
+                                            <Reweight scoretype=fa_elec weight=2.0 />
+                                      </sfx_elec>
+                          <sfx_norep weights=beta symmetric=1 >
+                                            <Reweight scoretype=fa_rep weight=0.05 />
+                                      </sfx_norep>
+                    </SCOREFXNS>
+                    <RESIDUE_SELECTORS>
+                         <ResidueName name=all_ala residue_name3="ALA"/>
+                         <Not name=not_ala selector=all_ala/>
+                         <ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet" />
+                    </RESIDUE_SELECTORS>
+
+                    <TASKOPERATIONS>
+                      <DisallowIfNonnative name=dsgn_aa_core disallow_aas=CG />
+                  		<DisallowIfNonnative name=dsgn_aa_surf disallow_aas=CGP />
+                  		<BuildingBlockInterface name=bbi nsub_bblock=1 contact_dist=10.0 />
+                  		<LimitAromaChi2 name=limitaro chi2max=110 chi2min=70 />
+                  		<RetrieveStoredTask name=design_task task_name="design_task" />
+                  		<RetrieveStoredTask name=scan_task task_name="scan_task" />
+                  		<RestrictToRepacking name=repack_only />
+                  		<SelectBySASA name=core mode="sc" state="bound" core_asa=30 surface_asa=0 core=1 boundary=0 surface=0 verbose=1 />
+                                  <SelectBySASA name=surf mode="sc" state="bound" core_asa=0 surface_asa=30 core=0 boundary=0 surface=1 verbose=1 />
+                  		<RestrictIdentities name=restr_resi_repack identities="PRO,GLY" prevent_repacking=0 />
+                  		<RestrictToInterface name=restr_interface jump=1 distance=10.0 />
+                  		<RestrictNativeResidues name=nonnative prevent_repacking=1 />
+                      <OperateOnResidueSubset name=hbnet_task selector=hbnet_residues>
+                         <PreventRepackingRLT/>
+                      </OperateOnResidueSubset>
+                    </TASKOPERATIONS>
+
+                    <FILTERS>
+                                <ShapeComplementarity name=sc_filt jump=1 verbose=1 min_sc=0.65 write_int_area=1 />
+                            		TaskAwareAlaScan name=ala_scan task_operations=design_task jump=1 repeats=1 scorefxn=sfx_hard_symm repack=1 report_diffs=0 exempt_identities="PRO,GLY" write2pdb=1 />
+                            		<Ddg name=ddG_filt scorefxn=sfx_hard_symm jump=1 repack=0 repeats=0 threshold=-20 />
+                            		<SymUnsatHbonds name=unsat_pols jump=1 cutoff=5 verbose=1 write2pdb=1 />
+                            		<DesignableResidues name=des_pos task_operations=design_task designable=1 packable=1 />
+                            		<Sasa name=sasa_int_area threshold=700 upper_threshold=10000 hydrophobic=0 polar=0 jump=1 confidence=0 />
+                            		<SequenceRecovery name=mutations rate_threshold=0.0 mutation_threshold=50 report_mutations=1 verbose=1 write2pdb=1 task_operations=design_task />
+                            		<ResidueCount name=ala_count residue_types="ALA" task_operations=nonnative />
+                            		<TaskAwareScoreType name=per_res_fa_rep task_operations=nonnative scorefxn=sfx_hard_symm score_type=fa_rep bb_bb=0 confidence=0 mode=individual threshold=2.5 write2pdb=1 />
+
+                                <PreProline name="prepro" use_statistical_potential=0 />
+                              	<ScoreType name=scorefilter scorefxn=sfx_hard_symm score_type=total_score threshold=0.0 confidence=1 />
+                              	EnzScore name="cst_score" score_type=cstE scorefxn=sfx_hard_symm whole_pose=1 energy_cutoff=20 confidence=0/>
+                              	BuriedUnsatHbonds name="uhb" scorefxn=sfx_hard_symm cutoff=4 task_operations=layer_all confidence=0/>
+                              	BuriedUnsatHbonds2 name="uhb2" scorefxn=sfx_hard_symm cutoff=4 task_operations=layer_all confidence=0 AHD_cutoff=90 confidence=0/>
+                              	ResidueCount name=ala_count max_residue_count=30 residue_types="ALA" confidence=1/>
+                              	ResidueCount name=chainA_ILVF_count min_residue_count=5 residue_types="ILE,LEU,VAL,PHE" residue_selector=chain_a confidence=0/>
+                              	ResidueCount name=chainB_ILVF_count min_residue_count=5 residue_types="ILE,LEU,VAL,PHE" residue_selector=chain_b confidence=0/>
+                              	ResidueCount name=chainC_ILVF_count min_residue_count=5 residue_types="ILE,LEU,VAL,PHE" residue_selector=chain_c confidence=0/>
+                    </FILTERS>
+                    <MOVERS>
+                                <SchemePlaceMotifs name=place_motifs   allowed_aas=motifs  task_operations=core,hbnet_task   scorefxn=sfx_norep  motif_sets="xsmax_bb_ss_AILMV_resl0.8_msc0.3.rpm.bin.gz" /> dumpfile="post_small_move"
+                                <StoreTaskMover name=store_design_task task_name="design_task" task_operations=bbi,limitaro />
+                                <StoreTaskMover name=store_scan_task task_name="scan_task" task_operations=dsgn_aa_core,restr_interface,limitaro />
+                                <SymPackRotamersMover name=design_hard scorefxn=sfx_hard_symm task_operations=design_task,core,dsgn_aa_core,hbnet_task />
+                                <SymPackRotamersMover name=design_elec scorefxn=sfx_elec_symm task_operations=design_task,surf,restr_resi_repack,hbnet_task />
+                                <SymPackRotamersMover name=repack scorefxn=sfx_hard_symm task_operations=design_task,repack_only,hbnet_task />
+                                <SymMinMover name=cart_min scorefxn=sfx_cart_symm bb=0 chi=0 jump=1 cartesian=1  />
+                                <TaskAwareSymMinMover name=min scorefxn=sfx_hard_symm bb=0 chi=1 rb=0 task_operations=design_task,hbnet_task />
+
+                                        <ParsedProtocol name=design_surf>
+                                           <add mover_name=design_elec />
+                                           <add mover_name=min />
+                                        </ParsedProtocol>
+                    </MOVERS>
+                    <PROTOCOLS>
+
+                                        <Add mover_name=store_design_task />
+                                        <Add mover_name=place_motifs />
+                                        <Add mover_name=cart_min />
+                                        <Add mover_name=min />
+                                        <Add mover_name=design_surf />
+
+                                        Add mover_name=design_elec />
+                                        Add mover_name=min />
+
+                                        <Add filter_name=ddG_filt />
+                                        <Add filter_name=sc_filt />
+                                        <Add filter_name=sasa_int_area />
+                                        <Add filter_name=mutations />
+                                        <Add filter_name=unsat_pols />
+                                        <Add filter_name=mutations />
+                                        <Add filter_name=ala_count />
+                                        <Add filter_name=per_res_fa_rep />
+                    </PROTOCOLS>
+              </ROSETTASCRIPTS>
+            </MultiplePoseMover>
+      </MOVERS>
+      <PROTOCOLS>
+         <Add mover=gen_docked_config/>
+         Add mover=hbnet_interf_addon/>
+         <Add mover=hbnet_find/>
+         <Add mover=hbnet_extend/>
+         <Add mover=MPM_design_dockedconfigs/>
+      </PROTOCOLS>
+  </ROSETTASCRIPTS>

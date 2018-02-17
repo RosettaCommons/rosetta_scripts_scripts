@@ -1,0 +1,59 @@
+<ROSETTASCRIPTS>
+	Sinduja Marx Oct18
+	Interface design by res selection for better layer design
+	<SCOREFXNS>
+	</SCOREFXNS>
+	<TASKOPERATIONS>
+	</TASKOPERATIONS>
+	<RESIDUE_SELECTORS>
+	</RESIDUE_SELECTORS>
+	<TASKOPERATIONS>
+	</TASKOPERATIONS>
+	<FILTERS>
+	</FILTERS>
+	<MOVERS>
+
+		#soft place motifs: interface_core
+		<SchemePlaceMotifs name="place_motifs" mode="symmetric_interface" allowed_aas="motifs" task_operations="lock_not_interface,design_interface_core,sbtrkt_interface_surface,hbnet_task,no_design_native_net,no_loops,IC,limitaro,extra_chi" scorefxn="sfx_symm_norep" motif_sets="xs_bb_ss_AILV_max_std.rpm.bin.gz"/>
+		#soft minimize side chains: interface_core
+		<TaskAwareSymMinMover name="min" scorefxn="sfx_symm_hard" bb="0" chi="1" rb="1" task_operations=""/>
+		#hard design surface: interface_surface
+		<SymPackRotamersMover name="design_surf" scorefxn="sfx_symm_elec" task_operations=""/>
+		#hard minimize side chains: interface_all
+		<TaskAwareSymMinMover name="min" scorefxn="sfx_symm_hard" bb="0" chi="1" rb="1" task_operations="bbi,hbnet_task"/>
+		#dump
+		#test hb-network integrity: cart min all+repack
+
+	</MOVERS>
+	<APPLY_TO_POSE>
+	</APPLY_TO_POSE>
+	<PROTOCOLS>
+
+		#soft place motifs: interface_core
+		<Add mover_name="place_motifs"/>
+		#soft minimize side chains: interface_core
+		<Add mover_name="min"/>
+		#hard design surface: interface_surface
+		<Add mover_name="design_surf"/>
+		#hard minimize side chains: interface_all
+		<Add mover_name="min"/>
+
+		#dump
+		#test hb-network integrity: cart min all+repack
+
+
+		#filters
+		1. unsats
+
+		#stats
+		1. compare to original sequence
+		2. secondary structure
+		3. sasa at interface
+
+	</PROTOCOLS>
+	<OUTPUT />
+</ROSETTASCRIPTS>
+
+lock_not_interface,design_interface_core,sbtrkt_interface_surface,
+hbnet_task,no_design_native_net,no_loops,
+IC,limitaro,extra_chi,
