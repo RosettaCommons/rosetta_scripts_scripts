@@ -216,6 +216,7 @@ scripts_not_tested = [
     "scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_motifgraft_netmotifs_cartmin_grafting_design_testing_design_grafts.xml",
     "scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_DeNovo_scaffolds_2kpo_rsmn_2x2_cluster0001_rank0888_bpb_ferr_GBB.xml",
     "scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_DeNovo_scaffolds_2kpo_rsmn_2x2_rebuild_scaffold_blueprintpass__20161030111603_GBB_bpb_ferr.xml",
-    "scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_motifgraft_cartmin_denovos_only_graft_cartmin.xml"
+    "scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_motifgraft_cartmin_denovos_only_graft_cartmin.xml",
+    "scripts/pilot/protein_interface_design/motifgrafting/epigraft.xml"
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world

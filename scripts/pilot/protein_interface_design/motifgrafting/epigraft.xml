@@ -1,0 +1,139 @@
+<dock_design>
+
+    <TASKOPERATIONS>
+        <InitializeFromCommandline name="init"/>
+        <LimitAromaChi2 name="arochi2"/>
+        <IncludeCurrent name="inclcur"/>
+        <ExtraRotamersGeneric name="exrot" ex1="1" ex2="1" extrachi_cutoff="1"/>
+        <DisallowIfNonnative name="only_native_GPH" disallow_aas="GPH"/>
+	<RestrictIdentities name="dont_design_GPH" identities="PRO,HIS" prevent_repacking="0" />
+        <OperateOnCertainResidues name="hotspot_onlyrepack">
+            <RestrictToRepackingRLT/>
+            <ResiduePDBInfoHasLabel property="HOTSPOT"/>
+        </OperateOnCertainResidues>
+        <OperateOnCertainResidues name="scaffold_onlyrepack">
+            <RestrictToRepackingRLT/>
+            <ResiduePDBInfoHasLabel property="SCAFFOLD"/>
+        </OperateOnCertainResidues>
+        <OperateOnCertainResidues name="context_norepack">
+            <PreventRepackingRLT/>
+            <ResiduePDBInfoHasLabel property="CONTEXT"/>
+        </OperateOnCertainResidues>
+        <OperateOnCertainResidues name="context_onlyrepack">
+            <RestrictToRepackingRLT/>
+            <ResiduePDBInfoHasLabel property="CONTEXT"/>
+        </OperateOnCertainResidues>
+	<RestrictToInterface name="interface_design_long" jump="1" distance="12.0"/>
+	<RestrictToInterface name="interface_design_short" jump="1" distance="8.0"/>
+
+  	<RestrictToInterfaceVector name="inter_vec" chain1_num="1" chain2_num="2" CB_dist_cutoff="8.0" nearby_atom_cutoff="5.5" vector_angle_cutoff="75.0" vector_dist_cutoff="9.0"/>
+	<ProteinInterfaceDesign name="pido" design_chain1="0" design_chain2="1" repack_chain1="0" repack_chain2="1" jump="1" interface_distance_cutoff="8"/>
+
+	<SelectBySASA name="core_norepack" mode="sc" state="monomer" probe_radius="2.2" core_asa="20" surface_asa="40" core="0" boundary="1" surface="1" verbose="1" />
+	<SelectBySASA name="core_design" mode="sc" state="monomer" probe_radius="2.2" core_asa="20" surface_asa="40" core="1" boundary="0" surface="0" verbose="1" />
+
+    </TASKOPERATIONS>
+
+    <SCOREFXNS>
+
+        <talaris2013_resCons weights="talaris2013">
+            <Reweight scoretype="res_type_constraint" weight="1.0"/>
+        </talaris2013_resCons>
+	<talaris2013_extra weights="talaris2013">
+            <Reweight scoretype="fa_elec" weight="1.0"/>
+            <Reweight scoretype="hpatch" weight="1.0"/>
+            <Set fa_elec_dielectric="1.0" fa_elec_max_dis="15.0" fa_elec_min_dis="3.0"/>
+        </talaris2013_extra>
+        <talaris2013_cart weights="talaris2013">
+            <Reweight scoretype="cart_bonded" weight="1.0"/>
+        </talaris2013_cart>
+
+    </SCOREFXNS>
+
+    <FILTERS>
+
+	<Geometry name="omega" omega="165" cart_bonded="35" start="351" confidence="0"/>
+		
+        <Ddg name="ddg" scorefxn="talaris2013" jump="1" repack="1" repeats="5" threshold="-15.0" confidence="0"/>
+        <ResInInterface name="resInInterface" residues="22" jump_number="1" confidence="0"/>
+        <Sasa name="sasa" threshold="1250" confidence="0"/>
+        <BuriedUnsatHbonds name="buriedUnsatBonds" scorefxn="talaris2013" jump_number="1" cutoff="9" confidence="0"/>
+        <ShapeComplementarity name="shapeComplementarity" jump="1" verbose="1" min_sc="0.65" write_int_area="0" confidence="0"/>
+        <InterfaceHoles name="interfaceHoles" jump="1" threshold="200" confidence="0"/>
+	<AverageDegree name="averageDegree" threshold="8.3" distance_threshold="8" task_operations="init,pido,arochi2,inclcur,exrot,only_native_GPH" confidence="0"/>
+        <PackStat name="packstat" repeats="5" threshold="0.59" confidence="0"/>
+        <ScoreType name="hpatch" scorefxn="talaris2013_extra" score_type="hpatch" threshold="35" confidence="0"/>
+        <ScoreType name="lr_elec" scorefxn="talaris2013_extra" score_type="fa_elec" threshold="1200" confidence="0"/>
+        <ScoreType name="total_score" scorefxn="talaris2013" score_type="total_score" threshold="0" confidence="0"/>
+
+    </FILTERS>
+
+    <MOVERS>
+	
+	<!-- Epigraft Mover -->
+		<MotifGraft name="motif_grafting" context_structure="./target.zaire.pdb" motif_structure="./helix.zaire.pdb" RMSD_tolerance="0.5" NC_points_RMSD_tolerance="1.0" clash_score_cutoff="50" clash_test_residue="GLY" hotspots="4:5:8:9:12:16" combinatory_fragment_size_delta="0:0" max_fragment_replacement_size_delta="0:0"  full_motif_bb_alignment="1"  allow_independent_alignment_per_fragment="0" graft_only_hotspots_by_replacement="0" only_allow_if_N_point_match_aa_identity="0" only_allow_if_C_point_match_aa_identity="0" revert_graft_to_native_sequence="1" allow_repeat_same_graft_output="0"/>
+
+	<!-- Design Movers -->
+		<FavorSequenceProfile name="favor_nativeSeqProfile" scorefxns="talaris2013_resCons" use_current="1"  chain="0" matrix="MATCH" weight="2.0"/>
+        	<PackRotamersMover name="design_graft1" scorefxn="talaris2013_resCons" task_operations="init,scaffold_onlyrepack,hotspot_onlyrepack,core_norepack,context_norepack,arochi2,inclcur,exrot,only_native_GPH,dont_design_GPH"/>
+	        <PackRotamersMover name="design_interface1" scorefxn="talaris2013_resCons" task_operations="init,interface_design_short,hotspot_onlyrepack,core_norepack,context_norepack,arochi2,inclcur,exrot,only_native_GPH,dont_design_GPH"/>
+	        <PackRotamersMover name="design_core1" scorefxn="talaris2013_resCons" task_operations="init,core_design,interface_design_long,hotspot_onlyrepack,context_norepack,arochi2,inclcur,exrot,only_native_GPH,dont_design_GPH"/>
+       		<PackRotamersMover name="design_graft2" scorefxn="talaris2013_resCons" task_operations="init,scaffold_onlyrepack,hotspot_onlyrepack,core_norepack,context_onlyrepack,arochi2,inclcur,exrot,only_native_GPH,dont_design_GPH"/>
+        	<PackRotamersMover name="design_interface2" scorefxn="talaris2013_resCons" task_operations="init,inter_vec,interface_design_short,hotspot_onlyrepack,core_norepack,context_onlyrepack,arochi2,inclcur,exrot,only_native_GPH,dont_design_GPH"/>
+        	<PackRotamersMover name="design_core2" scorefxn="talaris2013_resCons" task_operations="init,inter_vec,core_design,interface_design_long,hotspot_onlyrepack,context_onlyrepack,arochi2,inclcur,exrot,only_native_GPH,dont_design_GPH"/>
+
+	<!-- Minimization Movers -->
+		<TaskAwareMinMover name="chain2_kinematic_min_noBB"  scorefxn="talaris2013"     bb="0" chi="1" jump="1" task_operations="init,context_norepack,arochi2,inclcur,exrot"/>
+		<TaskAwareMinMover name="chain2_kinematic_min_wBB"  scorefxn="talaris2013"      bb="1" chi="1" jump="1" task_operations="init,context_norepack,arochi2,inclcur,exrot"/>
+        	<TaskAwareMinMover name="chain2_cart_min"           scorefxn="talaris2013_cart" bb="1" chi="1" jump="1" cartesian="1" task_operations="init,context_norepack"/>
+    </MOVERS>
+
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+
+    <PROTOCOLS>
+
+    	<!-- Epigraft -->
+        	<Add mover_name="motif_grafting"/>
+
+        <!-- Favor sequence profile -->
+        	<Add mover="favor_nativeSeqProfile"/>
+
+        <!-- First Design round -->
+        	<Add mover_name="design_graft1"/>
+        	<Add mover_name="design_interface1"/>
+        	<Add mover_name="design_core1"/>
+
+        <!-- Minimize (kine no BB) -->
+        	<Add mover_name="chain2_cart_min"/>
+        	<Add mover_name="chain2_kinematic_min_noBB"/>
+        	<Add mover_name="chain2_cart_min"/>
+
+        <!-- Second Design round -->
+        	<Add mover_name="design_graft2"/>
+        	<Add mover_name="design_interface2"/>
+        	<Add mover_name="design_core2"/>
+
+        <!-- Minimize (all BB) -->
+        	<Add mover_name="chain2_cart_min"/>
+        	<Add mover_name="chain2_kinematic_min_wBB"/>
+        	<Add mover_name="chain2_cart_min"/>
+
+        <!-- Filter by omega to ensure correct BB geometry and atomic distances -->
+		<Add filter="omega"/>
+
+	<!-- All the other Filters -->
+        	<Add filter="ddg"/>
+		<Add filter="total_score"/>
+        	<Add filter="resInInterface"/>
+        	<Add filter="sasa"/>
+        	<Add filter="buriedUnsatBonds"/>
+        	<Add filter="shapeComplementarity"/>
+        	<Add filter="packstat"/>
+        	<Add filter="averageDegree"/>
+        	<Add filter="hpatch"/>
+        	<Add filter="lr_elec"/>
+        	Add filter="interfaceHoles"/>
+
+    </PROTOCOLS>
+</dock_design>
