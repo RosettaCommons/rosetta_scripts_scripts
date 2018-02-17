@@ -1,0 +1,9 @@
+-out::file::pdb_comments
+-run:preserve_header
+-no_optH false
+-flip_HNQ
+-in:file:fullatom
+-multi_cool_annealer 10
+-renumber_pdb 1
+#-beta_july15
+#-aa_composition_setup_file ala.comp

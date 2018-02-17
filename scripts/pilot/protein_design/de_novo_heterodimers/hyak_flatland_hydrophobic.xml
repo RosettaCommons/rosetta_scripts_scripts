@@ -1,0 +1,71 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <hard weights=talaris2013_cst />
+    <soft weights="/gscratch/baker/zibochen/scripts/weights/soft_rep_trp_ala"/>
+    <soft_symm weights="/gscratch/baker/zibochen/scripts/weights/soft_rep_trp_ala" symmetric=1/>
+    <hard_symm weights=talaris2013_cst symmetric=1>
+         <Reweight scoretype=coordinate_constraint weight=0.5 />
+    </hard_symm>
+    <hard_ele weights=talaris2013_cst symmetric=1>
+         <Reweight scoretype=coordinate_constraint weight=0.5 />
+    </hard_ele>
+    <hard_bb weights="/gscratch/baker/zibochen/scripts/weights/bb_only" symmetric=1>
+          <Reweight scoretype=coordinate_constraint weight=2. />
+          <Reweight scoretype=cart_bonded weight = 0.5 />
+    </hard_bb>
+          <hard_symm_no_cst weights=talaris2013 symmetric=1/>
+    <talaris_cart_sym weights=talaris2013_cart symmetric=1/>
+  </SCOREFXNS>
+
+  <TASKOPERATIONS>
+    <RestrictToRepacking name=repack_only />
+    <ReadResfile name=resfile filename="design.res" />
+    <IncludeCurrent name=current/>
+    <LimitAromaChi2 name=arochi />
+    <ExtraRotamersGeneric name=ex1_ex2 ex1=1 ex2=1/>
+    <ExtraRotamersGeneric name=ex1 ex1=1/>
+    <LayerDesign name=all_layers layer=other make_pymol_script=0>
+      <SelectBySASA name=symmetric_inteface_core state=bound mode=mc core=1 probe_radius=2.0 core_asa=35 surface_asa=45 verbose=1>
+          <all copy_layer=core />
+          <Helix append="M"/>
+      </SelectBySASA>
+      <SelectBySASA name=symmetric_inteface_surface state=bound mode=mc surface=1 probe_radius=2.0 core_asa=35 surface_asa=45 verbose=1>
+          <all copy_layer=surface />
+      </SelectBySASA>
+      <SelectBySASA name=symmetric_inteface_boundary state=bound mode=mc boundary=1 probe_radius=2.0 core_asa=35 surface_asa=45 verbose=1>
+          <all copy_layer=boundary />
+          <Helix exclude="D"/>
+      </SelectBySASA>
+    </LayerDesign>
+    <SelectBySASA name=select_core state=bound mode=mc core=1 probe_radius=2.0 core_asa=35 surface_asa=45 verbose=1/>
+    <SelectBySASA name=select_boundary state=bound mode=mc boundary=1 probe_radius=2.0 core_asa=35 surface_asa=45 verbose=1/>
+    <SelectBySASA name=select_surface state=bound mode=mc surface=1 probe_radius=2.0 core_asa=35 surface_asa=45 verbose=1/>
+    <SelectBySASA name=select_all state=bound mode=mc core=1 boundary=1 surface=1 probe_radius=2.2 core_asa=35 surface_asa=45 verbose=1/> 
+    <SetCatalyticResPackBehavior name=fixcoord />
+</TASKOPERATIONS>
+
+  <MOVERS>
+    <SymPackRotamersMover name=softpack_core scorefxn=soft_symm task_operations=all_layers,select_core,current,arochi,fixcoord,resfile/>
+    <SymPackRotamersMover name=softpack_surface scorefxn=soft_symm task_operations=all_layers,select_surface,current,arochi,fixcoord,resfile/>
+    <SymPackRotamersMover name=hardpack_surface scorefxn=hard_ele task_operations=all_layers,select_surface,current,arochi,ex1,fixcoord,resfile/> 
+    <SymPackRotamersMover name=hardpack_core scorefxn=hard_symm task_operations=all_layers,select_core,current,arochi,ex1_ex2,fixcoord,resfile/>
+    <SymPackRotamersMover name=softpack_boundary scorefxn=soft_symm task_operations=all_layers,select_boundary,current,arochi,fixcoord,resfile/>
+    <SymPackRotamersMover name=hardpack_boundary  scorefxn=hard_symm task_operations=all_layers,select_boundary,current,arochi,ex1_ex2,fixcoord,resfile/>
+    <SymMinMover name=hardmin_cart scorefxn=talaris_cart_sym type=lbfgs_armijo_nonmonotone tolerance=0.0001 chi=1 bb=1 bondangle=1 bondlength=1 jump=ALL cartesian=1/>
+    <SymMinMover name=hardmin_sconly scorefxn=hard_symm chi=1 bb=0 bondangle=0 bondlength=0 />
+    <SymPackRotamersMover name=repack scorefxn=hard_symm_no_cst task_operations=repack_only />
+  </MOVERS>
+
+  <PROTOCOLS>
+    <Add mover=softpack_core/>
+    <Add mover=softpack_boundary/>
+    <Add mover=softpack_surface/>
+    <Add mover=hardmin_sconly/>
+    <Add mover=hardpack_core/>
+    <Add mover=hardpack_boundary/>
+    <Add mover=hardpack_surface/>
+    <Add mover=hardmin_cart />
+    <Add mover=repack />
+  </PROTOCOLS>
+
+</ROSETTASCRIPTS>

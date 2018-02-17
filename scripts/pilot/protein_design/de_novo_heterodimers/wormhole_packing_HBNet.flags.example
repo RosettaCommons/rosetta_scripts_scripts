@@ -1,0 +1,16 @@
+-out::file::pdb_comments
+-run:preserve_header
+#-no_optH false
+#-flip_HNQ
+#-in:file:fullatom
+-multi_cool_annealer 10
+#-renumber_pdb 1
+#-use_input_sc
+#-symmetry_definition dummy
+-out:prefix HBNet_
+-mute all
+-beta
+#-missing_density_to_jump true
+-parser:protocol /gscratch/baker/zibochen/scripts/xml_and_flags/wormhole_packing_HBNet.xml
+#-database /gscratch/dimaio/zibochen/Rosetta_HBNet_static/database
+-symmetry_definition dummy

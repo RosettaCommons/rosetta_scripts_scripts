@@ -1,0 +1,129 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <hard weights=beta symmetric=1/>
+    <hard_cst weights=beta_cst symmetric=1/>
+  </SCOREFXNS>
+  <TASKOPERATIONS>
+    <ReadResfile name=resfile filename="/gscratch/baker/zibochen/scripts/xml_and_flags/wormhole_packing_HBNet.res" />
+    <ConsensusLoopDesign name="disallow_nonnative_loop_sequences" />
+    <IncludeCurrent name=current/>
+    <LimitAromaChi2 name=arochi />
+    <ExtraRotamersGeneric name=ex1_ex2 ex1=1 ex2=1/>
+    <RestrictAbsentCanonicalAAS name=ala_only resnum=0 keep_aas="A" />
+    <LayerDesign name=init_layers layer=Nterm_core_boundary_surface_Cterm use_symmetry=1 make_pymol_script=0 use_sidechain_neighbors=True core=3.6 >
+      <core>
+        <Helix append="HNQYSTD"/>
+      </core>
+      <boundary>
+        <Helix exclude="EKRW"/>
+      </boundary>
+    </LayerDesign>
+  </TASKOPERATIONS>
+  <FILTERS>
+    <ResidueCount name=ala_count  residue_types="ALA" />
+    <ShapeComplementarity name="sc" jump=1 verbose=0 min_sc=0.6 write_int_area=1 confidence=0 />
+    <Ddg name="ddg" scorefxn=hard translate_by=10000000 jump=1 repack=0 repeats=0 threshold=-15 confidence=0/>
+    <Sasa name="sasa_int_area" threshold=700 upper_threshold=10000 hydrophobic=0 polar=0 jump=1 confidence=0 />
+    <EnzScore name="cst_score" score_type=cstE scorefxn=hard_cst whole_pose=1 energy_cutoff=3 confidence=1/>
+    <SymUnsatHbonds name="uhb" confidence=0/>
+    <BuriedUnsatHbonds2 name="uhb2" scorefxn=hard task_operations=init_layers confidence=0 AHD_cutoff=90/>
+    <PreProline name="prepro" use_statistical_potential="0" confidence=1/>
+  </FILTERS>
+  <MOVERS>
+    <HBNetStapleInterface name=hbnet_interf scorefxn=hard_cst no_heavy_unsats_allowed=1 show_task=1 store_subnetworks=0 verbose=0 hb_threshold=-0.5 write_network_pdbs=0 minimize=0 min_network_size=3 max_unsat=40 min_helices_contacted_by_network=2 min_intermolecular_hbonds=2 max_staples_per_interface=4 task_operations=arochi/> 
+    <MultiplePoseMover name=MPM_design max_input_poses=50>
+      <ROSETTASCRIPTS>
+        <SCOREFXNS>
+          <hard weights=beta symmetric=1/>
+          <soft_cst weights="/gscratch/baker/zibochen/scripts/weights/beta_soft_rep_cst.wts" symmetric=1/>
+          <hard_cst weights=beta_cst symmetric=1/>
+        </SCOREFXNS>
+        <RESIDUE_SELECTORS>
+          <Layer name=core select_core=true core_cutoff=3.6 />
+          <Layer name=boundary select_boundary=true />
+          <Layer name=surface select_surface=true />
+        </RESIDUE_SELECTORS>
+        <TASKOPERATIONS>
+          <ReadResfile name=resfile_core filename="/gscratch/baker/zibochen/scripts/xml_and_flags/wormhole_packing_HBNet.res" selector=core/>
+          <ReadResfile name=resfile_boundary filename="/gscratch/baker/zibochen/scripts/xml_and_flags/wormhole_packing_HBNet.res" selector=boundary/>
+          <ReadResfile name=resfile_surface filename="/gscratch/baker/zibochen/scripts/xml_and_flags/wormhole_packing_HBNet.res" selector=surface/>
+          <ConstrainHBondNetwork name=hbnet_task />
+          <ConsensusLoopDesign name="disallow_nonnative_loop_sequences" />
+          <IncludeCurrent name=current/>
+          <LimitAromaChi2 name=arochi />
+          <ExtraRotamersGeneric name=ex1_ex2 ex1=1 ex2=1/>
+          <ExtraRotamersGeneric name=ex1 ex1=1/>  
+          <LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" use_symmetry=1 make_pymol_script=0 use_sidechain_neighbors=True core=3.6 >
+            <core>
+              <Helix append="M" />
+            </core>
+            <boundary>
+              <Helix exclude="D" />
+            </boundary>
+          </LayerDesign>
+        </TASKOPERATIONS>
+        <MOVERS>
+          <SymPackRotamersMover name=softpack_core scorefxn=soft_cst task_operations=layer_all,resfile_core,current,arochi,hbnet_task,disallow_nonnative_loop_sequences/>
+          <SymPackRotamersMover name=hardpack_core scorefxn=hard_cst task_operations=layer_all,resfile_core,current,arochi,ex1_ex2,hbnet_task,disallow_nonnative_loop_sequences/>
+          <SymPackRotamersMover name=softpack_surface scorefxn=soft_cst task_operations=layer_all,resfile_surface,current,arochi,hbnet_task,disallow_nonnative_loop_sequences/>
+          <SymPackRotamersMover name=hardpack_surface scorefxn=hard_cst task_operations=layer_all,resfile_surface,current,arochi,ex1_ex2,hbnet_task,disallow_nonnative_loop_sequences/> 
+          <SymPackRotamersMover name=softpack_boundary scorefxn=soft_cst task_operations=layer_all,resfile_boundary,current,arochi,hbnet_task,disallow_nonnative_loop_sequences/>
+          <SymPackRotamersMover name=hardpack_boundary  scorefxn=hard_cst task_operations=layer_all,resfile_boundary,current,arochi,ex1_ex2,hbnet_task,disallow_nonnative_loop_sequences/>
+          <SymMinMover name=hardmin_sconly scorefxn=hard_cst chi=1 bb=0 bondangle=0 bondlength=0 />
+        </MOVERS>
+        <APPLY_TO_POSE>
+        </APPLY_TO_POSE>
+        <PROTOCOLS>
+          <Add mover=softpack_core/>
+          <Add mover=softpack_boundary/>
+          <Add mover=softpack_surface/>
+          <Add mover=hardmin_sconly/>
+          <Add mover=hardpack_core/>
+          <Add mover=hardpack_boundary/>
+          <Add mover=hardpack_surface/>
+        </PROTOCOLS>
+      </ROSETTASCRIPTS>
+    </MultiplePoseMover>
+    <MultiplePoseMover name=MPM_min_repack max_input_poses=50>
+      <ROSETTASCRIPTS>
+        <SCOREFXNS>
+          <hard weights=beta symmetric=1/>
+          <hard_cart weights=beta_cart symmetric=1/>
+        </SCOREFXNS>
+        <TASKOPERATIONS>
+          <RestrictToRepacking name=repack_only />
+        </TASKOPERATIONS>
+        <MOVERS>
+          <SymMinMover name=hardmin_cart scorefxn=hard_cart type=lbfgs_armijo_nonmonotone tolerance=0.0001 chi=1 bb=0 bondangle=1 bondlength=1 jump=0 cartesian=1/>
+          <SymPackRotamersMover name=repack scorefxn=hard task_operations=repack_only />
+        </MOVERS>
+        <APPLY_TO_POSE>
+        </APPLY_TO_POSE>
+        <PROTOCOLS>
+          <Add mover=hardmin_cart />
+          <Add mover=repack />
+        </PROTOCOLS>
+      </ROSETTASCRIPTS>
+    </MultiplePoseMover>
+    <MultiplePoseMover name=MPM_filters  max_input_poses=50>
+      <SELECT>
+        <AndSelector>
+          <Filter filter=sc/>
+          <Filter filter=ala_count />
+          <Filter filter=sasa_int_area />
+          <Filter filter=ddg/>
+          <Filter filter=cst_score/>
+          <Filter filter=uhb/>
+          <Filter filter=uhb2/>
+          <Filter filter=prepro/>
+        </AndSelector>
+      </SELECT>
+    </MultiplePoseMover>
+  </MOVERS>
+  <PROTOCOLS>
+    <Add mover_name=hbnet_interf/>
+    <Add mover_name=MPM_design/>
+    <Add mover_name=MPM_min_repack/>
+    <Add mover_name=MPM_filters/>
+  </PROTOCOLS>
+</ROSETTASCRIPTS>

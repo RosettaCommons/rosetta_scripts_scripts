@@ -1,0 +1,316 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="hard_cart" weights="beta_cart">
+      <Reweight scoretype="coordinate_constraint" weight="2.0"/>
+      <Reweight scoretype="cart_bonded" weight="0.5"/>
+    </ScoreFunction>
+    <ScoreFunction name="hard" weights="beta"/>
+    <ScoreFunction name="hard_cst" weights="beta_cst">
+      <Reweight scoretype="aa_composition" weight="1.0" />
+    </ScoreFunction>
+  </SCOREFXNS>
+<RESIDUE_SELECTORS>
+  <SecondaryStructure name="loops" ss="L"/>
+  <Neighborhood name="around_loops" distance="6.0" selector="loops"/>
+  <Not name="not_around_loops" selector="around_loops"/>      
+  <Layer name="hbnet_core" select_core="true" core_cutoff="4" />
+</RESIDUE_SELECTORS>
+<TASKOPERATIONS>
+  <LayerDesign name="init_layers" layer="Nterm_core_boundary_surface_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="3.6" >
+        <core>
+          <Helix append="HNQYSTD"/>
+        </core>
+        <boundary>
+          <Helix exclude="EKRW"/>
+        </boundary>
+      </LayerDesign>
+  <LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="3.6" >
+    <core>
+      <Helix append="M" />
+      <Helix exclude="W" />
+    </core>
+    <boundary>
+      <Helix exclude="DW" />
+    </boundary>
+  </LayerDesign> 
+  <ConsensusLoopDesign name="disallow_non_abego_aas"/>
+  <OperateOnResidueSubset name="only_loops_designable" selector="not_around_loops">
+    <PreventRepackingRLT/>
+  </OperateOnResidueSubset>
+</TASKOPERATIONS>
+<MOVERS>
+  <AddConstraintsToCurrentConformationMover name="add_cst" use_distance_cst="0" coord_dev="1" />
+  <ClearConstraintsMover name="clearconstraints"/>
+  <PackRotamersMover name="only_design_loops" scorefxn="hard_cst" task_operations="only_loops_designable,layer_all,disallow_non_abego_aas" />
+  <MinMover name="hardmin_bb" scorefxn="hard_cart" type="lbfgs_armijo_nonmonotone" tolerance="0.0001" chi="0" bb="1" bondangle="1" bondlength="1" jump="all" cartesian="1"/>
+  <MinMover name="hardmin_sconly" scorefxn="hard_cst" chi="1" bb="0" bondangle="0" bondlength="0" />
+  ConnectChainsMover name=closer chain_connections="[A+D,B+C],[D+A,B+C],[A+D,C+B],[D+A,C+B],[A+C,B+D],[C+A,B+D],[A+C,D+B],[C+A,D+B]" loopLengthRange="2,5"/>
+  <HBNetStapleInterface find_only_native_networks="1" scorefxn="hard" name="hbnet_interf" hb_threshold="-0.1" min_helices_contacted_by_network="4" core_selector="hbnet_core" show_task="0" store_subnetworks="0" verbose="1" no_heavy_unsats_allowed="1" write_network_pdbs="0" min_network_size="4" max_unsat="0" min_core_res="2" min_unique_networks="1" write_cst_files="0" min_networks_per_pose="3" max_networks_per_pose="3" use_aa_dependent_weights="true" max_replicates_before_branch="3" min_connectivity="0.5" task_operations="init_layers"/> min_networks_with_select_aa_type="2" network_must_have_aa_type="HYW"
+  <MultiplePoseMover name="MPM" max_input_poses="1">
+    <ROSETTASCRIPTS>
+    <SCOREFXNS>
+      <ScoreFunction name="hard" weights="beta"/>
+      <ScoreFunction name="hard_cart" weights="beta_cart"/>
+      <ScoreFunction name="soft_cst" weights="/gscratch/baker/zibochen/scripts/weights/beta_soft_rep_cst.wts">
+        <Reweight scoretype="aa_composition" weight="1.0" />
+      </ScoreFunction>
+      <ScoreFunction name="hard_cst_cord" weights="beta_cst" >
+        <Reweight scoretype="coordinate_constraint" weight="0" />
+        <Reweight scoretype="aa_composition" weight="0" />
+        <Reweight scoretype="angle_constraint" weight="0" />
+        <Reweight scoretype="dihedral_constraint" weight="0" />
+      </ScoreFunction>
+      <ScoreFunction name="hard_cst" weights="beta_cst">
+        <Reweight scoretype="aa_composition" weight="1.0" />
+      </ScoreFunction>
+      <ScoreFunction name="beta_aa_comp" weights="beta_cst" >
+        <Reweight scoretype="coordinate_constraint" weight="2.0"/>
+        <Reweight scoretype="cart_bonded" weight="0.5"/>
+        <Reweight scoretype="aa_composition" weight="1.0" />
+      </ScoreFunction>
+      <ScoreFunction name="up_ele" weights="beta_cst" >
+        <Reweight scoretype="fa_elec" weight="1.4"/>
+        <Reweight scoretype="hbond_sc" weight="2.0" />
+      </ScoreFunction>
+    </SCOREFXNS>
+    <RESIDUE_SELECTORS>
+      <ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet" />
+      <SecondaryStructure name="helices" ss="H"/>
+      <SecondaryStructure name="loops" ss="L"/>
+      <Neighborhood name="around_loops" distance="6.0" selector="loops"/>
+      <Not name="not_around_loops" selector="around_loops"/>
+      <Layer name="pick_core_and_boundary" select_core="true" select_boundary="true" core_cutoff="3.6"/>
+      <Layer name="pick_core_and_boundary_SASA" select_core="true" select_boundary="true" use_sidechain_neighbors="false" core_cutoff="35" />
+      <Layer name="pick_core_SASA" select_core="true" use_sidechain_neighbors="false" core_cutoff="35" />
+      <Layer name="pick_core_and_surface" select_core="true" select_surface="true" core_cutoff="3.6"/>
+      <Layer name="pick_core_and_surface_SASA" select_core="true" select_surface="true" core_cutoff="35" />
+      <Layer name="pick_surface_and_boundary" select_surface="true" select_boundary="true" core_cutoff="3.6"/>
+      <Layer name="pick_surface_and_boundary_SASA" select_surface="true" select_boundary="true" core_cutoff="35" />
+      <Chain name="chain_a" chains="A"/>
+      <Chain name="chain_b" chains="B"/>
+      <InterfaceByVector name="AB_interface" grp1_selector="chain_a" grp2_selector="chain_b"/>
+      <ResidueName name="LIV" residue_name3="VAL,ILE,LUE" />
+      <And name="a_LIV" selectors="chain_a,LIV"/>
+      <And name="b_LIV" selectors="chain_b,LIV"/>
+      <And name="AB_interface_LIV" selectors="AB_interface,LIV"/>
+      <Not name="not_chain_a_LIV" selector="a_LIV"/>
+      <Not name="not_chain_b_LIV" selector="b_LIV"/>
+      <Not name="not_AB_interface_LIV" selector="AB_interface_LIV"/>
+      <Layer name="core" select_core="true" core_cutoff="3.6" />
+      <ResidueName name="ala_and_met" residue_name3="ALA,MET" />
+      <Not name="not_ala_or_met" selector="ala_and_met" /> 
+      <And name="a_core" selectors="chain_a,pick_core_SASA"/>
+      <And name="b_core" selectors="chain_b,pick_core_SASA"/>
+    </RESIDUE_SELECTORS>
+    <TASKOPERATIONS>
+      <ConsensusLoopDesign name="disallow_non_abego_aas"/>
+      <LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="3.6" >
+        <core>
+          <Helix append="M" />
+          <Helix exclude="W" />
+        </core>
+        <boundary>
+          <Helix exclude="DW" />
+        </boundary>
+        <surface>
+          <Helix exclude="W" />
+        </surface>
+      </LayerDesign>
+      <LayerDesign name="layer_SASA" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="0" core="35" >
+        <core>
+          <Helix append="M" />
+          <Helix exclude="W" />
+        </core>
+        <boundary>
+          <Helix exclude="DW" />
+        </boundary>
+        <surface>
+          <Helix exclude="W" />
+        </surface>
+      </LayerDesign>
+      <OperateOnResidueSubset name="only_loops_designable" selector="not_around_loops">
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name="design_core" selector="pick_surface_and_boundary">
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name="design_boundary" selector="pick_core_and_surface">
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name="design_surface" selector="pick_core_and_boundary">
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name="design_core_SASA" selector="pick_surface_and_boundary_SASA">
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name="design_boundary_SASA" selector="pick_core_and_surface_SASA">
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name="design_surface_SASA" selector="pick_core_and_boundary_SASA">
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name="repack_not_ala_or_met" selector="not_ala_or_met" >
+        <RestrictToRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name="redesign_ala_met" selector="ala_and_met" >
+        <RestrictAbsentCanonicalAASRLT aas="AMILV" />
+      </OperateOnResidueSubset>
+      <InitializeFromCommandline name="init"/>
+      <ConstrainHBondNetwork name="hbnet_task" />
+<!--       <OperateOnResidueSubset name="hbnet_task" selector="hbnet_residues">
+        <RestrictToRepackingRLT/>
+      </OperateOnResidueSubset>  -->
+      <IncludeCurrent name="current"/>
+      <LimitAromaChi2 name="arochi" />
+      <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+      <ExtraRotamersGeneric name="ex1" ex1="1"/>
+      <RestrictAbsentCanonicalAAS name="ala_only" resnum="0" keep_aas="A" />
+      <RestrictToRepacking name="repack_only" />
+      <OperateOnCertainResidues name="ILV">
+        <NoResFilter>
+          <ResidueName3Is name3="ILE,LEU,VAL"/>
+        </NoResFilter>
+        <PreventRepackingRLT/>
+      </OperateOnCertainResidues>
+      <OperateOnCertainResidues name="aro_apolar">
+        <NoResFilter>
+          <ResidueType aromatic="1" apolar="1" polar="0" charged="0"/>
+        </NoResFilter>
+        <PreventRepackingRLT/>
+      </OperateOnCertainResidues>
+      <OperateOnResidueSubset name="A_ILV" selector="not_chain_a_LIV">
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name="B_ILV" selector="not_chain_b_LIV">
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name="AB_interface_ILV" selector="not_AB_interface_LIV">
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+    </TASKOPERATIONS>
+    <FILTERS>
+      <PreProline name="prepro" use_statistical_potential="0" />
+      <ScoreType name="scorefilter" scorefxn="hard_cst" score_type="total_score" threshold="0.0" confidence="1" />
+      <EnzScore name="cst_score" score_type="cstE" scorefxn="hard_cst_cord" whole_pose="1" energy_cutoff="3" confidence="0"/>
+      <BuriedUnsatHbonds name="uhb" scorefxn="hard_cst" cutoff="6" confidence="1"/>
+      <BuriedUnsatHbonds2 name="uhb2" scorefxn="hard_cst" cutoff="6" AHD_cutoff="90" confidence="1"/>
+      <ResidueCount name="ala_count" max_residue_count="30" residue_types="ALA" confidence="0"/>
+      <ResidueCount confidence="0" name="TYR" residue_types="TYR"/>
+      <ResidueCount confidence="0" name="TRP" residue_types="TRP"/>
+      <ResidueCount confidence="0" name="PHE" residue_types="PHE"/>
+      <ResidueCount confidence="0" name="MET" residue_types="MET"/>
+      <ResidueCount name="chainA_ILVF_count" min_residue_count="5" residue_types="ILE,LEU,VAL,PHE" residue_selector="chain_a" confidence="1"/>
+      <ResidueCount name="chainB_ILVF_count" min_residue_count="5" residue_types="ILE,LEU,VAL,PHE" residue_selector="chain_b" confidence="1"/>
+      <ResidueCount confidence="0" min_residue_count="5" name="prob_homodimerize_A" residue_selector="a_core" residue_types="HIS,PHE,TYR,TRP"/>
+      <ResidueCount confidence="0" min_residue_count="5" name="prob_homodimerize_B" residue_selector="b_core" residue_types="HIS,PHE,TYR,TRP"/>
+      <AverageDegree name="AveDeg_A_ILV" threshold="0" task_operations="A_ILV" distance_threshold="10" confidence="0"/>
+      <AverageDegree name="AveDeg_B_ILV" threshold="0" task_operations="B_ILV" distance_threshold="10" confidence="0"/>
+      <AverageDegree name="AveDeg_AB_interface_ILV" threshold="0" task_operations="AB_interface_ILV" distance_threshold="10" confidence="0"/>
+      <AverageDegree name="AveDeg_ILV" threshold="0" task_operations="ILV" distance_threshold="10" confidence="0"/>
+      <AverageDegree name="AveDeg_aro_apolar" threshold="0" task_operations="aro_apolar" distance_threshold="10" confidence="0"/>
+      <SSShapeComplementarity name="ss_sc" verbose="0" loops="0" helices="1" confidence="1" min_sc="0.65"/> #use cutoff 0.7
+      <AtomicContactCount name="atomcount_A_ILV" partition="none" task_operations="A_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+      <AtomicContactCount name="atomcount_B_ILV" partition="none" task_operations="B_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+      <AtomicContactCount name="atomcount_AB_interface_ILV" partition="none" task_operations="AB_interface_ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+      <AtomicContactCount name="atomcount_ILV" partition="jump" task_operations="ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+      <AtomicContactCount name="atomcount_norm_aro_apolar" partition="jump" task_operations="aro_apolar" distance="4.5" normalize_by_sasa="1" confidence="0"/>
+      <BuriedUnsatHbonds3 name="new_buns_HBNet" scorefxn="hard" cutoff="20" print_out_info_to_pdb="true" use_hbnet_behavior="true" ignore_bb_heavy_unsats="false" residue_selector="hbnet_residues" confidence="1"/>
+      <BuriedUnsatHbonds3 name="new_buns" scorefxn="hard" cutoff="20" print_out_info_to_pdb="true" use_hbnet_behavior="true" ignore_bb_heavy_unsats="false" residue_selector="helices" confidence="0"/>
+      <InterfaceHoles name="interfacehole" jump="1" threshold="200" confidence="0"/>
+      <CavityVolume name="cav_vol" />
+      <ExposedHydrophobics name="exposedhydrop" sasa_cutoff="20" threshold="0" confidence="0"/>
+    </FILTERS>
+    <MOVERS>
+      <AddConstraints name="add_cord_cst" >
+        <CoordinateConstraintGenerator name="coord_cst_gen"/>
+      </AddConstraints>
+      <RemoveConstraints name="remove_cord_cst" constraint_generators="coord_cst_gen" />
+      <AddConstraintsToCurrentConformationMover name="add_cst" use_distance_cst="0" coord_dev="1" />
+      <ClearConstraintsMover name="clearconstraints"/>
+      AddHelixSequenceConstraints name="addHelixcomps" add_overall_constraints="false" add_alanine_constraints="false" add_hydrophobic_constraints="false"/>
+      <PackRotamersMover name="hardpack_core_sn" scorefxn="hard_cst" task_operations="init,layer_all,design_core,current,arochi,ex1_ex2,hbnet_task,disallow_non_abego_aas"/>
+      <PackRotamersMover name="softpack_core" scorefxn="soft_cst" task_operations="init,layer_all,design_core,current,arochi,hbnet_task,disallow_non_abego_aas"/>
+      <PackRotamersMover name="softpack_boundary" scorefxn="soft_cst" task_operations="init,layer_all,design_boundary,current,arochi,hbnet_task,disallow_non_abego_aas"/>
+      <PackRotamersMover name="softpack_surface" scorefxn="soft_cst" task_operations="init,layer_all,design_surface,current,arochi,hbnet_task,disallow_non_abego_aas"/>
+      <PackRotamersMover name="hardpack_core" scorefxn="hard_cst" task_operations="init,layer_SASA,design_core_SASA,current,arochi,ex1_ex2,hbnet_task,disallow_non_abego_aas"/>
+      <PackRotamersMover name="hardpack_boundary" scorefxn="hard_cst" task_operations="init,layer_SASA,design_boundary_SASA,current,arochi,ex1_ex2,hbnet_task,disallow_non_abego_aas"/>
+      <PackRotamersMover name="hardpack_surface" scorefxn="up_ele" task_operations="init,layer_SASA,design_surface_SASA,current,arochi,ex1,hbnet_task,disallow_non_abego_aas"/>
+      <MinMover name="hardmin_sconly" scorefxn="hard_cst" chi="1" bb="0" bondangle="0" bondlength="0" />
+      <MinMover name="hardmin_cart" scorefxn="hard_cart" type="lbfgs_armijo_nonmonotone" tolerance="0.0001" chi="1" bb="1" bondangle="1" bondlength="1" jump="ALL" cartesian="1"/>
+      <PackRotamersMover name="repack" scorefxn="hard" task_operations="repack_only" />
+      <AddCompositionConstraintMover name="add_comp_file" filename="/gscratch/baker/zibochen/scripts/weights/bundle_constraint.comp" selector="pick_core_and_boundary_SASA" />
+      <FastDesign name="fdes1" scorefxn="beta_aa_comp" repeats="3" ramp_down_constraints="false" task_operations="init,layer_SASA,redesign_ala_met,repack_not_ala_or_met,current,arochi,ex1,hbnet_task,disallow_non_abego_aas" />
+      <InterfaceAnalyzerMover name="interface_analyzer" scorefxn="hard_cst" packstat="1" pack_input="0" pack_separated="1" interface_sc="1"/>
+      <ClearCompositionConstraintsMover name="clear_aa_comp_cst" />
+      <DumpPdb name="dump1" fname="dump1.pdb" scorefxn="beta_aa_comp" tag_time="1"/>
+      <Superimpose name="align"/> 
+    </MOVERS> 
+    <PROTOCOLS>
+      <Add mover="add_comp_file"/>
+      Add mover="addHelixcomps" />
+      <Add mover="softpack_core"/>
+      <Add mover="softpack_boundary"/>
+      <Add mover="softpack_surface"/>
+      <Add mover="hardmin_sconly"/>
+      <Add mover="hardpack_core"/>
+      <Add mover="hardpack_boundary"/>
+      <Add mover="hardpack_surface"/>
+      #have to evaluate cst score here becasue of fast design using cst as well
+      #repack and minimize to see if network stays in place
+      #fastdesign with aa_comp
+      <Add mover="add_cst"/>
+      <Add mover="fdes1"/>
+      Add mover="clearconstraints"/>
+      <Add mover="clear_aa_comp_cst"/>
+      <Add mover="hardmin_cart"/>
+      <Add mover="repack"/>
+      <Add filter="cst_score"/>
+      <Add filter="chainA_ILVF_count"/>
+      <Add filter="chainB_ILVF_count"/>
+      <Add filter="ala_count"/>
+      <Add filter="TYR"/>
+      <Add filter="TRP"/>
+      <Add filter="PHE"/>
+      <Add filter="MET"/>
+      Add filter="uhb"/>
+      Add filter="uhb2"/>
+      <Add filter="new_buns_HBNet"/>
+      <Add filter="new_buns"/>
+      <Add filter="prepro"/>
+      <Add filter="prob_homodimerize_A"/>
+      <Add filter="prob_homodimerize_B"/>
+      <Add filter="AveDeg_ILV"/>
+      <Add filter="AveDeg_aro_apolar"/>
+      <Add filter="AveDeg_A_ILV"/>
+      <Add filter="AveDeg_B_ILV"/>
+      <Add filter="AveDeg_AB_interface_ILV"/>
+      <Add filter="ss_sc"/>
+      <Add filter="atomcount_ILV"/>
+      <Add filter="atomcount_norm_aro_apolar"/>
+      <Add filter="atomcount_A_ILV"/>
+      <Add filter="atomcount_B_ILV"/>
+      <Add filter="atomcount_AB_interface_ILV"/>
+      <Add filter_name="cav_vol" />
+      <Add filter_name="exposedhydrop" />
+      <Add filter_name="interfacehole" />
+      <Add mover="interface_analyzer"/>
+      <Add mover="align"/>
+    </PROTOCOLS>
+    </ROSETTASCRIPTS>
+  </MultiplePoseMover>
+</MOVERS>
+<PROTOCOLS>
+  Add mover=transform_sc/>
+  Add mover_name=closer/>
+  <Add mover="only_design_loops"/>
+  Doing this to resolve any sidechain irregularity after stacking, also the network residues might need this step to properly form HBNets after stacking
+  <Add mover="hardmin_sconly"/>
+  <Add mover="add_cst"/>
+  Doing this to resolve any backbone irregularity after stacking
+  <Add mover="hardmin_bb"/>
+  <Add mover="clearconstraints"/>
+  <Add mover="hbnet_interf"/>
+  <Add mover="MPM"/>
+  <Add mover="hbnet_interf"/> #to filter out designs where HBNet is destroyed during design
+</PROTOCOLS>
+</ROSETTASCRIPTS>

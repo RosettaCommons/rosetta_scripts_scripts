@@ -1,0 +1,179 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    hard weights="beta"/>
+  </SCOREFXNS>
+<RESIDUE_SELECTORS>          
+  Layer name=hbnet_core select_core=true core_cutoff=3.6 />
+</RESIDUE_SELECTORS>
+<TASKOPERATIONS>
+</TASKOPERATIONS>
+<MOVERS>
+ConnectChainsMover name=closer chain_connections="[A+B,C],[B+A,C],[C+B,A],[B+C,A]" loopLengthRange="2,5"/>
+  <ConnectChainsMover name="closer" chain_connections="[A+C+B+D],[A+D+B+C],[C+B+D+A],[D+B+C+A],[B+D+A+C],[B+C+A+D],[D+A+C+B],[C+A+D+B]" loopLengthRange="2,5"/>
+  <!-- <HBNetStapleInterface find_native_networks=1 scorefxn=hard name=hbnet_interf hb_threshold=-0.1 min_helices_contacted_by_network=4 verbose=0 core_selector=hbnet_core write_network_pdbs=0 min_network_size=4 min_intermolecular_hbonds=2 max_unsat=1 combos=1 min_staples_per_interface=3 max_staples_per_interface=3 min_core_res=2 write_cst_files=0 />
+  <MultiplePoseMover name=MPM max_input_poses=1>
+    <ROSETTASCRIPTS>
+    <SCOREFXNS>
+      <hard_cart weights=beta_cart/>
+      <soft_cst weights="/gscratch/baker/zibochen/scripts/weights/beta_soft_rep_cst.wts"/>
+      <hard_cst weights=beta_cst/>
+      <beta_aa_comp weights="beta_cst" >
+        <Reweight scoretype=aa_composition weight=1.0 />
+      Set aa_composition_setup_file="CA2_constraint.comp" />
+      </beta_aa_comp>
+      <up_ele weights=beta_cst >
+        <Reweight scoretype=fa_elec weight=1.4 />
+        <Reweight scoretype=hbond_sc weight=2.0 />
+      </up_ele>
+    </SCOREFXNS>
+    <RESIDUE_SELECTORS>
+      <Layer name=pick_core_and_boundary select_core=true select_boundary=true core_cutoff=3.6/>
+      <Layer name=pick_core_and_boundary_SASA select_core=true select_boundary=true use_sidechain_neighbors=false core_cutoff=35 surface_cutoff=45/>
+      <Layer name=pick_core_SASA select_core=true use_sidechain_neighbors=false core_cutoff=35 surface_cutoff=45/>
+      <Layer name=pick_core_and_surface select_core=true select_surface=true core_cutoff=3.6/>
+      <Layer name=pick_surface_and_boundary select_surface=true select_boundary=true core_cutoff=3.6/>
+      <Chain name=chain_a chains=A/>
+      <Chain name=chain_b chains=B/>
+      <Layer name=core select_core=true core_cutoff=3.6 />
+      <ResidueName name=ala_and_met residue_name3="ALA,MET" />
+      <Not name=not_ala_or_met selector=ala_and_met /> 
+      <And name=a_core selectors=chain_a,pick_core_SASA/>
+      <And name=b_core selectors=chain_b,pick_core_SASA/>
+	ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet" />
+    </RESIDUE_SELECTORS>
+    <TASKOPERATIONS>
+      <ConsensusLoopDesign name="disallow_non_abego_aas"/>
+      <LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script=0 use_sidechain_neighbors=True core=3.6 >
+        <core>
+          <Helix append="M" />
+          <Helix exclude="W" />
+        </core>
+        <boundary>
+          <Helix exclude="DW" />
+        </boundary>
+      </LayerDesign>
+      <OperateOnResidueSubset name=design_core selector=pick_surface_and_boundary>
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name=design_boundary selector=pick_core_and_surface>
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name=design_surface selector=pick_core_and_boundary>
+        <PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name=repack_not_ala_or_met selector=not_ala_or_met >
+        <RestrictToRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name=redesign_ala_met selector=ala_and_met >
+        <RestrictAbsentCanonicalAASRLT aas=AMILVF />
+      </OperateOnResidueSubset>
+      <InitializeFromCommandline name=init/>
+      <ConstrainHBondNetwork name=hbnet_task />
+      OperateOnResidueSubset name=hbnet_task selector=hbnet_residues>
+                                  RestrictToRepackingRLT/>
+                                /OperateOnResidueSubset>	
+      <IncludeCurrent name=current/>
+      <LimitAromaChi2 name=arochi />
+      <ExtraRotamersGeneric name=ex1_ex2 ex1=1 ex2=1/>
+      <ExtraRotamersGeneric name=ex1 ex1=1/>
+      <RestrictAbsentCanonicalAAS name=ala_only resnum=0 keep_aas="A" />
+      <LayerDesign name=init_layers layer=Nterm_core_boundary_surface_Cterm make_pymol_script=0 use_sidechain_neighbors=True core=3.6 >
+      <core>
+        <Helix append="HNQYSTD"/>
+      </core>
+      <boundary>
+        <Helix exclude="EKRW"/>
+      </boundary>
+      </LayerDesign>
+      <LayerDesign name=all_layers layer=other make_pymol_script=0>
+        <SelectBySASA name=inteface_core state=bound mode=mc core=1 probe_radius=2.0 core_asa=35 surface_asa=45 verbose=1>
+          <all copy_layer=core />
+          <Helix append="M"/>
+          <Helix exclude="W" />
+        </SelectBySASA>
+        <SelectBySASA name=inteface_surface state=bound mode=mc surface=1 probe_radius=2.0 core_asa=35 surface_asa=45 verbose=1>
+          <all copy_layer=surface />
+        </SelectBySASA>
+        <SelectBySASA name=inteface_boundary state=bound mode=mc boundary=1 probe_radius=2.0 core_asa=35 surface_asa=45 verbose=1>
+          <all copy_layer=boundary />
+          <Helix exclude="DW"/>
+        </SelectBySASA>
+      </LayerDesign>
+      <SelectBySASA name=select_core state=bound mode=mc core=1 probe_radius=2.0 core_asa=35 surface_asa=45 verbose=1/>
+      <SelectBySASA name=select_boundary state=bound mode=mc boundary=1 probe_radius=2.0 core_asa=35 surface_asa=45 verbose=1/>
+      <SelectBySASA name=select_surface state=bound mode=mc surface=1 probe_radius=2.0 core_asa=35 surface_asa=45 verbose=1/>
+    </TASKOPERATIONS>
+    <FILTERS>
+      <PreProline name="prepro" use_statistical_potential=0 />
+      <ScoreType name=scorefilter scorefxn=hard_cst score_type=total_score threshold=0.0 confidence=1 />
+      <EnzScore name="cst_score" score_type=cstE scorefxn=hard_cst whole_pose=1 energy_cutoff=3 confidence=1/>
+      <BuriedUnsatHbonds name="uhb" scorefxn=hard_cst cutoff=6 confidence=1/>
+      <BuriedUnsatHbonds2 name="uhb2" scorefxn=hard_cst cutoff=6 AHD_cutoff=90 confidence=0/>
+      <ResidueCount name=ala_count max_residue_count=30 residue_types="ALA" confidence=0/>
+      <ResidueCount confidence=0 name=TYR residue_types=TYR/>
+      <ResidueCount confidence=0 name=TRP residue_types=TRP/>
+      <ResidueCount confidence=0 name=PHE residue_types=PHE/>
+      <ResidueCount confidence=0 name=MET residue_types=MET/>
+      <ResidueCount name=chainA_ILVF_count min_residue_count=5 residue_types="ILE,LEU,VAL,PHE" residue_selector=chain_a confidence=1/>
+      <ResidueCount name=chainB_ILVF_count min_residue_count=5 residue_types="ILE,LEU,VAL,PHE" residue_selector=chain_b confidence=1/>
+      <ResidueCount confidence=0 min_residue_count=5 name=prob_homodimerize_A residue_selector=a_core residue_types="HIS,PHE,TYR,TRP"/>
+      <ResidueCount confidence=0 min_residue_count=5 name=prob_homodimerize_B residue_selector=b_core residue_types="HIS,PHE,TYR,TRP"/>
+    </FILTERS>
+    <MOVERS>
+      <MinMover name=hardmin_bb scorefxn=hard_cart type=lbfgs_armijo_nonmonotone tolerance=0.0001 chi=0 bb=1 bondangle=1 bondlength=1 jump=all cartesian=1/>
+      <PackRotamersMover name=hardpack_core_sn scorefxn=hard_cst task_operations=init,layer_all,design_core,current,arochi,ex1_ex2,hbnet_task,disallow_non_abego_aas/>
+      <PackRotamersMover name=softpack_core scorefxn=soft_cst task_operations=init,all_layers,select_core,current,arochi,hbnet_task,disallow_non_abego_aas/>
+      <PackRotamersMover name=softpack_boundary scorefxn=soft_cst task_operations=init,all_layers,select_boundary,current,arochi,hbnet_task,disallow_non_abego_aas/>
+      <PackRotamersMover name=softpack_surface scorefxn=soft_cst task_operations=init,all_layers,select_surface,current,arochi,hbnet_task,disallow_non_abego_aas/>
+      <PackRotamersMover name=hardpack_core scorefxn=hard_cst task_operations=init,all_layers,select_core,current,arochi,ex1_ex2,hbnet_task,disallow_non_abego_aas/>
+      <PackRotamersMover name=hardpack_boundary scorefxn=hard_cst task_operations=init,all_layers,select_boundary,current,arochi,ex1_ex2,hbnet_task,disallow_non_abego_aas/>
+      <PackRotamersMover name=hardpack_surface scorefxn=up_ele task_operations=init,all_layers,select_surface,current,arochi,ex1,hbnet_task,disallow_non_abego_aas/>
+      <MinMover name=hardmin_sconly scorefxn=hard_cst chi=1 bb=0 bondangle=0 bondlength=0 />
+      <AddCompositionConstraintMover name=add_comp_file filename="/gscratch/baker/zibochen/scripts/weights/bundle_constraint.comp" selector=pick_core_and_boundary_SASA />
+      <FastDesign name=fdes1 scorefxn=beta_aa_comp repeats=3 task_operations=init,all_layers,redesign_ala_met,repack_not_ala_or_met,current,arochi,ex1,hbnet_task,disallow_non_abego_aas />
+      <InterfaceAnalyzerMover name=interface_analyzer scorefxn=beta_aa_comp packstat=1 pack_input=1 pack_separated=1 />
+      <DumpPdb name=dump1 fname=dump1.pdb scorefxn=beta_aa_comp tag_time=1/>
+      <Superimpose name=align/> 
+    </MOVERS>
+    <PROTOCOLS>
+      #min sc first to eliminate clashes, then hardmin_bb with chi=0
+      <Add mover=hardmin_sconly/>
+      <Add mover=hardmin_bb/>
+      <Add mover=hardpack_core_sn/>
+      <Add mover=softpack_core/>
+      <Add mover=softpack_boundary/>
+      <Add mover=softpack_surface/>
+      <Add mover=hardmin_sconly/>
+      <Add mover=hardpack_core/>
+      <Add mover=hardpack_boundary/>
+      <Add mover=hardpack_surface/>
+      #fastdesign with aa_comp
+      <Add mover=add_comp_file />
+      <Add mover=fdes1/>
+      <Add filter=cst_score/>
+      <Add filter=chainA_ILVF_count/>
+      <Add filter=chainB_ILVF_count/>
+      <Add filter=ala_count/>
+      <Add filter=TYR/>
+      <Add filter=TRP/>
+      <Add filter=PHE/>
+      <Add filter=MET/>
+      <Add filter=uhb/>
+      <Add filter=uhb2/>
+      <Add filter=prepro/>
+      <Add filter=prob_homodimerize_A/>
+      <Add filter=prob_homodimerize_B/>
+      <Add mover=interface_analyzer/>
+      <Add mover=align/>
+    </PROTOCOLS>
+    </ROSETTASCRIPTS>
+  </MultiplePoseMover> -->
+</MOVERS>
+<PROTOCOLS>
+  #start by designing ideal loop, everything else Ala.  Necessary for network search and minimization!!!!
+  Add mover=transform_sc/>
+  <Add mover_name="closer"/>
+  Add mover=hbnet_interf/>
+  Add mover=MPM/>
+</PROTOCOLS>
+</ROSETTASCRIPTS>

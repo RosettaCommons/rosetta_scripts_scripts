@@ -1,0 +1,14 @@
+<ROSETTASCRIPTS>
+<SCOREFXNS>
+</SCOREFXNS>
+<TASKOPERATIONS>
+</TASKOPERATIONS>
+<FILTERS>
+</FILTERS>
+<MOVERS>
+<SetupForSymmetry name=setup_symm definition="/gscratch/baker/zibochen/scripts/symm/C2_Z.sym"/>
+</MOVERS>
+<PROTOCOLS>
+<Add mover= setup_symm/>
+</PROTOCOLS>
+</ROSETTASCRIPTS>

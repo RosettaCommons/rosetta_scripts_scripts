@@ -1,0 +1,128 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="beta_aa_comp" weights="beta" >
+      <Reweight scoretype="aa_composition" weight="1.0" />
+    </ScoreFunction>
+    <ScoreFunction name="soft" weights="beta" symmetric="1"/>
+    <ScoreFunction name="up_ele" weights="beta" symmetric="1">
+      <Reweight scoretype="fa_elec" weight="1.4" />
+      <Reweight scoretype="hbond_sc" weight="2.0" />
+    </ScoreFunction>
+    <ScoreFunction name="hard" weights="beta" symmetric="1"/>
+    <ScoreFunction name="hard_cart" weights="beta_cart" symmetric="1"/>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <Layer name="core" select_core="true" core_cutoff="3.6" />
+    <Layer name="boundary" select_boundary="true" />
+    <Layer name="surface" select_surface="true" />
+    <And name="core_boundary" selectors="core,boundary"/>
+    <And name="core_surface" selectors="core,surface"/>
+    <And name="surface_boundary" selectors="surface,boundary"/>
+    <ResidueName name="trp_and_met" residue_name3="TRP,MET,ALA" />
+    <Not name="not_met_or_trp" selector="trp_and_met" /> 
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+    <IncludeCurrent name="current"/>
+    <OperateOnResidueSubset name="repack_not_ala_or_met" selector="not_met_or_trp" >
+        <RestrictToRepackingRLT/>
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name="redesign_ala_met" selector="trp_and_met" >
+        <RestrictAbsentCanonicalAASRLT aas="AWMILVF" />
+      </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="pack_core" selector="surface_boundary" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="pack_surface" selector="core_boundary" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="pack_boundary" selector="core_surface" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <RestrictToRepacking name="repack_only" />
+    <ReadResfile name="resfile" filename="%%resfile%%" />
+    <InitializeFromCommandline name="init"/>
+    <ConsensusLoopDesign name="disallow_nonnative_loop_sequences" />
+    <LimitAromaChi2 name="arochi" />
+    <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+    <ExtraRotamersGeneric name="ex1" ex1="1"/>       
+    <LayerDesign name="all_layers" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="3.6" >
+      <core>
+        <Helix append="M" />
+        <Helix exclude="W" />
+      </core>
+      <boundary>
+        <Helix exclude="DW" />
+      </boundary>
+    </LayerDesign>
+    <SelectBySASA name="select_core" state="bound" mode="mc" core="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+    <SelectBySASA name="select_boundary" state="bound" mode="mc" boundary="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+    <SelectBySASA name="select_surface" state="bound" mode="mc" surface="1" probe_radius="2.0" core_asa="35" surface_asa="45" verbose="1"/>
+    <SelectBySASA name="select_all" state="bound" mode="mc" core="1" boundary="1" surface="1" probe_radius="2.2" core_asa="35" surface_asa="45" verbose="1"/>
+    <OperateOnCertainResidues name="ILV">
+        <NoResFilter>
+          <ResidueName3Is name3="ILE,LEU,VAL"/>
+        </NoResFilter>
+        <PreventRepackingRLT/>
+      </OperateOnCertainResidues>
+      <OperateOnCertainResidues name="aro_apolar">
+        <NoResFilter>
+          <ResidueType aromatic="1" apolar="1" polar="0" charged="0"/>
+        </NoResFilter>
+        <PreventRepackingRLT/>
+      </OperateOnCertainResidues>
+  </TASKOPERATIONS>
+    <FILTERS>
+      <SymUnsatHbonds name="uhb" cutoff="1000"/>
+      <BuriedUnsatHbonds2 name="uhb2" scorefxn="hard" confidence="0" AHD_cutoff="90"/>
+      <PreProline name="prepro" use_statistical_potential="0" confidence="1"/>
+      <BuriedUnsatHbonds3 name="new_buns" scorefxn="hard" cutoff="20" print_out_info_to_pdb="true" use_hbnet_behavior="true" ignore_bb_heavy_unsats="false" confidence="0"/>
+      <ResidueCount name="ala_count" max_residue_count="30" residue_types="ALA" confidence="0"/>
+      <ResidueCount confidence="0" name="TYR" residue_types="TYR"/>
+      <ResidueCount confidence="0" name="TRP" residue_types="TRP"/>
+      <ResidueCount confidence="0" name="PHE" residue_types="PHE"/>
+      <ResidueCount confidence="0" name="MET" residue_types="MET"/>
+      <AverageDegree name="AveDeg_ILV" threshold="0" task_operations="ILV" distance_threshold="10" confidence="0"/>
+      <AverageDegree name="AveDeg_aro_apolar" threshold="0" task_operations="aro_apolar" distance_threshold="10" confidence="0"/>
+      <SSShapeComplementarity name="ss_sc" verbose="0" loops="0" helices="1" confidence="0"/> #use cutoff 0.7
+      <AtomicContactCount name="atomcount_ILV" partition="jump" task_operations="ILV" distance="4.5" normalize_by_sasa="0" confidence="0"/>
+      <AtomicContactCount name="atomcount_norm_aro_apolar" partition="jump" task_operations="aro_apolar" distance="4.5" normalize_by_sasa="1" confidence="0"/>
+    </FILTERS>
+  <MOVERS>
+    <DumpPdb name="dump" fname="out.pdb" tag_time="1"/>
+    <SymPackRotamersMover name="softpack_core" scorefxn="soft" task_operations="all_layers,resfile,arochi,disallow_nonnative_loop_sequences,init,pack_core"/>
+    <SymPackRotamersMover name="hardpack_core" scorefxn="hard" task_operations="all_layers,resfile,arochi,ex1_ex2,disallow_nonnative_loop_sequences,init,pack_core"/>
+    <SymPackRotamersMover name="softpack_surface" scorefxn="soft" task_operations="all_layers,resfile,arochi,disallow_nonnative_loop_sequences,init,pack_surface"/>
+    <SymPackRotamersMover name="hardpack_surface" scorefxn="hard" task_operations="all_layers,resfile,arochi,ex1_ex2,disallow_nonnative_loop_sequences,init,pack_surface"/> 
+    <SymPackRotamersMover name="softpack_boundary" scorefxn="soft" task_operations="all_layers,resfile,arochi,disallow_nonnative_loop_sequences,init,pack_boundary"/>
+    <SymPackRotamersMover name="hardpack_boundary"  scorefxn="up_ele" task_operations="all_layers,resfile,arochi,ex1_ex2,disallow_nonnative_loop_sequences,init,pack_boundary"/>
+    <SymMinMover name="hardmin_sconly" scorefxn="hard" chi="1" bb="0" bondangle="0" bondlength="0" />
+    <SymMinMover name="hardmin_cart" scorefxn="hard_cart" type="lbfgs_armijo_nonmonotone" tolerance="0.0001" chi="1" bb="1" bondangle="1" bondlength="1" jump="ALL" cartesian="1"/>
+    <SymPackRotamersMover name="repack" scorefxn="hard" task_operations="repack_only" />
+    <AddCompositionConstraintMover name="add_comp_file" filename="/gscratch/baker/zibochen/scripts/weights/flatland.comp" selector="core_boundary" />
+    <SymPackRotamersMover name="fdes1" scorefxn="beta_aa_comp" task_operations="init,all_layers,redesign_ala_met,resfile,repack_not_ala_or_met,current,arochi,ex1_ex2,disallow_nonnative_loop_sequences" />
+  </MOVERS>
+  <PROTOCOLS>
+    <Add mover="add_comp_file"/>
+    <Add mover="softpack_core"/>
+    <Add mover="softpack_boundary"/>
+    <Add mover="softpack_surface"/>
+    <Add mover="hardmin_sconly"/>
+    <Add mover="hardpack_core"/>
+    <Add mover="hardpack_boundary"/>
+    <Add mover="hardpack_surface"/>
+    <Add filter="new_buns"/>
+    <Add filter="ala_count"/>
+    <Add filter="TYR"/>
+    <Add filter="TRP"/>
+    <Add filter="PHE"/>
+    <Add filter="MET"/>
+    <Add filter="AveDeg_ILV"/>
+    <Add filter="AveDeg_aro_apolar"/>
+    <Add filter="ss_sc"/>
+    <Add filter="atomcount_ILV"/>
+    <Add filter="atomcount_norm_aro_apolar"/>
+    Add filter=uhb/>
+    Add filter=uhb2/>
+    Add filter=prepro/>
+  </PROTOCOLS>
+</ROSETTASCRIPTS>

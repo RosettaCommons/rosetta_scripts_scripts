@@ -1,0 +1,101 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="hard_cst" weights="beta_cst"/>
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>    
+    <Index name="design_ind" resnums="%%res_ind%%"/>
+    <Not name="no_designs" selector="design_ind"/>
+    <Layer name="hbnet_core" select_core="true" core_cutoff="4" />
+  </RESIDUE_SELECTORS>
+  <TASKOPERATIONS>
+    Rea name=" filename="%%%" />
+    <OperateOnResidueSubset name="no_design" selector="no_designs">
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <LimitAromaChi2 name="arochi" />
+    <LayerDesign name="init_layers" layer="Nterm_core_boundary_surface_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="3.6" >
+      <core>
+        <Helix append="HNQYSTD"/>
+      </core>
+      <boundary>
+        <Helix exclude="EKRW"/>
+      </boundary>
+    </LayerDesign>
+  </TASKOPERATIONS>
+  <MOVERS>
+    <HBNetStapleInterface scorefxn="hard_cst" name="hbnet_interf" hb_threshold="-0.5" min_helices_contacted_by_network="4" core_selector="hbnet_core" show_task="0" store_subnetworks="0" verbose="0" no_heavy_unsats_allowed="1" write_network_pdbs="0" min_network_size="4" max_unsat="0" min_core_res="3" min_unique_networks="1" write_cst_files="0" use_aa_dependent_weights="true" max_replicates_before_branch="3" min_connectivity="0.65" task_operations="arochi,init_layers,no_design" /> min_connectivity="0.65" ?
+    <MultiplePoseMover name="MPM_design" max_input_poses="50">
+      <ROSETTASCRIPTS>
+        <SCOREFXNS>
+          <ScoreFunction name="hard_cart" weights="beta_cart" />
+          <ScoreFunction name="hard" weights="beta"/>
+          <ScoreFunction name="soft_cst" weights="/gscratch/baker/zibochen/scripts/weights/beta_soft_rep_cst_up_met_trp.wts">
+            Reweight scoretype="aa_composition" weight="1.0" />
+          </ScoreFunction>
+          <ScoreFunction name="hard_cst" weights="beta_cst">
+            Reweight scoretype="aa_composition" weight="1.0" />
+          </ScoreFunction>
+        </SCOREFXNS>
+        <RESIDUE_SELECTORS>
+          <Index name="design_ind" resnums="%%res_ind%%"/>
+          <ResiduePDBInfoHasLabel name="hbnet_residues" property="HBNet" />
+          <Neighborhood name="hbnet_neighbour" selector="hbnet_residues" distance="10.0" include_focus_in_subset="0"/> #only select neighbouring residues around a HBNet, excluding HBNetresidues
+          <And name="design_these" selectors="design_ind,hbnet_neighbour"/>
+          <Not name="not_design_these" selector="design_these" />
+          <Layer name="core" select_core="true" core_cutoff="3.6" />
+          <Layer name="boundary" select_boundary="true" core_cutoff="3.6" />
+          <Layer name="surface" select_surface="true" core_cutoff="3.6" />
+        </RESIDUE_SELECTORS>
+        <TASKOPERATIONS>
+          <OperateOnResidueSubset name="design_only_HBNet_neighbour" selector="not_design_these">
+           <PreventRepackingRLT/>
+          </OperateOnResidueSubset>
+          <ConstrainHBondNetwork name="hbnet_task" />
+          <ConsensusLoopDesign name="disallow_nonnative_loop_sequences" />
+          <IncludeCurrent name="current"/>
+          <LimitAromaChi2 name="arochi" />
+          <ExtraRotamersGeneric name="ex1_ex2" ex1="1" ex2="1"/>
+          <ExtraRotamersGeneric name="ex1" ex1="1"/>  
+          <LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" make_pymol_script="0" use_sidechain_neighbors="True" core="3.6" >
+            <core>
+              <Helix append="M" />
+              <Helix exclude="W" />
+            </core>
+            <boundary>
+              <Helix exclude="DW" />
+            </boundary>
+          </LayerDesign>
+        <RestrictToRepacking name="repack_only" />
+        </TASKOPERATIONS>
+        <FILTERS>
+          <EnzScore name="cst_score" score_type="cstE" scorefxn="hard_cst" whole_pose="1" energy_cutoff="3" confidence="1"/>
+          <BuriedUnsatHbonds3 name="new_buns" scorefxn="hard" cutoff="20" print_out_info_to_pdb="true" use_hbnet_behavior="true" ignore_bb_heavy_unsats="false" confidence="1" residue_selector="hbnet_residues"/>
+        </FILTERS>
+        <MOVERS>
+          <MinMover name="hardmin_cart" scorefxn="hard_cart" type="lbfgs_armijo_nonmonotone" tolerance="0.0001" chi="1" bb="0" bondangle="1" bondlength="1" jump="0" cartesian="1"/>
+          <PackRotamersMover name="repack" scorefxn="hard" task_operations="repack_only" />
+          <AddCompositionConstraintMover name="add_comp_file" filename="/gscratch/baker/zibochen/scripts/weights/flatland.comp" />
+          <PackRotamersMover name="softpack" scorefxn="soft_cst" task_operations="layer_all,current,arochi,disallow_nonnative_loop_sequences,design_only_HBNet_neighbour"/>
+          <PackRotamersMover name="hardpack" scorefxn="hard_cst" task_operations="layer_all,current,arochi,ex1_ex2,disallow_nonnative_loop_sequences,design_only_HBNet_neighbour"/>
+          <MinMover name="hardmin_sconly" scorefxn="hard_cst" chi="1" bb="0" bondangle="0" bondlength="0" />
+        </MOVERS>
+        <APPLY_TO_POSE>
+        </APPLY_TO_POSE>
+        <PROTOCOLS>
+          Add mover="add_comp_file"/>
+          <Add mover="softpack"/>
+          <Add mover="hardmin_sconly"/>
+          <Add mover="hardpack"/>
+          <Add mover="repack" />
+          <Add mover="hardmin_cart" />
+          <Add filter="cst_score"/>
+          <Add filter="new_buns"/>
+        </PROTOCOLS>
+      </ROSETTASCRIPTS>
+    </MultiplePoseMover>
+  </MOVERS>
+  <PROTOCOLS>
+    <Add mover_name="hbnet_interf"/>
+    <Add mover_name="MPM_design"/>
+  </PROTOCOLS>
+</ROSETTASCRIPTS>

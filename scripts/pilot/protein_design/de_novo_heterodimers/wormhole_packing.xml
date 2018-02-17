@@ -1,0 +1,60 @@
+<ROSETTASCRIPTS>
+<SCOREFXNS>
+  <soft weights=beta_soft symmetric=1 />
+  <hard weights=beta symmetric=1 />
+</SCOREFXNS>
+
+<TASKOPERATIONS>
+  <ReadResfile name=resfile filename="design.res" />
+  <ConsensusLoopDesign name="disallow_nonnative_loop_sequences" />
+  <IncludeCurrent name=current/>
+  <LimitAromaChi2 name=arochi />
+  <ExtraRotamersGeneric name=ex1_ex2 ex1=1 ex2=1/>
+  <ExtraRotamersGeneric name=ex1 ex1=1/>  
+  <LayerDesign name="layer_all" layer="core_boundary_surface_Nterm_Cterm" verbose="True" use_sidechain_neighbors="True" pore_radius=2.0 core=4.0 surface=1.8 use_symmetry=1 >
+    <core>
+      <all append="M" />
+    </core>
+  </LayerDesign>
+</TASKOPERATIONS>
+
+<FILTERS>
+  <PreProline name="prepro" use_statistical_potential="0" confidence=1/>
+  <SymUnsatHbonds name="uhb" jump=1 cutoff=5 verbose=1 write2pdb=1 confidence=0 />
+  <BuriedUnsatHbonds2 name="uhb2" scorefxn=hard task_operations=layer_all confidence=0 AHD_cutoff=90 jump_number=0/>
+  <Ddg name="ddg" scorefxn=hard translate_by=10000000 jump=1 repack=0 repeats=0 threshold=-15 confidence=0/>
+  <ShapeComplementarity name="sc" jump=1 verbose=1 min_sc=0.6 write_int_area=1 confidence=0 />
+  <Sasa name="sasa_int_area" threshold=700 upper_threshold=10000 hydrophobic=0 polar=0 jump=1 confidence=0 />
+  <ScoreType name="scorefilter_post_pack" scorefxn=hard score_type=total_score threshold=-100.0 confidence=0 />
+</FILTERS>
+
+<MOVERS>
+  <SwitchResidueTypeSetMover name=to_fa set=fa_standard />
+  <FastRelax name=relax scorefxn=hard >
+    <MoveMap name=rmm>
+        <Jump number=0 setting=1/>
+        <Span begin=1 end=10000 chi=1 bb=0/>
+     </MoveMap>
+  </FastRelax>
+  <SymPackRotamersMover name=softpack scorefxn=soft task_operations=layer_all,arochi,disallow_nonnative_loop_sequences/>
+  <SymPackRotamersMover name=hardpack scorefxn=hard task_operations=layer_all,arochi,current,ex1_ex2,disallow_nonnative_loop_sequences/>
+  <SymMinMover name=hardmin_sconly scorefxn=hard chi=1 bb=0 bondangle=0 bondlength=0 jump=0/>
+</MOVERS>
+
+<PROTOCOLS>
+  <Add mover=softpack/>
+  <Add mover=hardmin_sconly/>
+  <Add mover=hardpack/>
+  <Add mover=relax/>
+  <Add filter=prepro/>
+  <Add filter=uhb/>
+  <Add filter=uhb2/>
+  <Add filter=sc/>
+<!--   <Add filter=ala/>
+  <Add filter=aro/> -->
+  <Add filter=sasa_int_area/>
+  <Add filter=ddg/>
+  <Add filter=scorefilter_post_pack/>
+</PROTOCOLS>
+
+</ROSETTASCRIPTS>

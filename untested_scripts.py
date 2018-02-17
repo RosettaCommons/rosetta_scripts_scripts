@@ -217,6 +217,24 @@ scripts_not_tested = [
     "scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_DeNovo_scaffolds_2kpo_rsmn_2x2_cluster0001_rank0888_bpb_ferr_GBB.xml",
     "scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_DeNovo_scaffolds_2kpo_rsmn_2x2_rebuild_scaffold_blueprintpass__20161030111603_GBB_bpb_ferr.xml",
     "scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_motifgraft_cartmin_denovos_only_graft_cartmin.xml",
-    "scripts/pilot/protein_interface_design/motifgrafting/epigraft.xml"
+    "scripts/pilot/protein_interface_design/motifgrafting/epigraft.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/hyak_flatland_hydrophobic.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/hyak_helical_bundle_C3.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/hyak_flatland_asym_hbnet.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/hyak_para_hetero.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/wormhole_packing_weights_hack.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/heptad_hbnet.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/hyak_setup_c2.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/hyak_helical_bundle_C2.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/hyak_flatland.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/heterodimer_hbnet_design.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/heterodimer_hbnet_design_asymbackbone.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/heterodimer_hbnet_design_3helix.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/wormhole_packing.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/flatland_full_lattice_design.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/flatland_final_packing.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/heterodimer_final_design_only_design.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/adjacent.xml",
+    "scripts/pilot/protein_design/de_novo_heterodimers/wormhole_packing_HBNet.xml"
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world

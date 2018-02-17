@@ -1,0 +1,15 @@
+-out::file::pdb_comments
+-run:preserve_header
+-multi_cool_annealer 10
+-use_input_sc
+-symmetry_definition dummy
+-out:prefix packed_
+#-mute all
+-beta
+-missing_density_to_jump true 
+-symmetry:detect_bonds false
+-overwrite
+-parser:protocol /gscratch/baker/zibochen/scripts/xml_and_flags/flatland_final_packing.xml
+-no_optH false
+-optH_MCA true
+-flip_HNQ
