@@ -1,0 +1,31 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="genpot" weights="beta">
+      <Reweight scoretype="gen_bonded" weight="1.0"/>
+    </ScoreFunction>
+  </SCOREFXNS>
+
+  <TASKOPERATIONS>
+  </TASKOPERATIONS>
+
+  <FILTERS>
+  </FILTERS>
+
+  <MOVERS>
+    <GALigandDock name="dock" scorefxn="genpot" ngen="20" npool="50"
+		  grid_step="0.25" padding="5.0" hashsize="8.0" subhash="3"
+		  nativepdb="holo.pdb" final_exact_minimize="sc"
+		  single_precision="1"
+		  sidechains="autonbr" sc_maxd_scale="0.5"
+		  ramp_schedule="0.1,1.0"
+		  pack_cycles="10"
+		  />
+
+  </MOVERS>
+
+  <PROTOCOLS>
+    <Add mover="dock"/>
+  </PROTOCOLS>
+
+  <OUTPUT scorefxn="genpot"/>
+</ROSETTASCRIPTS>

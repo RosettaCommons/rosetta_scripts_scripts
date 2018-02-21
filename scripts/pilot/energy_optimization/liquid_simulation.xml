@@ -1,0 +1,31 @@
+<ROSETTASCRIPTS>
+    <TASKOPERATIONS>
+    </TASKOPERATIONS>
+    <SCOREFXNS>
+      <ScoreFunction name="condensedphase" weights="empty.wts" symmetric="1">
+	 <Reweight scoretype="fa_atr" weight="1.0"/>
+	 <Reweight scoretype="fa_rep" weight="0.55"/>
+	 <Reweight scoretype="fa_elec" weight="3.0"/>
+	 <Reweight scoretype="hbond_sc" weight="3.0"/>
+	 Reweight scoretype="gen_bonded" weight="1.0"/>
+	 <Reweight scoretype="fa_intra_atr" weight="1.0"/>
+	 <Reweight scoretype="fa_intra_rep" weight="1.0"/>
+	 <Reweight scoretype="fa_intra_elec" weight="1.0"/>
+      </ScoreFunction>
+    </SCOREFXNS>
+    <FILTERS>
+    </FILTERS>
+    <MOVERS>
+      <PeriodicBoxMover name="liquidsim_equil" report_silent="trj.out" report_scorefile="trj.sc"
+			nmol_side="4" vol_step="20" scorefxn="condensedphase"
+			nsteps_equilibrate="1000000" nsteps_sim="0"
+			dump_every="10000" report_every="1000" resize_vol_every="300" temp="300"
+			pressure="1.0" report_thermodynamics_step="1000"
+			initial_density="1.0" istart="0" correct_LJtruncation="1"/>
+    </MOVERS>
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+      <Add mover="liquidsim_equil"/>
+    </PROTOCOLS>
+</ROSETTASCRIPTS>

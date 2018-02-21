@@ -1,0 +1,25 @@
+<ROSETTASCRIPTS>
+  <TASKOPERATIONS>
+    <ExtraRotamersGeneric name="extra_chi" ex1="0" ex2="0" extrachi_cutoff="0"/>
+    <ReadResfile name="resfile" filename="1a32.resfile"/>
+    SelectByDensityFit name=dens_fit threshold=0.72 invert=0/>
+  </TASKOPERATIONS>
+  <MOVERS>
+    <ReportToDB name="features_reporter" database_mode="sqlite3"
+		database_name="1a32.core.db3"
+		database_partition="1" batch_description="Rotamer recovery">
+      <ResidueFeatures/>
+
+      # B-Factors for filtering  and PDB identification for looking at the structures
+      <PdbDataFeatures/>
+
+      # The RTMin protocol repacks one sidechain at a time (in its native environment)
+      <RotamerRecoveryFeatures scorefxn="commandline" protocol="RRProtocolRTMin"
+			       comparer="RRComparerElecDensDiff" task_operations="extra_chi,resfile"
+			       nonideal="0" recovery_threshold="0.13"/>
+    </ReportToDB>
+  </MOVERS>
+  <PROTOCOLS>
+    <Add mover_name="features_reporter"/>
+  </PROTOCOLS>
+</ROSETTASCRIPTS>

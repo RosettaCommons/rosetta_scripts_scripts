@@ -1,0 +1,94 @@
+<ROSETTASCRIPTS>
+	<TASKOPERATIONS>
+		<ExtraRotamersGeneric name="extra" ex1="1" ex2="1" extrachi_cutoff="0"/>
+		<RestrictToRepacking name="restrict"/>
+		<IncludeCurrent	  name="keep_curr"/>
+	</TASKOPERATIONS>
+	<SCOREFXNS>
+		<ScoreFunction name="xtal" weights="ref2015" symmetric="1">
+   			<Reweight scoretype="cart_bonded" weight="0.5"/>
+   			<Reweight scoretype="pro_close" weight="0.0"/>
+		</ScoreFunction>
+		<ScoreFunction name="dens_soft" weights="soft_rep" symmetric="1">
+   			<Reweight scoretype="cart_bonded" weight="0.5"/>
+   			<Reweight scoretype="pro_close" weight="0.0"/>
+   			<Reweight scoretype="elec_dens_fast" weight="20.0"/>
+		</ScoreFunction>
+		<ScoreFunction name="dens_min" weights="ref2015" symmetric="1">
+   			<Reweight scoretype="cart_bonded" weight="0.5"/>
+   			<Reweight scoretype="pro_close" weight="0.0"/>
+			<Reweight scoretype="elec_dens_fast" weight="20.0"/>
+		</ScoreFunction>
+	</SCOREFXNS>
+	<MOVERS>
+	    <SetRefinementOptions name="setup_opts" />
+	    
+	    <SetupForSymmetry name="setup_symm" definition="symmetry.def"/>
+		<ExtractAsymmetricUnit name="extract_asu"/>
+		<RecomputeDensityMap name="recompute_dens"/>
+
+		<FitBfactors name="fit_bs" adp_strategy="individual"/>
+
+		<TagPoseWithRefinementStats name="tag_i" tag="input"/>
+		<TagPoseWithRefinementStats name="tag_c" tag="cycle"/>
+		<TagPoseWithRefinementStats name="tag_f" tag="final"/>
+
+		<SetCrystWeight	 name="set_cryst_wt_cart" weight_scale="0.5" scorefxn="xtal" scorefxn_ref="xtal" cartesian="1"  bb="1" chi="1" jump="ALL"/>
+		<SetCrystWeight	 name="set_cryst_wt_tors" weight_scale="0.5" scorefxn="xtal" scorefxn_ref="xtal" cartesian="0"  bb="1" chi="1" jump="ALL" bondlength="0" bondangle="1"/>
+
+		<SymMinMover name="min_tors_xtal" scorefxn="xtal" type="lbfgs_armijo_rescored" max_iter="200" tolerance="0.0001" bb="1" chi="1" jump="ALL" bondlength="0" bondangle="1"/>
+		<SymMinMover name="min_cart_xtal" cartesian="1" scorefxn="xtal" type="lbfgs_armijo_rescored" max_iter="100" tolerance="0.0001" bb="1" chi="1" jump="ALL"/>
+
+		<SymMinMover name="densmin" scorefxn="dens_min" cartesian="1" type="lbfgs_armijo" max_iter="25" tolerance="0.00001" bb="1" chi="1" jump="ALL" bondlength="0" bondangle="1"/>
+		<SymPackRotamersMover name="screpackSoft" scorefxn="dens_soft" task_operations="extra,restrict,keep_curr" />
+		<SymPackRotamersMover name="screpack" scorefxn="dens_min" task_operations="extra,restrict,keep_curr" />
+
+		<ParsedProtocol name="stage1cycle">
+			<Add mover="recompute_dens"/>
+			<Add mover="screpackSoft"/>
+			<Add mover="set_cryst_wt_tors"/>
+			<Add mover="min_tors_xtal"/>
+			<Add mover="fit_bs"/>
+			<Add mover="tag_c"/>
+		</ParsedProtocol>
+
+		<ParsedProtocol name="stage2cycle">
+			<Add mover="recompute_dens"/>
+			<Add mover="screpack"/>
+			<Add mover="densmin"/>
+			<Add mover="set_cryst_wt_tors"/>
+			<Add mover="min_tors_xtal"/>
+			<Add mover="fit_bs"/>
+			<Add mover="tag_c"/>
+		</ParsedProtocol>
+
+		<ParsedProtocol name="stage3cycle">
+			<Add mover="recompute_dens"/>
+			<Add mover="screpack"/>
+			<Add mover="set_cryst_wt_cart"/>
+			<Add mover="min_cart_xtal"/>
+			<Add mover="fit_bs"/>
+			<Add mover="tag_c"/>
+		</ParsedProtocol>
+	</MOVERS>
+
+	<PROTOCOLS>
+		<Add mover="setup_opts"/>
+		<Add mover="setup_symm"/>
+
+		<Add mover="tag_i"/>
+		<Add mover="stage1cycle"/>
+		<Add mover="stage1cycle"/>
+		<Add mover="stage1cycle"/>
+		<Add mover="stage2cycle"/>
+		<Add mover="stage2cycle"/>
+		<Add mover="stage2cycle"/>
+		<Add mover="stage2cycle"/>
+		<Add mover="stage2cycle"/>
+		<Add mover="stage3cycle"/>
+		<Add mover="stage3cycle"/>
+		<Add mover="tag_f"/>
+
+		<Add mover="extract_asu"/>
+	</PROTOCOLS>
+</ROSETTASCRIPTS>

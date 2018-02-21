@@ -26,7 +26,14 @@ scripts_not_tested = [
     "scripts/public/sewing/ligand_contacts/zn_tetra_script.xml",
     "scripts/public/sewing/ligand_contacts/zn_sewing_script.xml",
     "scripts/pilot/fold_and_dock_membrane_single_spanning_homodimers/fnd_homo.xml",
-	"scripts/pilot/enzymedesign/proenzyme_design_SEWING/cpg2_proenzyme_sewing.xml",	#This script uses refactored SEWING, which is not yet in master.
+    "scripts/pilot/enzymedesign/proenzyme_design_SEWING/cpg2_proenzyme_sewing.xml",	#This script uses refactored SEWING, which is not yet in master.
+    "scripts/pilot/energy_optimization/general_potential/crystdock.xml",
+    "scripts/pilot/energy_optimization/general_potential/crystmin.xml",
+    "scripts/pilot/energy_optimization/general_potential/crystrefine.xml",
+    "scripts/pilot/ligand_docking/GAdock/flexreceptor_soft_and_bbmove.xml",
+    "scripts/pilot/ligand_docking/GAdock/flexsc_pack.xml",
+    "scripts/pilot/ligand_docking/GAdock/rigidreceptor.xml",
+    "scripts/pilot/ligand_docking/GAdock/rigidreceptor_useinput.xml",
     "scripts/pilot/protein_design/modular_protein_design/design.xml",
     "scripts/pilot/protein_design/motif_fiber_design/designCx.xml",
     "scripts/pilot/protein_design/motif_fiber_design/designHx.xml",

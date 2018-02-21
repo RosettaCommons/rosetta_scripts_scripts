@@ -1,0 +1,26 @@
+<ROSETTASCRIPTS>
+    <TASKOPERATIONS>
+    </TASKOPERATIONS>
+    <SCOREFXNS>
+      <ScoreFunction name="fullatom" weights="gen_liqsim" symmetric="1">
+	<Reweight scoretype="gen_bonded" weight="1.0"/>
+	<Reweight scoretype="cart_bonded" weight="1.0"/>
+      </ScoreFunction>
+      <ScoreFunction name="fullatom_cst" weights="gen_liqsim" symmetric="1">
+	<Reweight scoretype="gen_bonded" weight="1.0"/>
+	<Reweight scoretype="cart_bonded" weight="1.0"/>
+	<Reweight scoretype="coordinate_constraint" weight="1.0"/>
+      </ScoreFunction>
+    </SCOREFXNS>
+    <MOVERS>
+      <DockLatticeMover name="crystdock" scorefxn="%%dockscore%%"
+			trans_step="0.5" rot_step="2.5" chi_step="5" ncycles="1"
+			randomize="0" perturb_chi="0" spacegroup="P1" verbose="1"
+			min="1" final_min="1" init_score_cut="0" kT="2.0" recover_low="1"/>
+      <UpdateCrystInfo name="updatecrystinfo"/>
+    </MOVERS>
+    <PROTOCOLS>
+      <Add mover="crystdock"/>
+    </PROTOCOLS>
+    <OUTPUT scorefxn="fullatom"/>
+</ROSETTASCRIPTS>

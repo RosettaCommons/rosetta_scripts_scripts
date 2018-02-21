@@ -1,0 +1,42 @@
+<ROSETTASCRIPTS>
+    <TASKOPERATIONS>
+    </TASKOPERATIONS>
+    <SCOREFXNS>
+        <ScoreFunction name="stage1" weights="score3" symmetric="0">
+          <Reweight scoretype="atom_pair_constraint" weight="0.5"/>
+          <Reweight scoretype="cen_hb" weight="5.0"/>
+        </ScoreFunction>
+        <ScoreFunction name="stage2" weights="score4_smooth_cart" symmetric="0">
+          <Reweight scoretype="atom_pair_constraint" weight="0.5"/>
+          <Reweight scoretype="cen_hb" weight="5.0"/>
+        </ScoreFunction>
+        <ScoreFunction name="fullatom" weights="ref2015_cart" symmetric="0">
+          <Reweight scoretype="atom_pair_constraint" weight="1.0"/>
+        </ScoreFunction>
+    </SCOREFXNS>
+    <FILTERS>
+    </FILTERS>
+    <MOVERS>
+      <Hybridize name="hybridize" stage1_scorefxn="stage1" stage2_scorefxn="stage2"
+		 fa_scorefxn="fullatom2" fa_cst_file="fa.cst"  batch="1" 
+		 stage1_increase_cycles="0.5" stage2_increase_cycles="0.5">
+            <Fragments small="t000_.3mers" big="t000_.9mers"/>
+            <Template pdb="parent1.pdb" weight="1.0" cst_file="cen.cst"/>
+            <Template pdb="parent2.pdb" weight="0.0" cst_file="cen.cst"/>
+            <Template pdb="parent3.pdb" weight="0.0" cst_file="cen.cst"/>
+            <Template pdb="parent4.pdb" weight="0.0" cst_file="cen.cst"/>
+            <Template pdb="parent5.pdb" weight="0.0" cst_file="cen.cst"/>
+        </Hybridize>
+        <FastRelax name="dualrelax" scorefxn="fullatom2" min_type="lbfgs_armijo_nonmonotone"
+		   relaxscript="cart2.script"/>
+	<ConstraintSetMover name="cst" add_constraints="0" cst_file="fa.cst"/>
+    </MOVERS>
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+        <Add mover="hybridize"/>
+	<Add mover="cst"/>
+        <Add mover="dualrelax"/>
+    </PROTOCOLS>
+    <OUTPUT scorefxn="fullatom"/>
+</ROSETTASCRIPTS>
