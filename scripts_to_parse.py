@@ -19,7 +19,7 @@ scripts_to_be_parsed = [
     "scripts/pilot/metal_binding/zinc_dependent_hydrolase/working_example/symm_design.xml",
     "scripts/pilot/crystal_refine/reciprocal_refinement.xml",
     "scripts/pilot/energy_optimization/liquid_simulation.xml",
-    "scripts/pilot/energy_optimization/rotamer_recovery.xml"
+    "scripts/pilot/energy_optimization/rotamer_recovery.xml",
     "scripts/pilot/homology_modeling/hybridize/iterhybrid.cross.xml",
     "scripts/pilot/homology_modeling/hybridize/iterhybrid.mut.xml",
     "scripts/pilot/homology_modeling/hybridize/refine.hires.xml"

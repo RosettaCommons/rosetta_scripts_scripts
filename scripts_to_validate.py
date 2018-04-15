@@ -61,7 +61,7 @@ scripts_to_be_validated = [
     "scripts/pilot/mutation_scanning/singlemutation_symrescore/mutalyze.xml",
     "scripts/pilot/mutation_scanning/singlemutation_symrescore/1c_mutalyze.xml",
     "scripts/pilot/protein_design/membrane_design_3helical_tetramer/design.xml",
-    "scripts/pilot/protein_design/membrane_design_3helical_tetramer/fiter.xml", 
+    "scripts/pilot/protein_design/membrane_design_3helical_tetramer/filter.xml", 
     "scripts/pilot/homology_modeling/map_align/PF14912.5.xml",
     "scripts/pilot/protein_design/membrane_design_3helical_tetramer/filter.xml",
     "scripts/pilot/protein_design/RGD_loop_remodeling/Hyak_scripts_blueprint_builder.xml",
