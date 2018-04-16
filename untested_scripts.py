@@ -16,7 +16,6 @@ scripts_not_tested = [
     "scripts/public/sewing/append/GTPase_inhibitors/HR1A_RhoA_LOV_cage/HR1A_RhoA_LOV_cage.xml",
     "scripts/public/sewing/append/GTPase_inhibitors/HR1B_Rac1_LOV_cage/HR1B_Rac1_LOV_cage.xml",
     "scripts/public/sewing/append/GTPase_inhibitors/Kalirin_zLock_2/Kalirin_zLock_2.xml",
-    #"scripts/public/sewing/append/gaq_binder_append.flags",
     "scripts/public/sewing/append/gaq_binder_append.xml",
     "scripts/public/sewing/refinement/HEM_refinement.xml",
     "scripts/public/sewing/legacy_sewing/ca_assembly.xml",
@@ -296,6 +295,8 @@ scripts_not_tested = [
     "scripts/pilot/protein_design/pore_design/oct19_hb3_redo_designCx_core_fix.xml",
     "scripts/pilot/protein_design/pore_design/dec13_ry1_C7_add_hbnet_motifs.xml",
     "scripts/pilot/protein_design/pore_design/nov13_mchbnet_extend_hbnet_on_docks_nomc.xml",
-    "scripts/pilot/protein_design/pore_design/funwithdocks2_designCx.xml"
+    "scripts/pilot/protein_design/pore_design/funwithdocks2_designCx.xml",
+	"scripts/public/multistage_examples/batch_relax.xml",
+	"scripts/pilot/energy_optimization/liquid_simulation.xml",
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world

@@ -61,7 +61,7 @@ scripts_to_be_validated = [
     "scripts/pilot/mutation_scanning/singlemutation_symrescore/mutalyze.xml",
     "scripts/pilot/mutation_scanning/singlemutation_symrescore/1c_mutalyze.xml",
     "scripts/pilot/protein_design/membrane_design_3helical_tetramer/design.xml",
-    "scripts/pilot/protein_design/membrane_design_3helical_tetramer/fiter.xml", 
+    "scripts/pilot/protein_design/membrane_design_3helical_tetramer/filter.xml", 
     "scripts/pilot/homology_modeling/map_align/PF14912.5.xml",
     "scripts/pilot/protein_design/membrane_design_3helical_tetramer/filter.xml",
     "scripts/pilot/protein_design/RGD_loop_remodeling/Hyak_scripts_blueprint_builder.xml",
@@ -150,7 +150,13 @@ scripts_to_be_validated = [
     "scripts/pilot/protein_design/de_novo_heterodimers/heterodimer_LSAS_final_design_close_loops_only.xml",
     "scripts/pilot/protein_design/pore_design/nov13_mchbnet_extend_hbnet_on_docks.xml",
     "scripts/pilot/protein_design/pore_design/nov13_mchbnet_extend_hbnet_on_docks_con.xml",
-    "scripts/pilot/protein_design/pore_design/oct19_add_hbnet_designCx_export.xml"
+    "scripts/pilot/protein_design/pore_design/oct19_add_hbnet_designCx_export.xml",
+    "scripts/pilot/crystal_refine/reciprocal_refinement.xml",
+    "scripts/pilot/energy_optimization/rotamer_recovery.xml",
+    "scripts/pilot/homology_modeling/hybridize/iterhybrid.cross.xml",
+    "scripts/pilot/homology_modeling/hybridize/iterhybrid.mut.xml",
+    "scripts/pilot/homology_modeling/hybridize/refine.hires.xml",
+    "scripts/pilot/metal_binding/zinc_dependent_hydrolase/working_example/symm_design.xml"
 ]
 
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world
