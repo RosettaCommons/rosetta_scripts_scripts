@@ -1,11 +1,17 @@
 <ROSETTASCRIPTS>
+  Keywords: relax, score
+  Author: Jason Klima
+  Email: klimaj@uw.edu
+
+  This script performs a FastRelax on chain A and chain B without minimizing chain B, and scores the resulting pose with a variety of metrics.
+  
   <SCOREFXNS>
     <ScoreFunction name="default_cart" weights="ref2015_cart" />
   </SCOREFXNS>
   <RESIDUE_SELECTORS>
     <Chain name="chA" chains="A"/>
     <Chain name="chB" chains="B"/>
-    <Layer name="core" select_core="true" core_cutoff="4.0" />  # select core using sidechain neighbors (don’t use SASA because of potential voids!)
+    <Layer name="core" select_core="true" core_cutoff="4.0" />
   </RESIDUE_SELECTORS>
   <MOVE_MAP_FACTORIES>
     <MoveMapFactory name="mm_factory" bb="0" chi="0" >
@@ -37,9 +43,9 @@
                scorefxn="default_cart" 
                repeats="5" 
                task_operations="init,limchi2,ex1_2,prevent_repacking,restrict_to_repacking"
-        	   batch="0" 
+               batch="0" 
                ramp_down_constraints="0"
-        	   cartesian="1" 
+               cartesian="1" 
                bondangle="1" 
                bondlength="1"
                min_type="lbfgs_armijo_nonmonotone" 
@@ -58,9 +64,6 @@
     </CalculatorFilter>
     <Geometry name="geometry" omega="165" cart_bonded="20" start="1" end="100000" confidence="0" />
     <ShapeComplementarity name="SC" min_sc="0" min_interface="0" verbose="0" quick="0" jump="1" residue_selector1="chA" residue_selector2="chB" write_int_area="0" confidence="0" />
-    SimpleHbondsToAtomFilter name="hbond_O1" n_partners="2" hb_e_cutoff="-0.4" target_atom_name="O1" pdb_num="116B" scorefxn="default_cart" confidence="0" 
-    SimpleHbondsToAtomFilter name="hbond_O2" n_partners="2" hb_e_cutoff="-0.4" target_atom_name="O2" pdb_num="116B" scorefxn="default_cart" confidence="0" 
-    SimpleHbondsToAtomFilter name="hbond_N1" n_partners="1" hb_e_cutoff="-0.4" target_atom_name="N1" pdb_num="116B" scorefxn="default_cart" confidence="0" 
     <RepackWithoutLigand name="rwl" scorefxn="default_cart" target_res="all_repacked" rms_threshold="1.5" confidence="0" />
     <DSasa name="dsasa" lower_threshold="0.0" upper_threshold="1.0" confidence="0" />
     <PackStat name="pstat" chain="0" threshold="0.60" confidence="0" />
@@ -127,9 +130,6 @@
     <Add filter="chainbreak"/>
     <Add filter="omega"/>
     <Add filter="cart_bonded"/>
-    Add filter="hbond_O1" 
-    Add filter="hbond_O2" 
-    Add filter="hbond_N1" 
     <Add filter="total_score" />
     <Add filter="total_score_res"/>
     <Add filter="nres" />
