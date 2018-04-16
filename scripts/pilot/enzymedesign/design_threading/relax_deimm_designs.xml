@@ -1,0 +1,86 @@
+<ROSETTASCRIPTS>
+Keywords: enzyme design, threading, deimmunization, design screening, symmetry, metals
+Author: Brahm Yachnin
+Email: brahm.yachnin@rutgers.edu
+
+This script threads a designed sequence onto a (presumably) wild-type protein sequence, and
+runs relax.  The idea is to screen a list of sequence designs in Rosetta so that they can be relaxed
+and scored.
+
+The script uses backbone constraints.  It also sets up metal constraints and symmetry, which
+should be removed for proteins that do not have these features.
+
+A series of filters are used to pass identifiers and external scoring information through to the
+Rosetta scorefile, so that all relevant data can be examined together.
+
+	<SCOREFXNS>
+		<ScoreFunction name="ref" weights="ref2015.wts" symmetric="1"/>
+		<ScoreFunction name="ref_cst_nosym" weights="ref2015_cst.wts" symmetric="0"/>
+		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts" symmetric="1"/>
+	</SCOREFXNS>
+	
+	<RESIDUE_SELECTORS>
+		<ResidueName name="zns" residue_name3=" ZN"/>
+		<Index name="catalytic" resnums="%%catres%%"/>
+	</RESIDUE_SELECTORS>
+	
+	<TASKOPERATIONS>
+		These are fairly standard task operations: initialize from command line, include current rotamers when packing, and the replacement -ex1 and -ex2 flags.
+		<InitializeFromCommandline name="init"/>
+		<IncludeCurrent name="inccurrent"/>
+		<ExtraRotamersGeneric name="ex" ex1="1" ex2="1" ex1aro="1" ex1_sample_level="1" ex2_sample_level="1" ex1aro_sample_level="1" extrachi_cutoff="1"/>
+		
+		Use this task op to turn off design.
+		<RestrictToRepacking name="designoff"/>
+	</TASKOPERATIONS>
+	
+	<FILTERS>
+		These filters are used to pass through design identifiers to the Rosetta scorefile.
+		<CalculatorFilter name="deltaEpi" equation="MAX(%%epi%%)" confidence="0"/>
+		<CalculatorFilter name="indexNum" equation="MAX(%%index%%)" confidence="0"/>
+		<CalculatorFilter name="curveNum" equation="MAX(%%curve%%)" confidence="0"/>
+		<CalculatorFilter name="epiPotential" equation="MAX(%%pot%%)" confidence="0"/>
+	</FILTERS>
+	
+	<MOVERS>
+		Symmetry
+		<SetupForSymmetry name="setup_symm" definition="1cg2.sym"/>
+		<ExtractAsymmetricUnit name="desym" keep_virtual="0"/>
+	
+		"Threading" mover to apply the correct sequence to our structure.
+		<SimpleThreadingMover name="thread_sequence" start_position="%%startpos%%" thread_sequence="%%sequence%%" pack_neighbors="0" pack_rounds="1" scorefxn="ref_cst"/>
+	
+		Standard FastRelax, with design turned off.  We need to add the resfile task op here if we want to use it.
+		<FastRelax name="fastrelax" scorefxn="ref_cst" repeats="2" task_operations="init,inccurrent,ex,designoff"/>
+		
+		Constraints
+		This adds coordinate constraints to stop relax from making large structural changes.
+		<AddConstraints name="add_coordcsts">
+			<CoordinateConstraintGenerator name="gen_coordcsts"/>
+		</AddConstraints>
+		<SetupMetalsMover name="setup_zns" metal_residue_selector="zns" contact_residue_selector="catalytic"/>
+	</MOVERS>
+	<PROTOCOLS>	
+		Symmetrize
+		<Add mover_name="setup_symm"/>
+		
+		Setup metal-based constraints
+		<Add mover_name="setup_zns"/>
+		
+		Add coordinate constraints
+		<Add mover_name="add_coordcsts"/>
+		
+		These filters are used to pass through design identifiers to the Rosetta scorefile.
+		<Add filter_name="deltaEpi"/>
+		<Add filter_name="curveNum"/>
+		<Add filter_name="indexNum"/>
+		<Add filter_name="epiPotential"/>
+	
+		Thread the new sequence onto the pose
+		<Add mover_name="thread_sequence"/>					
+
+		Run relax
+		<Add mover_name="fastrelax"/>
+	</PROTOCOLS>
+	<OUTPUT scorefxn="ref_cst"/>
+</ROSETTASCRIPTS>
