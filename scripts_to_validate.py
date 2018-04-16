@@ -152,7 +152,6 @@ scripts_to_be_validated = [
     "scripts/pilot/protein_design/pore_design/nov13_mchbnet_extend_hbnet_on_docks_con.xml",
     "scripts/pilot/protein_design/pore_design/oct19_add_hbnet_designCx_export.xml",
     "scripts/pilot/crystal_refine/reciprocal_refinement.xml",
-    "scripts/pilot/energy_optimization/liquid_simulation.xml",
     "scripts/pilot/energy_optimization/rotamer_recovery.xml",
     "scripts/pilot/homology_modeling/hybridize/iterhybrid.cross.xml",
     "scripts/pilot/homology_modeling/hybridize/iterhybrid.mut.xml",

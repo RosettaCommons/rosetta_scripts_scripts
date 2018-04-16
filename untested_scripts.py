@@ -296,6 +296,7 @@ scripts_not_tested = [
     "scripts/pilot/protein_design/pore_design/dec13_ry1_C7_add_hbnet_motifs.xml",
     "scripts/pilot/protein_design/pore_design/nov13_mchbnet_extend_hbnet_on_docks_nomc.xml",
     "scripts/pilot/protein_design/pore_design/funwithdocks2_designCx.xml",
-	"scripts/public/multistage_examples/batch_relax.xml"
+	"scripts/public/multistage_examples/batch_relax.xml",
+	"scripts/pilot/energy_optimization/liquid_simulation.xml",
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world
