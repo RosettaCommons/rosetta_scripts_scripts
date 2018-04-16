@@ -25,7 +25,6 @@ scripts_to_be_validated = [
     "scripts/pilot/protein_design/backrub_disulfidize_monte_carlo/backrub_disulfidize_monte_carlo.xml",
     "scripts/pilot/mutation_scanning/filterscan_score_all/filterscan-nopssm.xml",
     "scripts/public/visualize_protocol/template_pymol_mover.xml",
-    "scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_prodomain_energylandscape.xml",
     "scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_prodomain_fixedbbdesign.xml",
     "scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_rebuildlinker.xml",
     "scripts/pilot/enzymedesign/proenzyme_design_SEWING/cpg2_proenzyme_postsewing.xml",

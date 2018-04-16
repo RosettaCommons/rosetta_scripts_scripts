@@ -15,6 +15,7 @@ scripts_to_be_parsed = [
     "scripts/public/loop_modeling/simple_loop_grower/simple_loop_grower.xml",
     "scripts/public/protein_hacking/helix_extender.xml",
     "scripts/pilot/symmetry/symm.xml",
-    "scripts/public/homology_modeling/relax_into_density/relax_into_density.xml"
+    "scripts/public/homology_modeling/relax_into_density/relax_into_density.xml",
+	"scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_prodomain_energylandscape.xml"
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world
