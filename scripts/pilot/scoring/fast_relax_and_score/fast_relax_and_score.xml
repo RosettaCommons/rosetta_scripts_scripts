@@ -3,7 +3,9 @@
   Author: Jason Klima
   Email: klimaj@uw.edu
 
-  This script performs a FastRelax on chain A and chain B without minimizing chain B, and scores the resulting pose with a variety of metrics.
+  This script performs a FastRelax on chain A and chain B
+  allowing minimization and repacking of chain A but not chain B,
+  and scores the resulting pose with a variety of useful metrics.
   
   <SCOREFXNS>
     <ScoreFunction name="default_cart" weights="ref2015_cart" />
