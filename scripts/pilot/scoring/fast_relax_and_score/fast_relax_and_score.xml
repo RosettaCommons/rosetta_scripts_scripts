@@ -1,0 +1,154 @@
+<ROSETTASCRIPTS>
+  Keywords: relax, score
+  Author: Jason Klima
+  Email: klimaj@uw.edu
+
+  This script performs a FastRelax on chain A and chain B
+  allowing minimization and repacking of chain A but not chain B,
+  and scores the resulting pose with a variety of useful metrics.
+  
+  <SCOREFXNS>
+    <ScoreFunction name="default_cart" weights="ref2015_cart" />
+  </SCOREFXNS>
+  <RESIDUE_SELECTORS>
+    <Chain name="chA" chains="A"/>
+    <Chain name="chB" chains="B"/>
+    <Layer name="core" select_core="true" core_cutoff="4.0" />
+  </RESIDUE_SELECTORS>
+  <MOVE_MAP_FACTORIES>
+    <MoveMapFactory name="mm_factory" bb="0" chi="0" >
+      <Backbone residue_selector="chA" />
+      <Chi residue_selector="chA" />
+    </MoveMapFactory>
+  </MOVE_MAP_FACTORIES>
+  <TASKOPERATIONS>
+    <InitializeFromCommandline name="init" />
+    <IncludeCurrent name="ic" />
+    <LimitAromaChi2 name="limchi2" include_trp="1" />
+    <ExtraRotamersGeneric name="ex1_2"
+			  ex1="1" ex2="1" ex3="0"  ex4="0"
+			  ex1aro="1" ex2aro="1" ex1aro_exposed="0" ex2aro_exposed="0"
+			  ex1_sample_level="1" ex2_sample_level="1" ex3_sample_level="0" ex4_sample_level="0"
+			  ex1aro_sample_level="1" ex2aro_sample_level="1" ex1aro_exposed_sample_level="0" ex2aro_exposed_sample_level="0"
+			  extrachi_cutoff="24"/>
+    <RestrictToRepacking name="repack_only" />
+    <OperateOnResidueSubset name="restrict_to_repacking" selector="chA" >
+      <RestrictToRepackingRLT/>
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="prevent_repacking" selector="chB" >
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+  </TASKOPERATIONS>
+  <MOVERS>  
+    <PackRotamersMover name="repack" scorefxn="default_cart" task_operations="init,ic,limchi2,ex1_2,repack_only" />
+    <FastRelax name="fast_relax" 
+               scorefxn="default_cart" 
+               repeats="5" 
+               task_operations="init,limchi2,ex1_2,prevent_repacking,restrict_to_repacking"
+               batch="0" 
+               ramp_down_constraints="0"
+               cartesian="1" 
+               bondangle="1" 
+               bondlength="1"
+               min_type="lbfgs_armijo_nonmonotone" 
+               movemap_factory="mm_factory" />
+  </MOVERS>
+  <FILTERS>
+    <ScoreType name="total_score" scorefxn="default_cart" score_type="total_score" threshold="1000" confidence="0"/>
+    <ScoreType name="p_aa_pp" scorefxn="default_cart" score_type="p_aa_pp" threshold="1000" confidence="0"/>
+    <ScoreType name="chainbreak" scorefxn="default_cart" score_type="linear_chainbreak" threshold="1000" confidence="0"/>
+    <ScoreType name="omega" scorefxn="default_cart" score_type="omega" threshold="1000" confidence="0"/>
+    <ScoreType name="cart_bonded" scorefxn="default_cart" score_type="cart_bonded" threshold="1000" confidence="0"/>
+    <ResidueCount name="nres" confidence="0" />
+    <CalculatorFilter name="total_score_res" confidence="0" equation="SCORE/NRES" threshold="-3.2" >
+      <Var name="SCORE" filter_name="total_score" />
+      <Var name="NRES" filter_name="nres" />
+    </CalculatorFilter>
+    <Geometry name="geometry" omega="165" cart_bonded="20" start="1" end="100000" confidence="0" />
+    <ShapeComplementarity name="SC" min_sc="0" min_interface="0" verbose="0" quick="0" jump="1" residue_selector1="chA" residue_selector2="chB" write_int_area="0" confidence="0" />
+    <RepackWithoutLigand name="rwl" scorefxn="default_cart" target_res="all_repacked" rms_threshold="1.5" confidence="0" />
+    <DSasa name="dsasa" lower_threshold="0.0" upper_threshold="1.0" confidence="0" />
+    <PackStat name="pstat" chain="0" threshold="0.60" confidence="0" />
+    <Holes name="holes" threshold="1.8" residue_selector="core" normalize_per_atom="true" exclude_bb_atoms="true" confidence="0" />
+    <BuriedUnsatHbonds name="buns" scorefxn="default_cart" residue_surface_cutoff="15.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+    <BuriedUnsatHbonds name="buns_sc_heavy" use_reporter_behavior="true" report_sc_heavy_atom_unsats="true" scorefxn="default_cart" residue_surface_cutoff="15.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+    <BuriedUnsatHbonds name="buns_bb_heavy" use_reporter_behavior="true" report_bb_heavy_atom_unsats="true" scorefxn="default_cart" residue_surface_cutoff="15.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+    <BuriedUnsatHbonds name="buns_all_heavy" use_reporter_behavior="true" report_all_heavy_atom_unsats="true" scorefxn="default_cart" residue_surface_cutoff="15.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+    <BuriedUnsatHbonds name="buns_nonheavy" use_reporter_behavior="true" report_nonheavy_unsats="true" scorefxn="default_cart" residue_surface_cutoff="15.0" ignore_surface_res="true" print_out_info_to_pdb="true" confidence="0"/>
+    <ScoreType name="rama" score_type="rama" scorefxn="default_cart" threshold="0" confidence="0" />
+    <LigInterfaceEnergy name="interfE" scorefxn="default_cart" energy_cutoff="0.0" confidence="0" />
+    <Ddg name="ddg_complex" scorefxn="default_cart" threshold="0" jump="1" repeats="3" relax_mover="repack" confidence="0" />
+    <PreProline name="prepro" use_statistical_potential="0" confidence="0"/>
+    <ResidueCount name="ala_count" max_residue_count="30" residue_types="ALA" confidence="0"/>
+    <ResidueCount confidence="0" name="TYR" residue_types="TYR"/>
+    <ResidueCount confidence="0" name="TRP" residue_types="TRP"/>
+    <ResidueCount confidence="0" name="PHE" residue_types="PHE"/>
+    <ResidueCount confidence="0" name="MET" residue_types="MET"/>
+    <ResidueCount confidence="0" name="HIS" residue_types="HIS"/>
+    <ResidueCount confidence="0" name="ARG" residue_types="ARG"/>
+    <ResidueCount confidence="0" name="LYS" residue_types="LYS"/>
+    <ResidueCount confidence="0" name="ASP" residue_types="ASP"/>
+    <ResidueCount confidence="0" name="GLU" residue_types="GLU"/>
+    <ResidueCount confidence="0" name="SER" residue_types="SER"/>
+    <ResidueCount confidence="0" name="THR" residue_types="THR"/>
+    <ResidueCount confidence="0" name="ASN" residue_types="ASN"/>
+    <ResidueCount confidence="0" name="GLN" residue_types="GLN"/>
+    <ResidueCount confidence="0" name="CYS" residue_types="CYS"/>
+    <ResidueCount confidence="0" name="GLY" residue_types="GLY"/>
+    <ResidueCount confidence="0" name="PRO" residue_types="PRO"/>
+    <ResidueCount confidence="0" name="VAL" residue_types="VAL"/>
+    <ResidueCount confidence="0" name="ILE" residue_types="ILE"/>
+    <SSShapeComplementarity name="ss_sc" verbose="0" loops="1" helices="1" confidence="0" />
+
+  </FILTERS>
+  <APPLY_TO_POSE>
+  </APPLY_TO_POSE>
+  <PROTOCOLS>
+    <Add mover="fast_relax" />
+
+    <Add filter="TYR"/>
+    <Add filter="TRP"/>
+    <Add filter="PHE"/>
+    <Add filter="MET"/>
+    <Add filter="HIS"/>
+    <Add filter="ARG"/>
+    <Add filter="LYS"/>
+    <Add filter="ASP"/>
+    <Add filter="GLU"/>
+    <Add filter="SER"/>
+    <Add filter="THR"/>
+    <Add filter="ASN"/>
+    <Add filter="GLN"/>
+    <Add filter="CYS"/>
+    <Add filter="GLY"/>
+    <Add filter="PRO"/>
+    <Add filter="VAL"/>
+    <Add filter="ILE"/>
+    <Add filter="ala_count"/>
+    <Add filter="prepro"/>
+    <Add filter="ss_sc"/>
+    <Add filter="holes" />
+    <Add filter="p_aa_pp"/>
+    <Add filter="chainbreak"/>
+    <Add filter="omega"/>
+    <Add filter="cart_bonded"/>
+    <Add filter="total_score" />
+    <Add filter="total_score_res"/>
+    <Add filter="nres" />
+    <Add filter="geometry" />
+    <Add filter="SC" />
+    <Add filter="ddg_complex" />
+    <Add filter="interfE"/>
+    <Add filter="rwl"/>
+    <Add filter="dsasa" /> 
+    <Add filter="pstat" />
+    <Add filter="rama" />
+    <Add filter="holes" />
+    <Add filter="buns" />
+    <Add filter="buns_sc_heavy" />
+    <Add filter="buns_bb_heavy" />
+    <Add filter="buns_all_heavy" />
+    <Add filter="buns_nonheavy" />
+  </PROTOCOLS>
+  <OUTPUT />
+</ROSETTASCRIPTS>
