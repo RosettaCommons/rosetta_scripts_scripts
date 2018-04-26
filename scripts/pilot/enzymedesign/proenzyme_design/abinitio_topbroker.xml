@@ -1,0 +1,128 @@
+<ROSETTASCRIPTS>
+Keywords: enzyme design, symmetry, topology broker, abinitio folding, forward folding
+Author: Brahm Yachnin
+Email: brahm.yachnin@rutgers.edu
+
+This script uses the topology broker to abinitio fold a single domain in a larger protein.  It
+is intended to be used to refold designed prodomains in context.  Immediately after folding, a repack of
+the entire protein and cartesian minimization (including backbone) of the domain only are performed to 
+relieve any clashes introduced after returning to full atom mode.
+
+The protein is symmetric.  Because the topology broker is not very compatible with symmetry, the 
+abinitio folding is performed prior to setting up symmetry.  In order to deal with clashes across the 
+symmetry interface, a rigid body (jump) minimization is performed immediately after setting up symmetry.
+A fastrelax is then performed for the domain, with sidechain moves allowed for neighbouring scaffold residues.
+
+A filter returning the RMSD of the domain (only) is used for generation of score vs. rmsd plots.
+
+	<SCOREFXNS>
+		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts" symmetric="0"/>
+		<ScoreFunction name="ref_cart" weights="ref2015_cart.wts" symmetric="0"/>
+		<ScoreFunction name="ref_cst_sym" weights="ref2015_cst.wts" symmetric="1"/>
+	</SCOREFXNS>
+
+	<RESIDUE_SELECTORS>	
+		<Chain name="chainA" chains="A"/>
+		
+		<ResidueName name="zns" residue_name3=" ZN"/>
+		
+		All of chain A and the zincs will be defined as scaffold.
+		<Or name="scaffold" selectors="chainA,zns"/>
+		
+		Anything that's not the scaffold is domain.
+		<Not name="domain" selector="scaffold"/>
+		
+		<Or name="domain-plus" selectors="domain">
+			<Index resnums="406A"/> Add the last residue of scaffold linker to the domain.
+		</Or>
+			
+		Include the domain and everything with 6 A of it.
+		<Neighborhood name="around_domain" distance="6.0" selector="domain"/>
+	</RESIDUE_SELECTORS>
+	
+	<TASKOPERATIONS>
+		<InitializeFromCommandline name="init"/>
+		<IncludeCurrent name="inccurrent"/>
+		<RestrictToRepacking name="designoff"/>
+		
+		<OperateOnResidueSubset name="repack_arounddomain_only">
+			<Not selector="around_domain"/>
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+				
+		<OperateOnResidueSubset name="pack_domplus_only">
+			<Not selector="domain-plus"/>
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+	</TASKOPERATIONS>
+	
+	<FILTERS>
+		<Rmsd name="rmsd_B" chains="B" superimpose="false" symmetry="1" confidence="0"/>
+	</FILTERS>
+	
+	<MOVERS>
+		<SetupForSymmetry name="setup_symm" definition="1cg2_sdlib.sym" set_global_symmetry_at_parsetime="0"/>
+		<DeclareBond name="connect_domain" res1="406" res2="409" atom1="C" atom2="N"/> Link the domain and the scaffold.
+	
+		<SwitchResidueTypeSetMover name="centroid" set="centroid"/>
+		<SwitchResidueTypeSetMover name="fullatom" set="fa_standard"/>
+
+		Define chain A (the scaffold) as a rigid body for the topology broker.
+		<RigidChunkCM name="chunkA" region_selector="chainA" selector="chainA" template="pdbs/mod/%%domain%%.pdb" apply_to_template="centroid"/>
+
+		Define the abinitio mover
+		<AbscriptMover name="abinitio" cycles="3">
+			Set the fragment files to use, and use all abinitio stages.
+			<Fragments large_frags="frags/%%domain%%.frags9" small_frags="frags/%%domain%%.frags3" selector="domain"/>
+			<Stage ids="I-IVb"/>
+		</AbscriptMover>
+
+		Make the toplogy broker environment, and add the chunk and abinitio movers.
+		<Environment name="env" auto_cut="1" allow_pure_movers="1">
+			<Register mover="chunkA"/>
+			<Apply mover="abinitio"/>
+		</Environment>
+		
+		Repack the entire protein
+		<PackRotamersMover name="pack" scorefxn="ref_cst" task_operations="init,inccurrent,designoff"/>
+		Minimize the jump between the scaffold and domain (rigid body minimization).
+		<SymMinMover name="minjump" scorefxn="ref_cst_sym" bb="0" chi="0" jump="1"/>
+		
+		Post-abinitio minimization of the domain.
+		<TaskAwareMinMover name="idealize" task_operations="init,inccurrent,pack_domplus_only" chi="1" bb="1" jump="0" cartesian="1" scorefxn="ref_cart"/>
+
+		Switch to full atom and relax.  Do only 1 fastrelax cycle.  Scaffold (chain 1) allows sidechain movements, domain (chain 2) allows BB and sidechain.
+		<FastRelax name="relax" scorefxn="ref_cst_sym" repeats="1" task_operations="init,inccurrent,repack_arounddomain_only,designoff">
+			<MoveMap name="mm" chi="1" jump="0">
+				<Chain number="1" chi="1" bb="0"/>
+				<Chain number="2" chi="1" bb="1"/>
+			</MoveMap>
+		</FastRelax>
+	</MOVERS>
+	
+	<PROTOCOLS>
+		Convert to centroid and run abinitio on the domain
+		<Add mover="centroid"/>
+		<Add mover="env"/>
+		
+		Go back to full atom.
+		<Add mover="fullatom"/>
+		<Add mover="connect_domain"/>
+		
+		Repack everything, and cartesian minimize the domain (including bb).
+		<Add mover="pack"/>
+		<Add mover="idealize"/>
+			
+		Setup for symmetry.  Minimize the scaffold-domain jump to ensure that the domain doesn't clash with itself
+		across the symmetry axis.
+		<Add mover="setup_symm"/>
+		<Add mover="minjump"/>
+
+		Fastrelax the domain, allowing nearby scaffold sidechains to repack.
+		<Add mover="relax"/>
+		
+		Get the RMSD of chain B.
+		<Add filter="rmsd_B"/>
+	</PROTOCOLS>
+	<OUTPUT scorefxn="ref_cst_sym"/>
+</ROSETTASCRIPTS>
