@@ -10,6 +10,7 @@
             <Reweight scoretype="cart_bonded_angle" weight="1.0"/>
             <Reweight scoretype="pro_close" weight="0.0"/>
             <Reweight scoretype="cart_bonded_ring" weight="1.0"/>
+			<Reweight scoretype="elec_dens_fast" weight="35.0"/>
             <Set scale_sc_dens_byres="R:0.66,K:0.66,E:0.66,D:0.66,M:0.66,C:0.71,Q:0.71,H:0.71,N:0.71,T:0.71,S:0.71,Y:0.78,W:0.78,A:0.78,F:0.78,P:0.78,I:0.78,L:0.78,V:0.78"/>
         </ScoreFunction>
     </SCOREFXNS>
@@ -21,6 +22,7 @@
 	
     </MOVERS>
     <PROTOCOLS>
+        <Add mover="setup_dens"/>
         <Add mover="min"/>
         <Add mover="ideal"/>
         <Add mover="relaxcart"/>
