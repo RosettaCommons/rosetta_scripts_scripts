@@ -1,0 +1,136 @@
+<ROSETTASCRIPTS>
+   # Keywords: Membrane Protein design
+   # Author: Peilong Lu
+   # Email: lpl15@uw.edu
+	<SCOREFXNS>
+		ScoreFunction name="memb_hires" weights="score12" />
+        <ScoreFunction name="sfxn_cstWt1_symm" weights="mpframework_smooth_fa_2012" symmetric="true" >
+            <Reweight scoretype="aa_composition" weight="1.0" />
+        </ScoreFunction>
+	</SCOREFXNS>
+    ##############################################
+    # RESIDUE_SELECTORS
+    ##############################################
+    <RESIDUE_SELECTORS>
+        <ResidueName name="TS_selector" residue_name3="THR,SER" />
+        <ResiduePDBInfoHasLabel name="RK_selector" property="RK_RING"/>
+        <ResiduePDBInfoHasLabel name="TM_selector" property="OUTWARD_POLAR"/>
+        <ResiduePDBInfoHasLabel name="WY_selector" property="WY_RING"/>
+        <ResiduePDBInfoHasLabel name="F_selector" property="F_RING"/>
+        <Not name="not_designable_res_selector_F" selector="F_selector"/>
+        <Not name="not_designable_res_selector_TM" selector="TM_selector"/>
+        <Not name="not_designable_res_selector_RK" selector="RK_selector"/>
+        <Not name="not_designable_res_selector_WY" selector="WY_selector"/>
+    </RESIDUE_SELECTORS>
+    ##############################################
+    # Task Operations
+    ##############################################
+    <TASKOPERATIONS>
+        <InitializeFromCommandline name="IFC"/>
+        <IncludeCurrent name="IC"/>
+        <LimitAromaChi2 name="aroChi"/>
+        <LayerDesign name="layerCBS" layer="core_boundary_surface_Nterm_Cterm">
+            <boundary>
+                <all exclude="W" />
+                <Loop append="GM" />
+                <Helix append="GM" />
+            </boundary>
+            <surface>
+                <all exclude="W" />
+            </surface>
+            <core>
+                <all exclude="W" />
+                <Loop append="GM" />
+                <Helix append="GM" />
+            </core>
+        </LayerDesign>
+        <OperateOnResidueSubset name="restrict_to_pack_TM" selector="not_designable_res_selector_TM">
+            PreventRepackingRLT/>
+            <RestrictToRepackingRLT/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="restrict_to_pack_RK" selector="not_designable_res_selector_RK">
+            PreventRepackingRLT/>
+            <RestrictToRepackingRLT/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="restrict_to_pack_WY" selector="not_designable_res_selector_WY">
+            PreventRepackingRLT/>
+            <RestrictToRepackingRLT/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="restrict_to_pack_F" selector="not_designable_res_selector_F">
+            PreventRepackingRLT/>
+            <RestrictToRepackingRLT/>
+        </OperateOnResidueSubset>
+        <OperateOnResidueSubset name="restrict_to_pack_TS" selector="TS_selector">
+            PreventRepackingRLT/>
+            <RestrictToRepackingRLT/>
+        </OperateOnResidueSubset>
+    </TASKOPERATIONS>
+    ###############################################
+    # Filters
+    ###############################################
+    <FILTERS>
+    </FILTERS>
+    ##############################################
+    #   Movers
+    ##############################################
+	<MOVERS>
+        <AddCompositionConstraintMover name="addcomp_TM" filename="TM.comp" selector="TM_selector" />
+        <ClearCompositionConstraintsMover name="clear_comp_TM" />
+        <AddCompositionConstraintMover name="addcomp_RK" filename="RK.comp" selector="RK_selector" />
+        <ClearCompositionConstraintsMover name="clear_comp_RK" />
+        <AddCompositionConstraintMover name="addcomp_WY" filename="WY.comp" selector="WY_selector" />
+        <ClearCompositionConstraintsMover name="clear_comp_WY" />
+        <AddCompositionConstraintMover name="addcomp_F" filename="F.comp" selector="F_selector" />
+        <ClearCompositionConstraintsMover name="clear_comp_F" />
+        <AddConstraintsToCurrentConformationMover name="constrainCA" cst_weight="1.0" use_distance_cst="False" coord_dev="1.0" bound_width="0.5" CA_only="True" bb_only="False"/>
+        <SymPackRotamersMover name="pack_TM" scorefxn="sfxn_cstWt1_symm" task_operations="restrict_to_pack_TM,restrict_to_pack_TS"/>
+        <SymPackRotamersMover name="pack_RK" scorefxn="sfxn_cstWt1_symm" task_operations="restrict_to_pack_RK,restrict_to_pack_TS"/>
+        <SymPackRotamersMover name="pack_WY" scorefxn="sfxn_cstWt1_symm" task_operations="restrict_to_pack_WY,restrict_to_pack_TS"/>
+        <SymPackRotamersMover name="pack_F" scorefxn="sfxn_cstWt1_symm" task_operations="restrict_to_pack_F,restrict_to_pack_TS"/>
+        <FastRelax name="frelax" scorefxn="sfxn_cstWt1_symm" repeats="1" />
+        <SymMinMover name="min" scorefxn="sfxn_cstWt1_symm" bb="1" chi="1" jump="ALL" />
+        <ExtractAsymmetricUnit name="asymm_pose" keep_virtual="False" keep_unknown_aas="False" />
+        <ParsedProtocol name="combo_min">
+            <Add mover_name="pack_TM"/>
+            <Add mover_name="min"/>
+        </ParsedProtocol>
+		<AddMembraneMover name="add_memb"/>
+		<MembranePositionFromTopologyMover name="init_pos"/>
+        <SetupForSymmetry name="setup_symm" definition="C2_Z.sym" keep_pdb_info_labels="true"/> # keep_pdb_info_labels="true"
+    </MOVERS>
+    ##############################################
+    #  main
+    ##############################################
+	<PROTOCOLS>
+		<Add mover="add_memb"/>
+        <Add mover="setup_symm" />
+        <Add mover_name="addcomp_TM"/>
+        <Add mover_name="pack_TM"/>
+        <Add mover_name="clear_comp_TM"/>
+        <Add mover_name="addcomp_RK"/>
+        <Add mover_name="pack_RK"/>
+        <Add mover_name="clear_comp_RK"/>
+        <Add mover_name="addcomp_WY"/>
+        <Add mover_name="pack_WY"/>
+        <Add mover_name="clear_comp_WY"/>
+        <Add mover_name="addcomp_F"/>
+        <Add mover_name="pack_F"/>
+        <Add mover_name="clear_comp_F"/>
+        <Add mover_name="min"/>
+        <Add mover="init_pos"/>
+        <Add mover_name="addcomp_TM"/>
+        <Add mover_name="pack_TM"/>
+        <Add mover_name="clear_comp_TM"/>
+        <Add mover_name="addcomp_RK"/>
+        <Add mover_name="pack_RK"/>
+        <Add mover_name="clear_comp_RK"/>
+        <Add mover_name="addcomp_WY"/>
+        <Add mover_name="pack_WY"/>
+        <Add mover_name="clear_comp_WY"/>
+        <Add mover_name="addcomp_F"/>
+        <Add mover_name="pack_F"/>
+        <Add mover_name="clear_comp_F"/>
+        <Add mover_name="min"/>
+	</PROTOCOLS>
+	<OUTPUT scorefxn="sfxn_cstWt1_symm" />
+</ROSETTASCRIPTS>
