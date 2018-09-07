@@ -34,7 +34,7 @@
     <FILTERS>
     </FILTERS>
     <MOVERS>
-        <KeepRegionMover name="sub_pose" start_pdb_num="11" end_pdb_num="106" />
+        <KeepRegionMover name="sub_pose" start="11" end="106" />
         <SetupForSymmetry name="setup_sym" definition="C3_Z.sym" />
 
         <SymPackRotamersMover name="graft_inner" scorefxn="beta" task_operations="graft_inner,ex1ex2" />
