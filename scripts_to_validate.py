@@ -46,10 +46,7 @@ scripts_to_be_validated = [
     "scripts/pilot/homology_modeling/hybridize/cm.xml",
     "scripts/pilot/mutation_scanning/singlemutation_symrescore/mutalyze.xml",
     "scripts/pilot/mutation_scanning/singlemutation_symrescore/1c_mutalyze.xml",
-    "scripts/pilot/protein_design/membrane_design_3helical_tetramer/design.xml",
-    "scripts/pilot/protein_design/membrane_design_3helical_tetramer/filter.xml", 
     "scripts/pilot/homology_modeling/map_align/PF14912.5.xml",
-    "scripts/pilot/protein_design/membrane_design_3helical_tetramer/filter.xml",
     "scripts/pilot/protein_design/RGD_loop_remodeling/Hyak_scripts_blueprint_builder.xml",
     "scripts/pilot/protein_design/RGD_loop_remodeling/Hyak_scripts_blueprint_builder_unformatted.xml",
     "scripts/pilot/protein_design/RGD_loop_remodeling/Hyak_scripts_blueprint_builder_fixed.xml",
@@ -133,9 +130,9 @@ scripts_to_be_validated = [
 	"scripts/pilot/protein_interface_design/design_from_dock/mc_hbnet_only.xml",
 	"scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/apical_domain_design.xml",
 	"scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/multidomain_1_sel_design.xml",
-	"scripts/pilot/protein_interface_design/generate_stubs/invrot_E.xml"
-	"scripts/pilot/protein_design/membrane_design/membrane_design.xml"
-	"scripts/pilot/protein_design/membrane_design/membrane_design_3helical_tetramer/design.xml"
+	"scripts/pilot/protein_interface_design/generate_stubs/invrot_E.xml",
+	"scripts/pilot/protein_design/membrane_design/membrane_design.xml",
+	"scripts/pilot/protein_design/membrane_design/membrane_design_3helical_tetramer/design.xml",
 	"scripts/pilot/protein_design/membrane_design/membrane_design_3helical_tetramer/filter.xml"
 ]
 
