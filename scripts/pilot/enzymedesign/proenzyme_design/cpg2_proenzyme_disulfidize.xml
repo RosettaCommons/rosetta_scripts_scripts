@@ -1,0 +1,175 @@
+<ROSETTASCRIPTS>
+Keywords: protein interface design, enzyme design, disulfidize
+Author: Brahm Yachnin
+Email: brahm.yachnin@rutgers.edu
+
+This script is used to design explicit disulfide bonds between a prodomain (the "prodomain" residue_selector) and
+the rest of the protein (the "scaffold" residue selector).  Specific important residues are excluded from the design
+space.  No other residues are allowed to be designed.
+
+A relax step seemed to be necessary to get reasonable disulfide scores.  The coordinate constraints prevent large
+backbone movements.
+
+The MultiplePoseMover should be able to process movers, filters, etc. defined in the main rosettascript using
+the IMPORT tag, but I was not able to get that to work.  Instead, those items required in the MPM were duplicated
+in the MPM ROSETTASCRIPTS block.
+	<SCOREFXNS>
+		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts" symmetric="1"/>
+	</SCOREFXNS>
+	
+	<RESIDUE_SELECTORS>
+		<Index name="prodomain" resnums="407A-%%endprodomain%%"/>
+		<Not name="scaffold" selector="prodomain"/>
+		<Neighborhood name="around_prodomain" selector="prodomain" distance="8.0" include_focus_in_subset="0"/>
+		<SymmetricalResidue name="sym_around_prodomain" selector="around_prodomain"/>
+		<Index name="linker" resnums="396A-406A"/>
+		
+		<Index name="catalytic" resnums="54A,298A,89A,25A,113A,%%compglu%%,1000A,1001A"/>
+		
+		<And name="prodomain-noglu" selectors="prodomain">
+			<Not><Index resnums="%%compglu%%"/></Not>
+		</And>
+		
+		<And name="around_prodomain_nocat_nolinker" selectors="sym_around_prodomain">
+			<Not selector="catalytic"/>
+			<Not selector="linker"/>
+		</And>
+		
+		<Or name="packable" selectors="sym_around_prodomain,prodomain"/>
+	</RESIDUE_SELECTORS>
+	
+	<TASKOPERATIONS>
+		<InitializeFromCommandline name="init"/>
+		<IncludeCurrent name="inccurrent"/>
+		<ExtraRotamersGeneric name="ex" ex1="1" ex2="1" ex1aro="1" ex1_sample_level="1" ex2_sample_level="1" ex1aro_sample_level="1" extrachi_cutoff="1"/>
+		
+		<RestrictToRepacking name="designoff"/>
+		
+		<OperateOnResidueSubset name="prevent_repack_far_from_prodomain">
+			<Not selector="packable"/>
+			<PreventRepackingRLT/>
+		</OperateOnResidueSubset>
+	</TASKOPERATIONS>
+	
+	<FILTERS>
+		<EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="20.0" confidence="0"/>
+		<DisulfideEntropy name="disulf_entropy" confidence="0"/>
+	</FILTERS>
+	
+	<MOVERS>
+		Constraint stuff
+		<AddOrRemoveMatchCsts name="addmatchcsts" cst_instruction="add_new" cstfile="1cg2_zn_monomer_pluscomp.cst" accept_blocks_missing_header="0"/>
+		<AddConstraints name="add_coordcsts">
+			<CoordinateConstraintGenerator name="gen_coordcsts_scaffold" residue_selector="scaffold"/>
+			<CoordinateConstraintGenerator name="gen_coordcsts_prodomain" residue_selector="prodomain" sd="2.0"/>
+		</AddConstraints>
+		<RemoveConstraints name="rem_scaffold_csts" constraint_generators="gen_coordcsts_scaffold"/>
+		<RemoveConstraints name="rem_prodomain_csts" constraint_generators="gen_coordcsts_prodomain"/>
+		
+		Symmetry
+		<SetupForSymmetry name="sym" definition="%%symdef%%"/>
+			
+		Disulfidize mover
+		<Disulfidize name="disulfidize" min_disulfides="1" max_disulfides="1" max_disulf_score="100" set1="around_prodomain_nocat_nolinker" set2="prodomain-noglu" scorefxn="ref_cst"/>
+				
+		Relax
+		<FastRelax name="relax" scorefxn="ref_cst" repeats="4" task_operations="init,inccurrent,ex,designoff,prevent_repack_far_from_prodomain"/>
+		
+		Multiple pose mover (post disulfidize protocol)
+		<MultiplePoseMover name="postdisulfidize">
+			<ROSETTASCRIPTS>
+				<SCOREFXNS>
+					<ScoreFunction name="ref_cst" weights="ref2015_cst.wts" symmetric="1"/>
+				</SCOREFXNS>
+				
+				<RESIDUE_SELECTORS>
+					<Index name="prodomain" resnums="407A-%%endprodomain%%"/>
+					<Not name="scaffold" selector="prodomain"/>
+					<Neighborhood name="around_prodomain" selector="prodomain" distance="8.0" include_focus_in_subset="0"/>
+					<SymmetricalResidue name="sym_around_prodomain" selector="around_prodomain"/>
+					<Index name="linker" resnums="396A-406A"/>
+					
+					<Index name="catalytic" resnums="54A,298A,89A,25A,113A,%%compglu%%,1000A,1001A"/>
+					
+					<And name="promain-noglu" selectors="prodomain">
+						<Not><Index resnums="%%compglu%%"/></Not>
+					</And>
+					
+					<And name="around_prodomain_nocat_nolinker" selectors="sym_around_prodomain">
+						<Not selector="catalytic"/>
+						<Not selector="linker"/>
+					</And>
+					
+					<Or name="packable" selectors="sym_around_prodomain,prodomain"/>
+				</RESIDUE_SELECTORS>
+				
+				<TASKOPERATIONS>
+					<InitializeFromCommandline name="init"/>
+					<IncludeCurrent name="inccurrent"/>
+					<ExtraRotamersGeneric name="ex" ex1="1" ex2="1" ex1aro="1" ex1_sample_level="1" ex2_sample_level="1" ex1aro_sample_level="1" extrachi_cutoff="1"/>
+					
+					<RestrictToRepacking name="designoff"/>
+					
+					<OperateOnResidueSubset name="prevent_repack_far_from_prodomain">
+						<Not selector="packable"/>
+						<PreventRepackingRLT/>
+					</OperateOnResidueSubset>
+				</TASKOPERATIONS>
+				
+				<FILTERS>
+					<EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="20.0" confidence="0"/>
+					<DisulfideEntropy name="disulf_entropy" confidence="0"/>
+				</FILTERS>
+							
+				<MOVERS>
+					<FastRelax name="relax" scorefxn="ref_cst" repeats="4" task_operations="init,inccurrent,ex,designoff,prevent_repack_far_from_prodomain"/>
+					
+					<AddConstraints name="add_coordcsts">
+						<CoordinateConstraintGenerator name="gen_coordcsts_scaffold" residue_selector="scaffold"/>
+						<CoordinateConstraintGenerator name="gen_coordcsts_prodomain" residue_selector="prodomain" sd="2.0"/>
+					</AddConstraints>
+					<RemoveConstraints name="rem_scaffold_csts" constraint_generators="gen_coordcsts_scaffold"/>
+					<RemoveConstraints name="rem_prodomain_csts" constraint_generators="gen_coordcsts_prodomain"/>
+				</MOVERS>
+			
+				<PROTOCOLS>
+					Relax
+					<Add mover_name="add_coordcsts"/>
+					<Add mover_name="relax"/>
+					<Add mover_name="rem_scaffold_csts"/>
+					<Add mover_name="rem_prodomain_csts"/>
+												
+					Final filter.
+					<Add filter_name="cstE"/>
+					<Add filter_name="disulf_entropy"/>
+				</PROTOCOLS>
+				<OUTPUT scorefxn="ref_cst"/>
+			</ROSETTASCRIPTS>
+		</MultiplePoseMover>
+	</MOVERS>
+		
+	<PROTOCOLS>		
+		Apply symmetry and add match constraints.
+		<Add mover_name="sym"/>
+		<Add mover_name="addmatchcsts"/>
+		
+		Disulfidize
+		<Add mover_name="disulfidize"/>
+		
+		Multiple pose mover
+		<Add mover_name="postdisulfidize"/>
+		
+		---This is taken over by postdisulfidize.---
+		Relax
+		Add mover_name="add_coordcsts"/>
+		Add mover_name="relax"/>
+		Add mover_name="rem_scaffold_csts"/>
+		Add mover_name="rem_prodomain_csts"/>
+												
+		Final filter.
+		Add filter_name="cstE"/>
+		Add filter_name="disulf_entropy"/>
+	</PROTOCOLS>
+	
+	<OUTPUT scorefxn="ref_cst"/>
+</ROSETTASCRIPTS>
