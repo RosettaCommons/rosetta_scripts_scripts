@@ -1,0 +1,5 @@
+-run:preserve_header
+-mute core.io.database
+-delete_old_poses 1
+
+-parser:script_vars endprodomain=446A compglu=427A symdef=sdb.sym positions=90A,424A
