@@ -1,0 +1,5 @@
+-in:file:job_definition_file dock_and_design_msrs.xml
+-jd3:n_archive_nodes 2
+-jd3:archive_on_disk archives
+-mpi_tracer_to_file mpi
+-linmem_ig 10

@@ -1,0 +1,154 @@
+<JobDefinitionFile>
+
+	<Job>
+		<Input>
+                        <PDB filename="input_HaloTag_RasGRP1_relaxed.pdb" /> EDIT THIS (i.e. scaffold.pdb)
+		</Input>
+	</Job>
+	<Common>
+
+		<SCOREFXNS>
+			<ScoreFunction name="sfxn_low-res" weights="interchain_cen">
+				<Reweight scoretype="atom_pair_constraint" weight="1"/>
+			</ScoreFunction>
+			ScoreFunction name="sfxn_low-res_no-constr" weights="interchain_cen"/> For assessing docking protocols
+			<ScoreFunction name="sfxn_high-res" weights="ref2015_cst"/>
+			<ScoreFunction name="sfxn_basic" weights="ref2015"/>
+		</SCOREFXNS>
+
+		<RESIDUE_SELECTORS>
+			<Chain chains="A" name="receptor"/>
+                        <Index name="receptor-face" resnums="295A"/> RECEPTOR-SPECIFIC
+			<Index name="designable" resnums="151B,154B-157B,159B-161B,163B-167B,170B,171B,179B,182B-188B,190B,191B"/> SCAFFOLD-SPECIFIC (i.e. 31B,32B,35B,36B)
+			<Not name="NOT-designable" selector="designable"/>
+                        <ResidueName name="hphobic" residue_name3="ALA,VAL,ILE,LEU,MET,CYS,TRP,PHE,PRO,GLY"/> Include TYR?
+			<InterfaceByVector name="interface">
+				<Chain chains="A"/>
+				<Chain chains="B"/>
+			</InterfaceByVector>
+                        <InterfaceByVector name="rec-des_interface" grp1_selector="receptor" grp2_selector="designable"/> Interface between receptor and designable residues on scaffold
+			<Not name="not_interface" selector="interface"/>
+			<And name="des_interface" selectors="designable,rec-des_interface"/> For maximizing the # of designable residues at the interface
+                        <And name="hphobic_rec-interface" selectors="receptor,rec-des_interface,hphobic"/>
+                        <Or name="des_AND_hphobic-rec_interface" selectors="des_interface,hphobic_rec-interface"/> (Designable residues + hphobic receptor residues) at interface
+                        <ResiduePDBInfoHasLabel property="HBNet" name="hbond_network_residues"/>
+		</RESIDUE_SELECTORS>
+
+		<TASKOPERATIONS> 'to' is a suffix for all task-ops | repack interface, minimize all atoms
+                	<OperateOnResidueSubset name="NO_design_to" selector="NOT-designable" > 
+                        	<RestrictToRepackingRLT/> Turn off design (allows repacking)
+                	</OperateOnResidueSubset>
+                	<OperateOnResidueSubset name="NO-pack_design_to" selector="not_interface" >
+                        	<PreventRepackingRLT/> Turn off design and repacking (still minimizes)
+                	</OperateOnResidueSubset>
+                	<OperateOnResidueSubset name="designable_to" selector="designable">
+                        	<RestrictAbsentCanonicalAASRLT aas="ADEFGHIKLMNPQRSTVWY"/> No CYS
+                	</OperateOnResidueSubset>
+			<OperateOnResidueSubset name="fix_hbnet" selector="hbond_network_residues" >
+                                <PreventRepackingRLT/>
+                        </OperateOnResidueSubset>
+                	<InitializeFromCommandline name="ifcl_to" />
+                	<ExtraRotamersGeneric name="extra_chi" ex1="1" ex2="1" />
+                        <LimitAromaChi2 name="limit_arochi2_to" include_trp="true" />
+                        <IncludeCurrent name="incl_curr_to" />
+                </TASKOPERATIONS>
+
+		<FILTERS>
+			<ScoreType name="f_b-site" score_type="atom_pair_constraint" scorefxn="sfxn_low-res" threshold="5"/>
+			<ResidueCount name="f_contact-designable" max_residue_count="9999" min_residue_count="1" residue_selector="des_interface" /> Count # of interface residues that are designable
+			<ResidueCount name="f_contact-hphobic_with_designable" max_residue_count="9999" min_residue_count="1" residue_selector="des_AND_hphobic-rec_interface" /> Count # of interface residues that are designable AND the number of hydrophobic residues on the receptor at the interface
+			<ScoreType name="f_sfxn_basic" scorefxn="sfxn_basic" threshold="9999"/>
+			<ReadPoseExtraScoreFilter name="read_dG_dSASA" term_name="dG_separated/dSASAx100" threshold="9999"/>
+			<ReadPoseExtraScoreFilter name="read_dG" term_name="dG_separated" threshold="9999"/>
+                        <ReadPoseExtraScoreFilter name="read_f_contact" term_name="f_contact-copy" threshold="9999"/>
+			<CalculatorFilter equation="((dG*13) + (dG_dSASA*250) + (Etot))/3" name="f_combined_scores" threshold="99999">
+                        	<Var filter="f_sfxn_basic" name="Etot"/>
+                        	<Var filter="read_dG_dSASA" name="dG_dSASA"/>
+                        	<Var filter="read_dG" name="dG"/>
+                	</CalculatorFilter>
+                        <ReadPoseExtraScoreFilter name="read_dSASA" term_name="dSASA_int" threshold="99999"/>
+                        <CalculatorFilter equation="(-(dSASA))" name="f_calc_sasa" threshold="-1000">
+                                <Var filter="read_dSASA" name="dSASA"/>
+                        </CalculatorFilter>
+			<BuriedUnsatHbonds name="f_new_buns_bb" residue_selector="interface" report_bb_heavy_atom_unsats="true" scorefxn="sfxn_basic" cutoff="100" residue_surface_cutoff="20.0" ignore_surface_res="true" print_out_info_to_pdb="true" use_ddG_style="true" />
+                	<BuriedUnsatHbonds name="f_new_buns_sc" residue_selector="interface" report_sc_heavy_atom_unsats="true" scorefxn="sfxn_basic" cutoff="100" residue_surface_cutoff="20.0" ignore_surface_res="true" print_out_info_to_pdb="true" use_ddG_style="true" />
+			<CalculatorFilter equation="(buns_bb + buns_sc)" name="f_combined_buns" threshold="200">
+                                <Var filter="f_new_buns_bb" name="buns_bb"/>
+                                <Var filter="f_new_buns_sc" name="buns_sc"/>
+                        </CalculatorFilter>
+                        <Sasa name="f_sasa" threshold="1000"/>
+		</FILTERS>
+
+		<MOVERS>
+			<DockSetupMover name="dock_setup" partners="A_B"/>
+			<DockingInitialPerturbation dock_pert="1" name="dock-set_global" randomize2="1" rot="8" trans="15"/>
+                        <DockingInitialPerturbation dock_pert="1" name="dock-set_local" randomize2="0" rot="8" trans="2"/>
+                        <DockingProtocol docking_score_low="sfxn_low-res" low_res_protocol_only="true" name="dock_Low-res" partners="A_B"/>
+                        <DockingProtocol docking_score_high="sfxn_high-res" low_res_protocol_only="false" docking_local_refine="1" name="dock_High-res" partners="A_B"/>
+			<FastDesign name="fast-design-1" repeats="1" scorefxn="sfxn_high-res" task_operations="NO_design_to,NO-pack_design_to,designable_to,ifcl_to,extra_chi,fix_hbnet,limit_arochi2_to,incl_curr_to"/>
+                        <HBNetStapleInterface name="hbnet_interf" scorefxn="sfxn_high-res" hb_threshold="-0.75" write_network_pdbs="false" min_intermolecular_hbonds="3" min_networks_per_pose="1" max_networks_per_pose="9" use_aa_dependent_weights="false" min_core_res="0" min_network_size="3" max_unsat_Hpol="3" task_operations="NO_design_to,NO-pack_design_to,ifcl_to,extra_chi" monte_carlo="true" />
+			<AddConstraints name="dock_constraint">
+				<DistanceConstraintGenerator function="FLAT_HARMONIC 0 0.1 10" name="distance-constraint" residue_selector1="designable" residue_selector2="receptor-face"/> Exclude models when designable residues are not near selected residue on receptor
+			</AddConstraints>
+			<SaveAndRetrieveSidechains allsc="1" multi_use="0" name="sr_side-chains" two_step="1"/>
+			<SwitchResidueTypeSetMover name="centro-full" set="fa_standard"/>
+			<ClearConstraintsMover name="clear-cst"/>
+                        <FilterReportAsPoseExtraScoresMover name="save_f_contact-designable" report_as="f_contact-designable_copy" filter_name="f_contact-designable"/> Save # contacts in scorefile
+                        <FilterReportAsPoseExtraScoresMover name="save_f_combined_scores" report_as="f_combined-copy" filter_name="f_combined_scores"/>
+                        <FilterReportAsPoseExtraScoresMover name="save_f_contact-hphobic_with_designable" report_as="f_contact-hphobic_with_designable_copy" filter_name="f_contact-hphobic_with_designable"/> Save # contacts in scorefile
+                        <FilterReportAsPoseExtraScoresMover name="save_f_combined_buns" report_as="f_combined_buns-copy" filter_name="f_combined_buns"/>
+	                <AddConstraintsToCurrentConformationMover name="bb_cst" use_distance_cst="0" coord_dev="1.0" bound_width="1" cst_weight="1.0" residue_selector="receptor" CA_only="1" /> backbone coordinate constraints with 1 angstrom flat-bottom
+			<InterfaceAnalyzerMover name="IfaceAnalyzer" scorefxn="sfxn_basic" packstat="1" interface_sc="false" pack_input="false" pack_separated="1" ligandchain="B" tracer="false" />
+		</MOVERS>
+
+		<PROTOCOLS>
+                        <Stage num_runs_per_input_struct="100000" total_num_results_to_keep="9800"> Global Dock
+                                <Add mover="sr_side-chains"/>
+                                <Add mover="dock_constraint"/>
+                                <Add mover="dock_setup"/>
+                                <Add mover="dock-set_global"/>
+                                <Add mover="dock_Low-res"/>
+                                <Add filter="f_b-site"/> Remove models if lacking a designable residue within 10 of 'receptor-face'
+                                <Add filter="f_contact-designable"/> Count the number of designable residues at the interface
+                                <Add mover="clear-cst"/>
+                                <Add mover="centro-full"/>
+                                <Add mover="sr_side-chains"/>
+                                <Sort negative_score_is_good="false" filter="f_contact-designable"/> Maximize the no. of designable residues at the interface
+                        </Stage>
+                        <Stage num_runs_per_input_struct="10" total_num_results_to_keep="9800"> Local Dock (enrich population with large designable interface)
+                                <Add mover="sr_side-chains"/>
+                                <Add mover="dock_constraint"/>
+                                <Add mover="dock_setup"/>
+                                <Add mover="dock-set_local"/>
+                                <Add mover="dock_Low-res"/>
+                                <Add filter="f_contact-designable"/>
+                                <Add mover="save_f_contact-designable"/>
+                                <Add filter="f_contact-hphobic_with_designable"/> Count the number of designable residues at the interface AND the number of hydrophobic receptor residues at the interface
+                                <Add mover="save_f_contact-hphobic_with_designable"/>
+                                <Add mover="clear-cst"/>
+                                <Add mover="centro-full"/>
+                                <Add mover="sr_side-chains"/>
+                                <Add filter="f_sasa"/>
+                                <Add mover="bb_cst"/>
+                                <Sort negative_score_is_good="false" filter="f_contact-hphobic_with_designable"/> Prioritize models with many designable residues near hydrophobic patches on the receptor
+                        </Stage>
+                        <Stage num_runs_per_input_struct="1" total_num_results_to_keep="2800"> Design
+                                <Add mover_name="fast-design-1"/>
+                                <Add mover_name="IfaceAnalyzer"/>
+                                <Sort filter="f_combined_scores"/> Consider the total energy, dG, and dG/dSASA when sorting between design stages
+                        </Stage>
+                        <Stage num_runs_per_input_struct="1" total_num_results_to_keep="500"> Design
+                                <Add mover_name="fast-design-1"/>
+                                <Add mover_name="IfaceAnalyzer"/>
+				<Add filter="f_new_buns_bb"/>
+                		<Add filter="f_new_buns_sc"/>
+                                <Add filter="f_combined_buns"/>
+                                <Add mover="save_f_combined_scores"/>
+                                <Add mover="save_f_combined_buns"/>
+                                <Sort filter="f_combined_scores"/>
+                        </Stage>
+		</PROTOCOLS>
+
+	</Common>
+
+</JobDefinitionFile>
