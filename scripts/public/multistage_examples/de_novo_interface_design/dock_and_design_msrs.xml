@@ -88,7 +88,7 @@
 			<FastDesign name="fast-design-1" repeats="1" scorefxn="sfxn_high-res" task_operations="NO_design_to,NO-pack_design_to,designable_to,ifcl_to,extra_chi,fix_hbnet,limit_arochi2_to,incl_curr_to"/>
                         <HBNetStapleInterface name="hbnet_interf" scorefxn="sfxn_high-res" hb_threshold="-0.75" write_network_pdbs="false" min_intermolecular_hbonds="3" min_networks_per_pose="1" max_networks_per_pose="9" use_aa_dependent_weights="false" min_core_res="0" min_network_size="3" max_unsat_Hpol="3" task_operations="NO_design_to,NO-pack_design_to,ifcl_to,extra_chi" monte_carlo="true" />
 			<AddConstraints name="dock_constraint">
-				<DistanceConstraintGenerator function="FLAT_HARMONIC 0 0.1 10" name="distance-constraint" residue_selector1="designable" residue_selector2="receptor-face"/> Exclude models when designable residues are not near selected residue on receptor
+				<DistanceConstraintGenerator function="FLAT_HARMONIC 0 1 10" name="distance-constraint" residue_selector1="designable" residue_selector2="receptor-face"/> Exclude models when designable residues are not near selected residue on receptor
 			</AddConstraints>
 			<SaveAndRetrieveSidechains allsc="1" multi_use="0" name="sr_side-chains" two_step="1"/>
 			<SwitchResidueTypeSetMover name="centro-full" set="fa_standard"/>
