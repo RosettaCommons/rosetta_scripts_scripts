@@ -1,5 +1,16 @@
 <JobDefinitionFile>
 
+Keywords: dock design multistage
+Author: David Thieker
+Email: thieker@unc.edu
+	
+	The following is a MultiStageRosettaScript for docking and designing a protein scaffold 
+	(chain B) to a receptor (chain A). Stage 1 (Global Dock) is sorted by number of designable 
+	residues at interface. Stage 2 (Local Dock) is sorted by # of residues at the interface 
+	that are designable (on scaffold) or hydrophobic (on receptor). Stage 3 and 4 both design 
+	the structures and are sorted by a combined score that consists of Total Score, dG_separated, 
+	and dG_sep/dSASA. 
+	
 	<Job>
 		<Input>
                         <PDB filename="input_HaloTag_RasGRP1_relaxed.pdb" /> EDIT THIS (i.e. scaffold.pdb)
