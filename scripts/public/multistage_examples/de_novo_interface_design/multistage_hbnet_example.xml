@@ -1,0 +1,104 @@
+<JobDefinitionFile>
+
+  <!-- Originally Written By David Thieker-->
+  <!-- Modified By Jack Maguire For Usage In rosetta_scripts_scripts -->
+
+  <Job>
+    <Input>
+      <PDB filename="pose.pdb" />
+    </Input>
+  </Job>
+
+  <Common>
+
+    <SCOREFXNS>
+      <ScoreFunction name="sfxn_low_res" weights="interchain_cen"/>
+      <ScoreFunction name="sfxn_high_res" weights="ref2015"/>
+    </SCOREFXNS>
+
+    <RESIDUE_SELECTORS>
+      <ResiduePDBInfoHasLabel property="HBNet" name="hbond_network_residues"/>
+    </RESIDUE_SELECTORS>
+
+    <TASKOPERATIONS>
+      <InitializeFromCommandline name="ifcl" />
+      <ExtraRotamersGeneric name="extra_chi" ex1="1" ex2="1" />
+      <IncludeCurrent name="incl_curr" /> <!-- -linmem_ig 10 -->
+
+      <!-- This one is only used for movers after HBNet -->
+      <OperateOnResidueSubset name="fix_hbnet" selector="hbond_network_residues" >
+	<PreventRepackingRLT/>
+      </OperateOnResidueSubset>
+    </TASKOPERATIONS>
+
+    <FILTERS>
+      <ScoreType name="low_res_score" scorefxn="sfxn_low_res" threshold="9999"/>
+
+      <ScoreType name="high_res_score" scorefxn="sfxn_high_res" threshold="9999"/>
+
+      <!-- Options here are "HBNet_NumUnsatHpol", "HBNet_Saturation", and "HBNet_Score"-->
+      <!-- HBNet_Saturation is the only one of the three that requires negative_score_is_good="false" -->
+      <!-- These scores require store_network_scores_in_pose="true" in HBNetStapleInterface -->
+      <ReadPoseExtraScoreFilter name="hbnet_saturation" term_name="HBNet_Saturation" threshold="9999"/>
+    </FILTERS>
+
+    <MOVERS>
+      <DockSetupMover name="dock_setup" partners="A_B"/>
+      <DockingProtocol docking_score_low="sfxn_low_res" low_res_protocol_only="true" name="dock_Low_res" partners="A_B"/>
+
+      <HBNetStapleInterface name="hbnet" monte_carlo="true" scorefxn="sfxn_high_res" hb_threshold="-0.75" min_networks_per_pose="1" store_network_scores_in_pose="true" task_operations="ifcl,extra_chi,incl_curr"/>
+
+      <!-- Note the addition of "fix_hbnet" to the task_operations -->
+      <FastDesign name="fast_design" relaxscript="KillA2019" scorefxn="sfxn_high_res" task_operations="ifcl,extra_chi,incl_curr,fix_hbnet"/>
+
+      <SaveAndRetrieveSidechains allsc="1" multi_use="0" name="sr_side_chains" two_step="1"/>
+      <SwitchResidueTypeSetMover name="to_fa" set="fa_standard"/>
+      <ClearConstraintsMover name="clear_cst"/>
+
+      <InterfaceAnalyzerMover name="IfaceAnalyzer" scorefxn="sfxn_high_res" packstat="1" interface_sc="false" pack_input="false" pack_separated="1" interface="A_B" tracer="false" />
+    </MOVERS>
+
+    <PROTOCOLS>
+
+      <!-- Dock -->
+      <Stage num_runs_per_input_struct="100000" total_num_results_to_keep="1000"> 
+	<!-- Save high-res sidechains -->
+	<Add mover="sr_side_chains"/>
+
+	<!-- Dock -->
+	<Add mover="dock_setup"/>
+	<Add mover="dock_Low_res"/>
+
+	<!-- Convert back to high-res-->
+	<Add mover="to_fa"/>
+	<Add mover="sr_side_chains"/>
+
+	<!-- Rank and filter -->
+	<!-- You may want to sort using something like contact-count instead -->
+	<Sort filter="low_res_score"/>
+      </Stage>
+
+      <!-- HBNet -->
+      <Stage num_runs_per_input_struct="1" max_num_results_to_keep_per_instance="10" total_num_results_to_keep="100">
+	<!-- max_num_results_to_keep_per_instance allows HBNet to return multiple results. See here: -->
+	<!-- https://www.rosettacommons.org/docs/latest/scripting_documentation/RosettaScripts/multistage/StageOptions#stage-options_max_num_results_to_keep_per_instance -->
+	<Add mover="hbnet"/>
+	<Sort negative_score_is_good="false" filter="hbnet_saturation"/>
+      </Stage>
+
+      <!-- Design -->
+      <Stage num_runs_per_input_struct="5" total_num_results_to_keep="500">
+	<!-- This can be split into multiple stages, check out rosetta_scripts_scripts/scripts/public/multistage_examples/batch_relax.xml -->
+	<Add mover="fast_design"/>
+	<Add mover="IfaceAnalyzer"/>
+
+	<!-- You may want to sort using one of the IfaceAnalyzer metrics instead -->
+	<Sort filter="high_res_score"/>
+      </Stage>
+
+
+    </PROTOCOLS>
+
+  </Common>
+
+</JobDefinitionFile>
