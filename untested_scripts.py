@@ -294,7 +294,9 @@ scripts_not_tested = [
     "scripts/pilot/protein_design/pore_design/dec13_ry1_C7_add_hbnet_motifs.xml",
     "scripts/pilot/protein_design/pore_design/nov13_mchbnet_extend_hbnet_on_docks_nomc.xml",
     "scripts/pilot/protein_design/pore_design/funwithdocks2_designCx.xml",
-	"scripts/public/multistage_examples/batch_relax.xml",
+    "scripts/public/multistage_examples/batch_relax.xml",
+    "scripts/public/multistage_examples/de_novo_interface_design/dock_and_design_msrs.xml",
+    "scripts/public/multistage_examples/de_novo_interface_design/multistage_hbnet_example.xml",
 	"scripts/pilot/energy_optimization/liquid_simulation.xml",
 	"scripts/public/cryoem/cryoem_glycan_refinement.xml"
 ]
