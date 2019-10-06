@@ -20,6 +20,7 @@ scripts_to_be_validated = [
     "scripts/public/docking/lrf_docking_with_usersuppliedconstraints.xml",
     "scripts/public/homology_modeling/hybridize_example.xml",
     "scripts/pilot/mutation_scanning/filterscan_score_all/filterscan-nopssm.xml",
+    "scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_small_domain_glu_placestub.xml",
     "scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_prodomain_fixedbbdesign.xml",
     "scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_rebuildlinker.xml",
     "scripts/pilot/enzymedesign/proenzyme_design_SEWING/cpg2_proenzyme_postsewing.xml",

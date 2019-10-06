@@ -4,3 +4,6 @@
 -extrachi_cutoff 1
 -linmem_ig 10
 -mute core.io.database
+
+# lastres should contain the resnum of the last residue in the pose.  prefix is the pdb's prefix (for getting foldtree files)
+-parser:script_vars lastres=844 prefix=EEHEE_rd3_1072_0001.out.4

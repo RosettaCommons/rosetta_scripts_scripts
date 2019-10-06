@@ -8,3 +8,8 @@
 -no_optH 
 -extra_res_fa 1CG2_ligand_.fa.params
 -use_truncated_termini 1
+-restore_talaris_behavior
+
+# res1-res5 should be set to the catalytic residue resnums.  helixchain should be set to the chain number of the docked helix
+# matchedres should be set to the resnum of the matched in residue 
+-parser:script_vars res1=85 res2=294 res3=109 res4=50 res5=21 helixchain=2 matchedres=411B

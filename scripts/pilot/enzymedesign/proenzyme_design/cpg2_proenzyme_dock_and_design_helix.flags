@@ -6,3 +6,6 @@
 -mute core.io.database
 -no_packstat_calculation
 -no_optH
+-restore_talaris_behavior
+
+-parser:script_vars pivot=396 # Can be set to a random linker residue to randomize the genkic pivot residue

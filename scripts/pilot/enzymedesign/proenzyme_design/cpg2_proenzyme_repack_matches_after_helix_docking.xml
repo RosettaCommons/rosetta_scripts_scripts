@@ -1,3 +1,4 @@
+<ROSETTASCRIPTS>
 Keywords: protein interface design, single sided design, enzyme design, protein-protein docking
 Author: Brahm Yachnin, Laura Azouz
 Email: brahm.yachnin@rutgers.edu, azouzlau@msu.edu
@@ -10,7 +11,6 @@ the "matched-in" residue to remove any severely unfavourable (e.g. clashing) res
 
 The variables res1-res5 are the "regular" catalytic residues.  matchedres is the resnum of the 
 "matched-in" residue.  helixchain is the chain ID of the pro-domain helix.
-<ROSETTASCRIPTS>
     <SCOREFXNS>
         <ScoreFunction name="myscore" weights="talaris2014_cst.wts"/>
     </SCOREFXNS>

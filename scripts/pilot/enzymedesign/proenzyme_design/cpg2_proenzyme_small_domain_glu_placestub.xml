@@ -15,6 +15,9 @@ glutamate to generate the inverse rotamer library "stub."
 -After placement, a GSENLYFQGGS linker is built, and GeneralizedKIC is used to connect the C-terminus 
 of the circular permutant to the N-terminus of the pro-domain.
 -The linker and pro-domain are relaxed (without design).
+
+Note that the lastres variable is the last residue in the pose, and prefix is the pdb file's prefix (used 
+to get the name of the foldtree files).
 	<SCOREFXNS>
 		<ScoreFunction name="ref" weights="ref2015.wts"/>
 		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts">
