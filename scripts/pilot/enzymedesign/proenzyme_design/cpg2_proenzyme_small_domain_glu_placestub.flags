@@ -1,0 +1,6 @@
+-run:preserve_header
+-ex1
+-ex2
+-extrachi_cutoff 1
+-linmem_ig 10
+-mute core.io.database
