@@ -1,0 +1,20 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="sfxn" weights="ref2015"/>
+  </SCOREFXNS>
+
+  <TASKOPERATIONS>
+    InitializeFromCommandline name="ifc"
+    <SetIGType name="linmem_ig" lin_mem_ig="1"/>
+    <ExtraRotamersGeneric name="ex1ex2" ex1="1" ex2="1" />
+    <IncludeCurrent name="curr" />
+  </TASKOPERATIONS>
+
+  <MOVERS>
+    <FastDesign name="fast_design" relaxscript="MonomerDesign2019" scorefxn="sfxn" task_operations="linmem_ig,ex1ex2,curr"/>
+  </MOVERS>
+
+  <PROTOCOLS>
+    <Add mover="fast_design"/>
+  </PROTOCOLS>
+</ROSETTASCRIPTS>
