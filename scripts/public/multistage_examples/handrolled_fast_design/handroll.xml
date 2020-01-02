@@ -1,32 +1,33 @@
 <ROSETTASCRIPTS>
   <SCOREFXNS>
     <ScoreFunction name="sfxn" weights="ref2015"/>
+    <!-- Normal fa_rep weight is 0.55 -->
 
 
     <ScoreFunction name="sfxn_pack1" weights="ref2015">
-      <Reweight scoretype="fa_rep" weight="1.0"/>
+      <Reweight scoretype="fa_rep" weight="0.03245"/> <!-- 0.55 * 0.059 -->
     </ScoreFunction>
 
     <ScoreFunction name="sfxn_min1" weights="ref2015">
-      <Reweight scoretype="fa_rep" weight="1.0"/>
+      <Reweight scoretype="fa_rep" weight="0.0506"/> <!-- 0.55 * 0.092 -->
     </ScoreFunction>
 
 
     <ScoreFunction name="sfxn_pack2" weights="ref2015">
-      <Reweight scoretype="fa_rep" weight="1.0"/>
+      <Reweight scoretype="fa_rep" weight="0.154"/> <!-- 0.55 * 0.280 -->
     </ScoreFunction>
 
     <ScoreFunction name="sfxn_min2" weights="ref2015">
-      <Reweight scoretype="fa_rep" weight="1.0"/>
+      <Reweight scoretype="fa_rep" weight="0.17765"/> <!-- 0.55 * 0.323 -->
     </ScoreFunction>
 
 
     <ScoreFunction name="sfxn_pack3" weights="ref2015">
-      <Reweight scoretype="fa_rep" weight="1.0"/>
+      <Reweight scoretype="fa_rep" weight="0.3124"/> <!-- 0.55 * 0.568 -->
     </ScoreFunction>
 
     <ScoreFunction name="sfxn_min3" weights="ref2015">
-      <Reweight scoretype="fa_rep" weight="1.0"/>
+      <Reweight scoretype="fa_rep" weight="0.34815"/> <!-- 0.55 * 0.633 -->
     </ScoreFunction>
 
   </SCOREFXNS>
