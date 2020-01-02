@@ -1,0 +1,103 @@
+<ROSETTASCRIPTS>
+  <SCOREFXNS>
+    <ScoreFunction name="sfxn" weights="ref2015"/>
+
+
+    <ScoreFunction name="sfxn_pack1" weights="ref2015">
+      <Reweight scoretype="fa_rep" weight="1.0"/>
+    </ScoreFunction>
+
+    <ScoreFunction name="sfxn_min1" weights="ref2015">
+      <Reweight scoretype="fa_rep" weight="1.0"/>
+    </ScoreFunction>
+
+
+    <ScoreFunction name="sfxn_pack2" weights="ref2015">
+      <Reweight scoretype="fa_rep" weight="1.0"/>
+    </ScoreFunction>
+
+    <ScoreFunction name="sfxn_min2" weights="ref2015">
+      <Reweight scoretype="fa_rep" weight="1.0"/>
+    </ScoreFunction>
+
+
+    <ScoreFunction name="sfxn_pack3" weights="ref2015">
+      <Reweight scoretype="fa_rep" weight="1.0"/>
+    </ScoreFunction>
+
+    <ScoreFunction name="sfxn_min3" weights="ref2015">
+      <Reweight scoretype="fa_rep" weight="1.0"/>
+    </ScoreFunction>
+
+  </SCOREFXNS>
+
+  <TASKOPERATIONS>
+    InitializeFromCommandline name="ifc"
+    <SetIGType name="linmem_ig" lin_mem_ig="1"/>
+    <ExtraRotamersGeneric name="ex1ex2" ex1="1" ex2="1" />
+    <IncludeCurrent name="curr" />
+  </TASKOPERATIONS>
+
+  <MOVERS>
+    <FastDesign name="fast_design" relaxscript="MonomerDesign2019" scorefxn="sfxn" task_operations="linmem_ig,ex1ex2,curr"/>
+
+    <PackRotamersMover scorefxn="sfxn_pack1" task_operations="linmem_ig,ex1ex2,curr" name="pack1"/>
+    <MinMover chi="true" bb="true" scorefxn="sfxn_min1" name="min1"/>
+
+    <PackRotamersMover scorefxn="sfxn_pack2" task_operations="linmem_ig,ex1ex2,curr" name="pack2"/>
+    <MinMover chi="true" bb="true" scorefxn="sfxn_min2" name="min2"/>
+
+    <PackRotamersMover scorefxn="sfxn_pack3" task_operations="linmem_ig,ex1ex2,curr" name="pack3"/>
+    <MinMover chi="true" bb="true" scorefxn="sfxn_min3" name="min3"/>
+
+    <PackRotamersMover scorefxn="sfxn" task_operations="linmem_ig,ex1ex2,curr" name="pack4"/>
+    <MinMover chi="true" bb="true" scorefxn="sfxn" name="min4"/>
+  </MOVERS>
+
+  <PROTOCOLS>
+    <Add mover="pack1"/>
+    <Add mover="min1"/>
+    <Add mover="pack2"/>
+    <Add mover="min2"/>
+    <Add mover="pack3"/>
+    <Add mover="min3"/>
+    <Add mover="pack4"/>
+    <Add mover="min4"/>
+
+    <Add mover="pack1"/>
+    <Add mover="min1"/>
+    <Add mover="pack2"/>
+    <Add mover="min2"/>
+    <Add mover="pack3"/>
+    <Add mover="min3"/>
+    <Add mover="pack4"/>
+    <Add mover="min4"/>
+
+    <Add mover="pack1"/>
+    <Add mover="min1"/>
+    <Add mover="pack2"/>
+    <Add mover="min2"/>
+    <Add mover="pack3"/>
+    <Add mover="min3"/>
+    <Add mover="pack4"/>
+    <Add mover="min4"/>
+
+    <Add mover="pack1"/>
+    <Add mover="min1"/>
+    <Add mover="pack2"/>
+    <Add mover="min2"/>
+    <Add mover="pack3"/>
+    <Add mover="min3"/>
+    <Add mover="pack4"/>
+    <Add mover="min4"/>
+
+    <Add mover="pack1"/>
+    <Add mover="min1"/>
+    <Add mover="pack2"/>
+    <Add mover="min2"/>
+    <Add mover="pack3"/>
+    <Add mover="min3"/>
+    <Add mover="pack4"/>
+    <Add mover="min4"/>
+  </PROTOCOLS>
+</ROSETTASCRIPTS>
