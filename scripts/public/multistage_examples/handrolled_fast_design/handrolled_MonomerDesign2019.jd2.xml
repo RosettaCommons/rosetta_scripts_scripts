@@ -43,27 +43,22 @@
     <FastDesign name="fast_design" relaxscript="MonomerDesign2019" scorefxn="sfxn" task_operations="linmem_ig,ex1ex2,curr"/>
 
     <PackRotamersMover scorefxn="sfxn_pack1" task_operations="linmem_ig,ex1ex2,curr" name="pack1"/>
-    <MinMover chi="true" bb="true" scorefxn="sfxn_min1" name="min1"/>
+    <MinMover chi="true" bb="true" scorefxn="sfxn_min1" name="min1" tolerance="0.01"/>
 
     <PackRotamersMover scorefxn="sfxn_pack2" task_operations="linmem_ig,ex1ex2,curr" name="pack2"/>
-    <MinMover chi="true" bb="true" scorefxn="sfxn_min2" name="min2"/>
+    <MinMover chi="true" bb="true" scorefxn="sfxn_min2" name="min2" tolerance="0.01"/>
 
     <PackRotamersMover scorefxn="sfxn_pack3" task_operations="linmem_ig,ex1ex2,curr" name="pack3"/>
-    <MinMover chi="true" bb="true" scorefxn="sfxn_min3" name="min3"/>
+    <MinMover chi="true" bb="true" scorefxn="sfxn_min3" name="min3" tolerance="0.01"/>
 
     <PackRotamersMover scorefxn="sfxn" task_operations="linmem_ig,ex1ex2,curr" name="pack4"/>
-    <MinMover chi="true" bb="true" scorefxn="sfxn" name="min4"/>
+    <MinMover chi="true" bb="true" scorefxn="sfxn" name="min4" tolerance="0.00001"/>
+
+    <AcceptToBestMover name="accept_to_best" scorefxn="sfxn"/>
   </MOVERS>
 
   <PROTOCOLS>
-    <Add mover="pack1"/>
-    <Add mover="min1"/>
-    <Add mover="pack2"/>
-    <Add mover="min2"/>
-    <Add mover="pack3"/>
-    <Add mover="min3"/>
-    <Add mover="pack4"/>
-    <Add mover="min4"/>
+    <Add mover="accept_to_best"/>
 
     <Add mover="pack1"/>
     <Add mover="min1"/>
@@ -74,14 +69,7 @@
     <Add mover="pack4"/>
     <Add mover="min4"/>
 
-    <Add mover="pack1"/>
-    <Add mover="min1"/>
-    <Add mover="pack2"/>
-    <Add mover="min2"/>
-    <Add mover="pack3"/>
-    <Add mover="min3"/>
-    <Add mover="pack4"/>
-    <Add mover="min4"/>
+    <Add mover="accept_to_best"/>
 
     <Add mover="pack1"/>
     <Add mover="min1"/>
@@ -92,6 +80,8 @@
     <Add mover="pack4"/>
     <Add mover="min4"/>
 
+    <Add mover="accept_to_best"/>
+
     <Add mover="pack1"/>
     <Add mover="min1"/>
     <Add mover="pack2"/>
@@ -100,5 +90,29 @@
     <Add mover="min3"/>
     <Add mover="pack4"/>
     <Add mover="min4"/>
+
+    <Add mover="accept_to_best"/>
+
+    <Add mover="pack1"/>
+    <Add mover="min1"/>
+    <Add mover="pack2"/>
+    <Add mover="min2"/>
+    <Add mover="pack3"/>
+    <Add mover="min3"/>
+    <Add mover="pack4"/>
+    <Add mover="min4"/>
+
+    <Add mover="accept_to_best"/>
+
+    <Add mover="pack1"/>
+    <Add mover="min1"/>
+    <Add mover="pack2"/>
+    <Add mover="min2"/>
+    <Add mover="pack3"/>
+    <Add mover="min3"/>
+    <Add mover="pack4"/>
+    <Add mover="min4"/>
+
+    <Add mover="accept_to_best"/>
   </PROTOCOLS>
 </ROSETTASCRIPTS>
