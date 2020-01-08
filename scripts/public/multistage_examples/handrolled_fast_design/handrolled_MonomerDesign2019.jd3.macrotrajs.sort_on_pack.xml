@@ -1,0 +1,197 @@
+<JobDefinitionFile>
+
+  <Job>
+    <Input>
+      <PDB filename="TODO"/>
+    </Input>
+  </Job>
+
+  <Common>
+
+    <SCOREFXNS>
+      <ScoreFunction name="sfxn" weights="ref2015"/>
+      <ScoreFunction name="sfxn_pack1" weights="ref2015">
+	<Reweight scoretype="fa_rep" weight="0.03245"/>
+      </ScoreFunction>
+      <ScoreFunction name="sfxn_min1" weights="ref2015">
+	<Reweight scoretype="fa_rep" weight="0.0506"/>
+      </ScoreFunction>
+      <ScoreFunction name="sfxn_pack2" weights="ref2015">
+	<Reweight scoretype="fa_rep" weight="0.154"/>
+      </ScoreFunction>
+      <ScoreFunction name="sfxn_min2" weights="ref2015">
+	<Reweight scoretype="fa_rep" weight="0.17765"/>
+      </ScoreFunction>
+      <ScoreFunction name="sfxn_pack3" weights="ref2015">
+	<Reweight scoretype="fa_rep" weight="0.3124"/>
+      </ScoreFunction>
+      <ScoreFunction name="sfxn_min3" weights="ref2015">
+	<Reweight scoretype="fa_rep" weight="0.34815"/>
+      </ScoreFunction>
+    </SCOREFXNS>
+
+    <FILTERS>
+      <ScoreType name="sfxn_f" scorefxn="sfxn" threshold="9999"/>
+      <ScoreType name="sfxn_pack1_f" scorefxn="sfxn_pack1" threshold="9999"/>
+      <ScoreType name="sfxn_pack2_f" scorefxn="sfxn_pack2" threshold="9999"/>
+      <ScoreType name="sfxn_pack3_f" scorefxn="sfxn_pack3" threshold="9999"/>
+      <ScoreType name="sfxn_min1_f" scorefxn="sfxn_min1" threshold="9999"/>
+      <ScoreType name="sfxn_min2_f" scorefxn="sfxn_min2" threshold="9999"/>
+      <ScoreType name="sfxn_min3_f" scorefxn="sfxn_min3" threshold="9999"/>
+    </FILTERS>
+
+    <TASKOPERATIONS>
+      <SetIGType lin_mem_ig="1" name="linmem_ig"/>
+      <ExtraRotamersGeneric ex1="1" ex2="1" name="ex1ex2"/>
+      <IncludeCurrent name="curr"/>
+    </TASKOPERATIONS>
+
+    <MOVERS>
+      <FastDesign name="fast_design" relaxscript="MonomerDesign2019" scorefxn="sfxn" task_operations="linmem_ig,ex1ex2,curr"/>
+      <PackRotamersMover name="pack1" scorefxn="sfxn_pack1" task_operations="linmem_ig,ex1ex2,curr"/>
+      <MinMover bb="true" chi="true" name="min1" scorefxn="sfxn_min1" tolerance="0.01"/>
+      <PackRotamersMover name="pack2" scorefxn="sfxn_pack2" task_operations="linmem_ig,ex1ex2,curr"/>
+      <MinMover bb="true" chi="true" name="min2" scorefxn="sfxn_min2" tolerance="0.01"/>
+      <PackRotamersMover name="pack3" scorefxn="sfxn_pack3" task_operations="linmem_ig,ex1ex2,curr"/>
+      <MinMover bb="true" chi="true" name="min3" scorefxn="sfxn_min3" tolerance="0.01"/>
+      <PackRotamersMover name="pack4" scorefxn="sfxn" task_operations="linmem_ig,ex1ex2,curr"/>
+      <MinMover bb="true" chi="true" name="min4" scorefxn="sfxn" tolerance="0.00001"/>
+      <AcceptToBestMover name="accept_to_best" scorefxn="sfxn"/>
+    </MOVERS>
+
+    <PROTOCOLS>
+      <Stage num_runs_per_input_struct="%%total%%" total_num_results_to_keep="%%macro%%">
+	<Add mover="accept_to_best"/>
+	<Add mover="pack1"/>
+	<Sort filter="sfxn_pack1_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min1"/>
+	<Add mover="pack2"/>
+	<Sort filter="sfxn_pack2_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min2"/>
+	<Add mover="pack3"/>
+	<Sort filter="sfxn_pack3_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min3"/>
+	<Add mover="pack4"/>
+	<Sort filter="sfxn_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min4"/>
+	<Add mover="accept_to_best"/>
+	<Add mover="pack1"/>
+	<Sort filter="sfxn_pack1_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min1"/>
+	<Add mover="pack2"/>
+	<Sort filter="sfxn_pack2_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min2"/>
+	<Add mover="pack3"/>
+	<Sort filter="sfxn_pack3_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min3"/>
+	<Add mover="pack4"/>
+	<Sort filter="sfxn_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min4"/>
+	<Add mover="accept_to_best"/>
+	<Add mover="pack1"/>
+	<Sort filter="sfxn_pack1_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min1"/>
+	<Add mover="pack2"/>
+	<Sort filter="sfxn_pack2_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min2"/>
+	<Add mover="pack3"/>
+	<Sort filter="sfxn_pack3_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min3"/>
+	<Add mover="pack4"/>
+	<Sort filter="sfxn_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min4"/>
+	<Add mover="accept_to_best"/>
+	<Add mover="pack1"/>
+	<Sort filter="sfxn_pack1_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min1"/>
+	<Add mover="pack2"/>
+	<Sort filter="sfxn_pack2_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min2"/>
+	<Add mover="pack3"/>
+	<Sort filter="sfxn_pack3_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min3"/>
+	<Add mover="pack4"/>
+	<Sort filter="sfxn_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min4"/>
+	<Add mover="accept_to_best"/>
+	<Add mover="pack1"/>
+	<Sort filter="sfxn_pack1_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min1"/>
+	<Add mover="pack2"/>
+	<Sort filter="sfxn_pack2_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min2"/>
+	<Add mover="pack3"/>
+	<Sort filter="sfxn_pack3_f"/>
+      </Stage>
+
+      <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min3"/>
+	<Add mover="pack4"/>
+	<Sort filter="sfxn_f"/>
+      </Stage>
+
+
+      <Stage num_runs_per_input_struct="1" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="min4"/>
+	<Add mover="accept_to_best"/>
+	<Sort filter="sfxn_f"/>
+      </Stage>
+    </PROTOCOLS>
+
+  </Common>
+
+</JobDefinitionFile>
