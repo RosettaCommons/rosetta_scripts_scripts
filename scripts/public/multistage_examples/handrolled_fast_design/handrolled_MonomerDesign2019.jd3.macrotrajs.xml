@@ -107,11 +107,11 @@
       <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
 	<Add mover="pack4"/>
 	<Add mover="min4"/>
-	<Add mover="accept_to_best"/>
 	<Sort filter="sfxn_f"/>
       </Stage>
 
       <Stage num_runs_per_input_struct="%%micro%%" total_num_results_to_keep="%%macro%%" max_num_results_to_keep_per_input_struct="1">
+	<Add mover="accept_to_best"/>
 	<Add mover="pack1"/>
 	<Add mover="min1"/>
 	<Sort filter="sfxn_min1_f"/>
