@@ -2,7 +2,7 @@
 
   <Job>
     <Input>
-      <PDB filename="TODO"/>
+      <PDB filename="/home/jackmag/Rosetta/main2/source/test/protocols/multistage_rosetta_scripts/3U3B_A.pdb"/>
     </Input>
   </Job>
 
