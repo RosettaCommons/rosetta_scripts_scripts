@@ -15,6 +15,7 @@ scripts_to_be_validated = [
     "scripts/public/homology_modeling/RosettaCM_with_density/cm_with_density.xml",
     "scripts/public/sewing/refinement/gaq_binder_refinement.xml",
     "scripts/public/analysis/interface/custom_interface_filter2.xml",
+    "scripts/public/point_mutant_scan/point_mutant_scan.xml",
     "scripts/public/docking/ancient_lrf_docking.xml",
     "scripts/public/docking/lrf_docking_with_autointerfacecst.xml",
     "scripts/public/docking/lrf_docking_with_usersuppliedconstraints.xml",
