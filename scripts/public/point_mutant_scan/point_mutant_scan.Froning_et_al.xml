@@ -1,0 +1,28 @@
+<ROSETTASCRIPTS>
+  <TASKOPERATIONS>
+    <InitializeFromCommandline name="ifc"/>
+    <ReadResfile name="rrf" filename="resfile"/>
+  </TASKOPERATIONS>
+
+  <SCOREFXNS>
+    <ScoreFunction name="beta_cart_sfxn" weights="beta_nov15_cart"/>
+    
+    <ScoreFunction name="beta_cart_sfxn_cc" weights="beta_nov15_cart">
+      <Reweight scoretype="coordinate_constraint" weight="1"/>
+    </ScoreFunction>
+  </SCOREFXNS>
+
+  <MOVERS>
+    <AtomCoordinateCstMover name="coor_cst"/>
+    <FastRelax name="fast_relax" scorefxn="beta_cart_sfxn_cc" repeats="5" cartesian="true" task_operations="ifc,rrf"/>
+    <MinMover name="min_mover" scorefxn="beta_cart_sfxn" chi="true" bb="true" cartesian="true"/>
+  </MOVERS>
+
+  <PROTOCOLS>
+    <Add mover="coor_cst"/>
+    <Add mover="fast_relax"/>
+    <Add mover="min_mover"/>
+  </PROTOCOLS>
+
+  <OUTPUT scorefxn="beta_cart_sfxn"/>
+</ROSETTASCRIPTS>
