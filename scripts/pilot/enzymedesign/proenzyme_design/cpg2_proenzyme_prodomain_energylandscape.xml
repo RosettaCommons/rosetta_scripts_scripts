@@ -51,10 +51,12 @@ improved run time in our tests.
 	<FILTERS>
 		<ScoreType name="score" scorefxn="ref_cst" score_type="total_score" threshold="9999"/>
 		<Report name="initscore" filter="score"/>
-		<Rmsd name="helix_linker_rmsd" chains="B" threshold="9999" superimpose="0"/>
+		<Rmsd name="helix_linker_rmsd" chains="B" threshold="9999" superimpose="0" reference_name="input_pose" />
 	</FILTERS>
 
 	<MOVERS>
+		<SavePoseMover name="save_input" restore_pose="false" reference_name="input_pose" />	
+	
 		Repack around flexing
 		<PackRotamersMover name="linker_repack" scorefxn="ref_cst" task_operations="init,keep_curr,not_flex_prevent,restrict,freeze_zn" />
 
@@ -119,6 +121,8 @@ improved run time in our tests.
 	</MOVERS>
 
 	<PROTOCOLS>
+		<Add mover="save_input"/>
+
 		Attach chain A and chain B explicitly, since they are covalently linked.
 		<Add mover="attach_chains"/>
 		Calculate the score of the initial pose in a report filter so that this is easily available in the score file.
