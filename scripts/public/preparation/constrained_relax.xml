@@ -1,0 +1,35 @@
+<ROSETTASCRIPTS>
+# I think this is a match for the flagset for relaxing a protein (preparatory to other Rosetta work) that AJ Vincelli showed at summer rosettacon 2020
+# Steven Lewis smlewi@gmail.com
+
+  <TASKOPERATIONS>
+  </TASKOPERATIONS>
+  <SCOREFXNS>
+    <ScoreFunction name="ref" weights="ref2015.wts" >
+      <Reweight scoretype="coordinate_constraint" weight="0.5" />
+    </ScoreFunction>
+  </SCOREFXNS>
+  <FILTERS>
+  </FILTERS>
+  <MOVERS>
+    <AtomCoordinateCstMover name="constrain_relax_to_start_coords"
+      coord_dev="0.5"
+      bounded="false"
+      sidechain="false"
+      />
+    <VirtualRoot name="i_am_vroot"
+      removable="true"
+      remove="false" />
+    <FastRelax name="FastRelax"
+      ramp_down_constraints="false"
+      delete_virtual_residues_after_FastRelax="true"
+      />
+  </MOVERS>
+  <APPLY_TO_POSE>
+  </APPLY_TO_POSE>
+  <PROTOCOLS>
+    <Add mover="i_am_vroot"/>
+    <Add mover="constrain_relax_to_start_coords"/>
+    <Add mover="FastRelax"/>
+  </PROTOCOLS>
+</ROSETTASCRIPTS>
