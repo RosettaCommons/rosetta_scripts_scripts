@@ -23,6 +23,7 @@
     <FastRelax name="FastRelax"
       ramp_down_constraints="false"
       delete_virtual_residues_after_FastRelax="true"
+      scorefxn="ref"
       />
   </MOVERS>
   <APPLY_TO_POSE>
