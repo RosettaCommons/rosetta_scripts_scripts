@@ -1,0 +1,5 @@
+# Customize to restrict design space.
+# For example, use PSI-BLAST to generate evolution-based csts.
+# Then use main/tools/mhc_energy_tools/mhc_gen_db.py to convert it to a resfile.
+ALLAA
+start

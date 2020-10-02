@@ -1,0 +1,26 @@
+-run:preserve_header
+-linmem_ig 10
+-mute core.io.database
+-no_packstat_calculation
+-no_optH
+-delete_old_poses 1
+
+# Flags to control various aspects of the de-immunization process
+# scorefxn: which scorefxn to use for de-immunization
+# mhc_epitope_weight, scorefxn_mhc_file: mhc_epitope weight and configuration file
+# netcharge_weight, netcharge_setup: weight and configuration file for net charge constraints (if present in scorefxn)
+# aacomp_weight, aacomp_setup: weight and configuration file for amino acid composition constraints (if present in scorefxn)
+# resfile: A resfile to limit design space
+# report_var: For analyzing large datasets, which variable value to report in the scorefile
+# design_protocol: Which mover to use for design
+-parser:script_vars \
+	scorefxn=ref_deimm \
+	mhc_epitope_weight=1.0 \
+	scorefxn_mhc_file=propred8_5.mhc \
+	netcharge_weight=0 \
+	netcharge_setup=my_immunogenic_protein.charge \
+	aacomp_weight=0.5 \
+	aacomp_setup=my_immunogenic_protein.comp \
+	resfile=my_immunogenic_protein.resfile \
+	report_var=mhc_epitope_weight \
+	design_protocol=fixedbbX3

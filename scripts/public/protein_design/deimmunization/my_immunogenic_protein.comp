@@ -1,0 +1,19 @@
+# We recommend restraining positive and negative charges separately.
+# Set the line "ABSOLUTE 24" to the number of native positive charges.
+# Set up the penalties to control how steep you want the penalty.
+PENALTY_DEFINITION
+PROPERTIES POSITIVE_CHARGE
+ABSOLUTE 24
+PENALTIES 3 2 1 0 1 2 3
+DELTA_START -3
+DELTA_END 3
+END_PENALTY_DEFINITION
+
+# Same as for the positive charge block, but now for negative charges.
+PENALTY_DEFINITION
+PROPERTIES NEGATIVE_CHARGE
+ABSOLUTE 18
+PENALTIES 3 2 1 0 1 2 3
+DELTA_START -3
+DELTA_END 3
+END_PENALTY_DEFINITION
