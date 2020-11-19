@@ -52,7 +52,7 @@ Jha et al. JMB 2010
         <MOVERS>
 	        <Docking name="dock_lo_res" score_low="score_docking_low" fullatom="0" jumps="1" optimize_fold_tree="1"/>
 
-		<AddConstraintsToCurrentConformationMover name="coord_constr" CA_only="1" bb_only="1" coord_dev="0.5" cst_weight="1"/>
+		<AddConstraintsToCurrentConformationMover name="coord_constr" CA_only="1" coord_dev="0.5" cst_weight="1"/>
 		
                 <PackRotamersMover name="pack_rot1" scorefxn="talaris2014_rep0p1" task_operations="rti_taskop,keep_curr,ex1,ex2,exchi1,disable_chainA_design"/>
                 <MinMover name="min1" scorefxn="talaris2014_rep0p1" bb="0" chi="1" jump="1"/>
