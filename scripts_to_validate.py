@@ -136,7 +136,13 @@ scripts_to_be_validated = [
 	"scripts/pilot/protein_design/membrane_design/membrane_design.xml",
 	"scripts/pilot/protein_design/membrane_design/membrane_design_3helical_tetramer/design.xml",
 	"scripts/pilot/protein_design/membrane_design/membrane_design_3helical_tetramer/filter.xml",
-        "scripts/public/point_mutant_scan/point_mutant_scan.Froning_et_al.xml"
+        "scripts/public/point_mutant_scan/point_mutant_scan.Froning_et_al.xml",
+    "scripts/public/macrocycle_inhibitor_design/NDM1i-3_design_script/modernized/xml/NDM1i_3_design.xml",
+    "scripts/public/macrocycle_inhibitor_design/NDM1i-3_design_script/original/xml/NDM1i_3_design_legacy.xml",
+    "scripts/public/macrocycle_inhibitor_design/NDM1i-1_design_script/modernized/xml/NDM1i_1_design.xml",
+    "scripts/public/macrocycle_inhibitor_design/NDM1i-3D_biding_mode_comparison_script/xml/minimize_and_score.xml",
+    "scripts/public/macrocycle_inhibitor_design/NDM1i-4_design_script/original/xml/NDM1i_4_design.xml",
+    "scripts/public/macrocycle_inhibitor_design/NDM1i_delta_G_binding_estimation_scripts/original/xml/ddgscript.xml"
 ]
 
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world
