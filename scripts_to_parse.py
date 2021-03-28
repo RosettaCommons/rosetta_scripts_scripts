@@ -19,7 +19,7 @@ scripts_to_be_parsed = [
     "scripts/public/protein_design/deimmunization/mhc_epitope_design.xml",
     "scripts/pilot/symmetry/symm.xml",
     "scripts/public/homology_modeling/relax_into_density/relax_into_density.xml",
-    "scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_prodomain_energylandscape.xml",
+    "scripts/public/enzymedesign/proenzyme_design/cpg2_proenzyme_prodomain_energylandscape.xml",
     "scripts/pilot/enzymedesign/design_threading/relax_deimm_designs.xml",
 	"scripts/pilot/cyclic_peptide_design/cis_peptide_design_backbone_generation/KIC.xml",
 	"scripts/pilot/metal_binding/zinc_dependent_hydrolase/05_symmetrize_matcheZn_rb_min.xml",
@@ -47,9 +47,9 @@ scripts_to_be_parsed = [
 	"scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_DeNovo_scaffolds_DeNovoStrands_add_2nd_helix_back_designs_c_pass_gba.bp_pass__20161129210254.pdb.bp_20161219172548_0001_0003_bpb2.xml",
 	"scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_DeNovo_scaffolds_DeNovoStrands_add_2nd_helix_back_designs_c_pass_gba.bp_pass__20161129210726.pdb.bp_20161219173002_0001_0001_bpb2.xml",
 	"scripts/pilot/protein_interface_design/edge_strand_mediated_interface_design/relaxed_tfr_retry_nonrelaxed_DeNovo_scaffolds_DeNovoStrands_add_2nd_helix_back_designs_c_pass_gba.bp_pass__20161129210228.pdb.bp_20161219172446_0001_0001_bpb2.xml",
-	"scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_disulfidize.xml",
-        "scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_interface_saltbridges.xml",
-        "scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_dock_and_design_helix.xml",
-        "scripts/pilot/enzymedesign/proenzyme_design/cpg2_proenzyme_repack_matches_after_helix_docking.xml"
+	"scripts/public/enzymedesign/proenzyme_design/cpg2_proenzyme_disulfidize.xml",
+        "scripts/public/enzymedesign/proenzyme_design/cpg2_proenzyme_interface_saltbridges.xml",
+        "scripts/public/enzymedesign/proenzyme_design/cpg2_proenzyme_dock_and_design_helix.xml",
+        "scripts/public/enzymedesign/proenzyme_design/cpg2_proenzyme_repack_matches_after_helix_docking.xml"
 ]
 #note - do not put a trailing comma on the closing ] if you are doing multiline editing to add the trailing commas to the 10 scripts you just added - it will convert the list to a tuple and blow up the world

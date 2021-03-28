@@ -24,7 +24,6 @@ scripts_not_tested = [
     "scripts/public/sewing/append/append_C-terminal_binding_helix.xml",
     "scripts/public/sewing/ligand_contacts/zn_tetra_script.xml",
     "scripts/public/sewing/ligand_contacts/zn_sewing_script.xml",
-    "scripts/pilot/enzymedesign/proenzyme_design_SEWING/cpg2_proenzyme_sewing.xml",	#This script uses refactored SEWING, which is not yet in master.
     "scripts/pilot/energy_optimization/general_potential/crystdock.xml",
     "scripts/pilot/energy_optimization/general_potential/crystmin.xml",
     "scripts/pilot/energy_optimization/general_potential/crystrefine.xml",
