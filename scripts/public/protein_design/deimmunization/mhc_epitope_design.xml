@@ -12,7 +12,11 @@ your particular protein, constrining positive and negative charges separately, a
 PSSM (for example, generated with PSI-BLAST).
 
 For more details, see the documentation at https://www.rosettacommons.org/docs/wiki/rosetta_basics/scoring/MHCEpitopeEnergy
-or our forthcoming publication.  In addition, there is a scientific test with a simplified version of this script.  See
+or the MHCEpitopeEnergy putlication:
+Yachnin BJ, Mulligan VK, Khare SD, and Bailey-Kellogg C.  (2021).  MHCEpitopeEnergy, a flexible Rosetta-based
+biotherapeutic deimmunization platform.  J Chem Inf Model 61(5):2368-2382.  doi: 10.1021/acs.jcim.1c00056.
+
+In addition, there is a scientific test with a simplified version of this script.  See
 https://benchmark.graylab.jhu.edu/ and Rosetta/main/tests/scientific/tests/mhc_epitope_energy/.
 
 	<SCOREFXNS>
