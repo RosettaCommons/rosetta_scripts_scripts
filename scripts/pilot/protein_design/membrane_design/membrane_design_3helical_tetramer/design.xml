@@ -184,8 +184,8 @@
               # Filters
               ###############################################
               <FILTERS>
-                  <worst9mer name="worst9mer_a" threshold="0.4"/>
-                  <worst9mer name="worst9mer_h" threshold="0.15" only_helices="true"/>
+                  <Worst9mer name="worst9mer_a" threshold="0.4"/>
+                  <Worst9mer name="worst9mer_h" threshold="0.15" only_helices="true"/>
                   #for digs
                   <SSPrediction name="psipred_conf" confidence="0" cmd="/home/brunette/src/psipred3.21/runpsipred_single" use_probability="1" use_svm="false"/>
                   #for hyak
