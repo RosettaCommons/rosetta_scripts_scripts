@@ -209,7 +209,7 @@
                     #interface analyzer
                     <InterfaceAnalyzerMover name="interface_analyzer" scorefxn="sfx_symm_hard" pack_separated="true" pack_input="false" packstat="true" interface_sc="true" use_jobname="true" jump="1" />
                     <Dssp name="dssp" reduced_IG_as_L="1"/>
-                    <worst9mer name="worst9mer" rmsd_lookup_threshold="0.4"/>
+                    <Worst9mer name="worst9mer" rmsd_lookup_threshold="0.4"/>
                 </MOVERS>
                 <PROTOCOLS>
                     Movers

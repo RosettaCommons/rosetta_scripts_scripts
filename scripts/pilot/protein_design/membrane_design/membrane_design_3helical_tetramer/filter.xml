@@ -31,7 +31,7 @@
 # Filters
 ###############################################
 <FILTERS>
-    worst9mer name="worst9mer_h" threshold="0.2" only_helices="true"/>
+    Worst9mer name="worst9mer_h" threshold="0.2" only_helices="true"/>
     <ResidueCount name="resCount" max_residue_count="600"/>
     <Sasa name="Sasa" threshold="1500" upper_threshold="1000000" jump="1" confidence="1"/>
 </FILTERS>
