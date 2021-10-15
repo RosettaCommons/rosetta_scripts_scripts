@@ -1,0 +1,66 @@
+<ROSETTASCRIPTS>
+
+  <SCOREFXNS>
+    <ScoreFunction name="sfxn_cc" weights="ref2015_cart"> # Reweight the score function to include coordinate constraints
+      <Reweight scoretype="coordinate_constraint" weight="1.0"/>
+    </ScoreFunction>
+    <ScoreFunction name="sfxn" weights="ref2015_cart"/> # Score function without constraints
+  </SCOREFXNS>
+
+  <RESIDUE_SELECTORS>
+    <Index name="target_residue_to_mutate" resnums="%%pos1%%" />        # Mutation site
+    <PrimarySequenceNeighborhood name="primary_seq_res" selector="target_residue_to_mutate" /> # Residues flanking and including the target_residue (n=3)
+    <Not name="not_primary_seq_res" selector="primary_seq_res"/>
+    <Neighborhood name="neighbors" selector="target_residue_to_mutate"/> # Residues within 10 A of target_residue
+    <Not name="not_neighbor" selector="neighbors"/>
+    <And name="soft_sphere" selectors="neighbors,not_primary_seq_res"/>
+    <StoredResidueSubset name="neighbors_stored" subset_name="neighbors"/>      # Remember selection (important to select neighbors BEFORE mutation so that neighborhood does not change for Gly, which lacks a CB atom)
+    <StoredResidueSubset name="not_neighbor_stored" subset_name="not_neighbor"/>
+    <StoredResidueSubset name="soft_sphere_stored" subset_name="soft_sphere"/>
+  </RESIDUE_SELECTORS>
+
+  <MOVE_MAP_FACTORIES>
+    <MoveMapFactory name="inside_sphere" chi="false" bb="false"> # Disable all degrees of freedom globally (DOFs)
+      <Chi residue_selector="neighbors_stored"/> # Allow sidechain DOFs of neighbors_stored
+      <Backbone residue_selector="neighbors_stored"/> # Allow backbone DOFs of neighbors_stored
+    </MoveMapFactory>
+  </MOVE_MAP_FACTORIES>
+  <TASKOPERATIONS>
+    <OperateOnResidueSubset name="fix" selector="not_neighbor_stored">
+      <PreventRepackingRLT/>
+    </OperateOnResidueSubset>
+    <InitializeFromCommandline name="ifcl_to"/> # Accept command-line options
+    <IncludeCurrent name="incl_curr_to"/> # Include rotamer from input structure during packing
+    <RestrictToRepacking name="repack_only" /> # Turn off design at these positions. Only repack and minimize
+    <ExtraRotamersGeneric name="ex12_to" ex1="1" ex2="1" extrachi_cutoff="0"/> # Include additional rotamers during repacking
+  </TASKOPERATIONS>
+  <CONSTRAINT_GENERATORS>
+    <CoordinateConstraintGenerator name="not_neightbor_cc" sd="1" ca_only="true" residue_selector="not_neighbor_stored" /> # Add strong backbone constraints (C_alpha-only) for residues outside of the sphere around the target residue (residues limited by MoveMap)
+    <CoordinateConstraintGenerator name="softsphere_cc" sd="2" ca_only="true" residue_selector="soft_sphere_stored" />       # Add weaker backbone constraints (C_alpha-only) for residues within the sphere around the target residue (excluding primary_seq_res)
+  </CONSTRAINT_GENERATORS>
+
+  <MOVERS>
+    <VirtualRoot name="vr" />
+    <StoreResidueSubset name="store_neighbs" subset_name="neighbors" residue_selector="neighbors"/>
+    <StoreResidueSubset name="store_not_neighb" subset_name="not_neighbor" residue_selector="not_neighbor"/>
+    <StoreResidueSubset name="store_soft_sphere" subset_name="soft_sphere" residue_selector="soft_sphere"/>
+    <AddConstraints name="cc" constraint_generators="not_neightbor_cc" />
+    <AddConstraints name="cc2" constraint_generators="softsphere_cc" />
+    <MutateResidue name="mutate" residue_selector="target_residue_to_mutate" new_res="%%aa%%" preserve_atom_coords="true"/>
+    <FastRelax name="relax" scorefxn="sfxn_cc" repeats="3" relaxscript="MonomerRelax2019" task_operations="fix,ex12_to,ifcl_to,repack_only,ifcl_to" movemap_factory="inside_sphere" cartesian="true" />
+  </MOVERS>
+
+  <PROTOCOLS>
+    <Add mover="vr"/>
+    <Add mover="store_neighbs"/>
+    <Add mover="store_not_neighb"/>
+    <Add mover="store_soft_sphere"/>
+    <Add mover="mutate"/>
+    <Add mover="cc"/>
+    <Add mover="cc2"/>
+    <Add mover="relax"/>
+  </PROTOCOLS>
+
+  <OUTPUT scorefxn="sfxn"/> # Output score without penalties from constraints (cc/cc2)
+
+</ROSETTASCRIPTS>

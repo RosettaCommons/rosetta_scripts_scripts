@@ -1,0 +1,80 @@
+<ROSETTASCRIPTS>
+
+  <SCOREFXNS>
+    <ScoreFunction name="sfxn_cc" weights="ref2015_cst"/> # Reweight the score function to include coordinate and nativeresidue constraints
+    <ScoreFunction name="sfxn" weights="ref2015"/>        # Score function without constraints
+  </SCOREFXNS>
+
+  <RESIDUE_SELECTORS>
+    <Index name="residue_position_to_explore" resnums="%%seed%%" />                                     # Seed for design
+    <Neighborhood name="neighbors" selector="residue_position_to_explore"/>                             # 10 Angstrom sphere around seed residue
+    <Not name="not_neighbor" selector="neighbors"/>                                                     # Region outside neighborhood that is not explicitly manipulated
+    <Neighborhood name="inner_shell" selector="residue_position_to_explore" distance="7.0"/>            # Inner shell within neighborhood, all residues allowed to mutate
+    <Not name="not_mutant_neighbor" selector="inner_shell"/>                                            # Everything that isn't the design shell.
+    <And name="outer_shell" selectors="neighbors,not_mutant_neighbor"/>                                 # Outer shell within neighborhood, repack and minimize only (NO mutations)
+    <Index name="add_res_NO_design" resnums="%%keep%%" error_on_out_of_bounds_index="false"/>                           # User-selected residues that should never mutate (i.e. an important protein-protein interface)
+    <And name="inner_NO_design" selectors="inner_shell,add_res_NO_design"/>                             # Additional user-defined residues that should not mutate
+    <Or name="NOT-designable" selectors="outer_shell,inner_NO_design"/>                                 # All residues that should not be mutated
+    <Chain name="symmetry_chain_A" chains="A"/>
+    <Chain name="symmetry_chain_B" chains="B"/>
+  </RESIDUE_SELECTORS>
+
+  <JUMP_SELECTORS>
+    <Interchain name="interchain_jumps"/>
+  </JUMP_SELECTORS>
+
+  <MOVE_MAP_FACTORIES>
+    <MoveMapFactory name="inside_sphere" chi="false" bb="false"> # Disable all degrees of freedom globally (DOFs)
+      <Chi residue_selector="neighbors"/> # Allow sidechain DOFs of neighbors
+      <Backbone residue_selector="neighbors"/> # Allow backbone DOFs of neighbors
+      <Jumps jump_selector="interchain_jumps"/> # Consider different chains
+    </MoveMapFactory>
+  </MOVE_MAP_FACTORIES>
+
+  <TASKOPERATIONS>
+    <OperateOnResidueSubset name="designable_to" selector="inner_shell">
+      <RestrictAbsentCanonicalAASRLT aas="%%aa_subs%%"/> Limit design to these amino acids (all except for Cys)
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="NO_design_to" selector="NOT-designable" >
+      <RestrictToRepackingRLT/> Turn off design (allows repacking and minimization)
+    </OperateOnResidueSubset>
+    <OperateOnResidueSubset name="NO-pack_design_to" selector="not_neighbor" >
+      <PreventRepackingRLT/> Turn off design and repacking (still minimizes)
+    </OperateOnResidueSubset>
+    <InitializeFromCommandline name="ifcl_to" /> # Accept command-line options
+    <IncludeCurrent name="incl_curr_to" /> # Include additional rotamers during repacking
+    <ExtraRotamersGeneric name="ex12" ex1="1" ex2="1" extrachi_cutoff="0"/> # Include additional rotamers during repacking
+    <KeepSequenceSymmetry name="seq_sym_to" setting="true"/> # Only for sequence-symmetric simulations
+  </TASKOPERATIONS>
+
+  <CONSTRAINT_GENERATORS>
+    <CoordinateConstraintGenerator name="not_neightbor_cc" sd="0.5" ca_only="true" residue_selector="not_neighbor" /> # Add strong backbone constraints (N, C_alpha, C, and O) for residues outside of the sphere around the target residue (residues limited by MoveMap)
+    <CoordinateConstraintGenerator name="softsphere_cc" sd="2" ca_only="true" residue_selector="outer_shell" />       # Add weaker backbone constraints (N, C_alpha, C, and O) for residues in outer shell that can repack/minimize but NOT design
+  </CONSTRAINT_GENERATORS>
+  <MOVERS>
+    <VirtualRoot name="vr" />
+    <AddConstraints name="cc" constraint_generators="not_neightbor_cc" />
+    <AddConstraints name="cc2" constraint_generators="softsphere_cc" />
+    <FavorNativeResidue name="favor-native" bonus="%%fav_nat%%"/> # Prefer the WT residue over mutations during the design step
+    FastDesign name="design" relaxscript="MonomerDesign2019" scorefxn="sfxn_cc" task_operations="designable_to,NO_design_to,NO-pack_design_to,ex12,ifcl_to,incl_curr_to" movemap_factory="inside_sphere" />
+    <FastDesign name="sym_design" relaxscript="MonomerDesign2019" scorefxn="sfxn_cc" task_operations="designable_to,NO_design_to,NO-pack_design_to,ex12,ifcl_to,incl_curr_to,seq_sym_to" movemap_factory="inside_sphere" /> #  Only for sequence-symmetric simulations. Also comment out 'design' mover
+    <SetupForSequenceSymmetryMover name="setup_sym" sequence_symmetry_behaviour="seq_sym_to"> #  Only for sequence-symmetric simulations
+        <SequenceSymmetry residue_selectors="symmetry_chain_A,symmetry_chain_B"/>
+    </SetupForSequenceSymmetryMover>
+    <ClearConstraintsMover name="clear-cst"/>
+  </MOVERS>
+
+  <PROTOCOLS>
+    <Add mover="vr"/>
+    <Add mover="cc"/>
+    <Add mover="cc2"/>
+    <Add mover="favor-native"/>
+    Add mover="design"/>
+    <Add mover="setup_sym"/> #  Only for sequence-symmetric simulations
+    <Add mover="sym_design"/> #  Only for sequence-symmetric simulations. Also comment out 'design' mover
+    <Add mover="clear-cst"/>
+  </PROTOCOLS>
+
+  <OUTPUT scorefxn="sfxn"/> # Output score without penalties from constraints (cc/cc2)
+
+</ROSETTASCRIPTS>
