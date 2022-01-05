@@ -18,7 +18,7 @@
 #
 # Generate input or analyze results for Mutation Clusters (MC)
 #
-# Stabilize_Cluster.py
+# stabilizing_mc.py
 # -mode is either 'trim' 'build' or 'analyze' [Required]
 #     -mode trim: Prepare the PDB file for relax (remove heteroatoms)
 #     -mode build: Build the directory tree, RosettaScripts (1 relax and 1 cluster) and jobdefinition file
@@ -28,18 +28,21 @@
 # -fav allows the user to apply a bonus score to native residues, thereby reducing the number of mutations in the output models (i.e. "0,1.5,3") [Optional]
 # -lig allows the user to specify ligand residues to keep when mode==trim. Format is a comma-delimited list with chain_ID preceding each residue (i.e. "H[405-408],L[403]") [Optional]
 # -sym allows mutations on multiple chains simultaneously (Format is chains:residues (i.e. "ABC[20-30,35,80]") [Required if -seed is not selected]
-# -subs is amino acid residues that FastDesign is allowed to substitute during the simulations (if WT residue is not included, it will be forced to mutate) [Optional]
-# -keep is amino acid residues that are NOT allowed to mutated during FastDesign (i.e. residues within a binding site) [Optional]
+# -subs specifies amino acid residues that FastDesign is allowed to substitute during the simulations (if WT residue is not included, it will be forced to mutate) [Optional, default includes all except Cys]
+# -keep specifies amino acid residues that are NOT allowed to mutated during FastDesign (i.e. residues within a binding site) [Optional]
 # -keep_sym is the same as -keep but reads the symmetric style of input residues [Optional]
 #
 # Example of trimming a PDB file:
-# python Stabilize_Cluster.py -mode trim -pdb input_file.pdb 
+# python stabilizing_mc.py -mode trim -pdb input_file.pdb 
 #
 # Example of building inputs:
-# python Stabilize_Cluster.py -mode build -pdb input_file.pdb -seed H[1,12],L[20-30] -subs ADEFHIKLMNQRSTVWY
+# python stabilizing_mc.py -mode build -pdb input_file.pdb -seed H[1,12],L[20-30] 
+#
+# Example of building inputs but only allowing hydrophilic mutations:
+# python stabilizing_mc.py -mode build -pdb input_file.pdb -seed H[1,12],L[20-30] -subs DEHKNQRST 
 #
 # Example of analyzing results from a symmetric run:
-# python Stabilize_Cluster.py -mode analyze -pdb input_file.pdb -sym ABC[20,35,80] -keep_sym AB[27]
+# python stabilizing_mc.py -mode analyze -pdb input_file.pdb -sym ABC[20,35,80] -keep_sym AB[27]
 #
 ################################################################################################
 #
@@ -914,7 +917,7 @@ def parse_build_analyze_inputs(pdb_file, input_resnum, aa_subs_option, fav_nativ
     if aa_subs_option != "":
         resname = aa_subs_option
     else:
-        # Can exclude mutations for saturation mutagenesis here (i.e. to save speed, skip Pro, etc.)
+        # Can exclude mutations for here (i.e. only hydrophobics)
         resname = "ADEFGHIKLMNPQRSTVWY"  # excludes Cys
     if fav_native != '':
         fav_nat_list=parse_fav_native_input(fav_native)
@@ -922,6 +925,7 @@ def parse_build_analyze_inputs(pdb_file, input_resnum, aa_subs_option, fav_nativ
         fav_nat_list = [ "0.0" ]
     # Optional, user decides which aa substitutions are allowed during design
     if keep_native != '':
+        keep_native=parse_brackets_input_resid(keep_native)
         keep_native_list, num_res = parse_input_resid(pdb_file, keep_native)
     else:
         keep_native_list = [('999999', '999999', '999999', '999999')] # This residue is assumed to not be in the pdb file so no residues will be skipped with this option
@@ -1035,9 +1039,9 @@ Error: Must include -mode
 
 ############################## ERROR ##############################
 
-Usage Example 1: python Stabilize_Cluster.py -mode trim -pdb input_file.pdb
-Usage Example 2: python Stabilize_Cluster.py -mode build -pdb input_file.pdb -seed H[1,12],L[23] -subs ADEFGHIKLMNQRSTVWY
-Usage Example 3: python Stabilize_Cluster.py -mode analyze -pdb input_file.pdb -seed H[1,12],L[23] -subs ADEFGHIKLMNQRSTVWY
+Usage Example 1: python stabilizing_mc.py -mode trim -pdb input_file.pdb
+Usage Example 2: python stabilizing_mc.py -mode build -pdb input_file.pdb -seed H[1,12],L[23] -subs ADEFGHIKLMNQRSTVWY
+Usage Example 3: python stabilizing_mc.py -mode analyze -pdb input_file.pdb -seed H[1,12],L[23] -subs ADEFGHIKLMNQRSTVWY
 
 """
     print(error)
@@ -1052,9 +1056,9 @@ Error: Must include -pdb
 
 ############################## ERROR ##############################
 
-Usage Example 1: python Stabilize_Cluster.py -mode trim -pdb input_file.pdb
-Usage Example 2: python Stabilize_Cluster.py -mode build -pdb input_file.pdb -seed H[1,12],L[23] -subs ADEFGHIKLMNQRSTVWY
-Usage Example 3: python Stabilize_Cluster.py -mode analyze -pdb input_file.pdb -seed H[1,12],L[23] -subs ADEFGHIKLMNQRSTVWY
+Usage Example 1: python stabilizing_mc.py -mode trim -pdb input_file.pdb
+Usage Example 2: python stabilizing_mc.py -mode build -pdb input_file.pdb -seed H[1,12],L[23] -subs ADEFGHIKLMNQRSTVWY
+Usage Example 3: python stabilizing_mc.py -mode analyze -pdb input_file.pdb -seed H[1,12],L[23] -subs ADEFGHIKLMNQRSTVWY
 
 """
     print(error)
@@ -1070,7 +1074,7 @@ If mode = 'build'/'analyze', then either '-seed' or '-sym' are required
 
 ############################## ERROR ##############################
 
-Usage Example: python Stabilize_Cluster.py -mode build -pdb input_file.pdb -seed H[1,12],L[23] -subs ADEFGHIKLMNQRSTVWY
+Usage Example: python stabilizing_mc.py -mode build -pdb input_file.pdb -seed H[1,12],L[23] -subs ADEFGHIKLMNQRSTVWY
 
 """
     print(error)

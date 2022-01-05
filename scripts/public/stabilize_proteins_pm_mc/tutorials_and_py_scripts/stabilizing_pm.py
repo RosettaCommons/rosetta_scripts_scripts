@@ -25,7 +25,7 @@
 #     -mode analyze: Analyze the results after PM has been performed (collect best models based on total_score, calculate delta scores to WT, and generate a heatmap of results)
 # -pdb is starting structure filename. The starting structure should already be relaxed (original rosetta script used CARTESIAN minimization) [Required]
 # -pos is residue positions for PM. Format is a comma-delimited list with chain_ID preceding each residue (e.g. H[1,10-20],L[23]). Insertion codes are allowed. [Required if -sym is not selected]
-# -subs is amino acid residues to substitute during PM (must include WT residue for each position selected) [Optional]
+# -subs is amino acid residues to substitute during PM (must include WT residue for each position selected) [Optional, default is all amino acids]
 # -sym allows mutations on multiple chains simultaneously (Format is chains:residues (i.e. ABC[20-30,35,80]) [Required if -pos is not selected]
 # -lig allows the user to specify ligand residues to keep when mode==trim. Format is a comma-delimited list with chain_ID preceding each residue (e.g. H[405-408],L[403]) [Optional]
 #
@@ -33,10 +33,13 @@
 # python stabilizing_pm.py -mode trim -pdb input_file.pdb 
 #
 # Example of building PM inputs:
-# python stabilizing_pm.py -mode build -pdb input_file.pdb -pos H[1,10-20],L[23] -subs ADEFHIKLMNQRSTVWY
+# python stabilizing_pm.py -mode build -pdb input_file.pdb -pos H[1,10-20],L[23] 
+#
+# Example of building PM inputs while skipping Cys mutations:
+# python stabilizing_pm.py -mode build -pdb input_file.pdb -pos H[1,10-20],L[23] -subs ADEFGHIKLMNPQRSTVWY
 #
 # Example of analyzing PM results from a symmetric run:
-# python stabilizing_pm.py -mode analyze -pdb input_file.pdb -sym ABC[20-30,35,80] -subs DEKR
+# python stabilizing_pm.py -mode analyze -pdb input_file.pdb -sym ABC[20-30,35,80]
 #
 ################################################################################################
 #
@@ -940,7 +943,7 @@ def parse_build_analyze_inputs(pdb_file, input_resnum, aa_subs_option, symmetric
     else:
         # Can exclude mutations for saturation mutagenesis here (i.e. to save speed, skip Pro, etc.)
         #resname = [ "A", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y" ]  # These are sorted alphabetically, exclude Cys
-        resname = [ "G", "P", "C", "A", "V", "I", "L", "M", "F", "Y", "W", "S", "T", "N", "Q", "H", "K", "R", "D", "E" ] # These are sorted by type (special, hydrophobic, hydrophbilic, charge), exclude Cys
+        resname = [ "G", "P", "C", "A", "V", "I", "L", "M", "F", "Y", "W", "S", "T", "N", "Q", "H", "K", "R", "D", "E" ] # These are sorted by type (special, hydrophobic, hydrophbilic, charge), default includes all amino acids
     # Optional, symmetric mutations
     if symmetric_option is not "":
         sym_mutation_list=parse_symmetric_input(symmetric_option)
