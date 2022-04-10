@@ -31,7 +31,7 @@ Also, the %%prefix%% variable should contain the filename of the appropriate fol
 
 This script was used in the following publication:
 Yachnin, B. J., Azouz, L. R., White, R. E. III, Minetti, C. A. S. A., Remeta, D. P., Tan, V. M., Drake, J. M.,
-Khare, S. D.  (2022)  Proc. Natl. Acad. Sci. U.S.A.  119: e2116097119.  doi: 2116097119
+Khare, S. D.  (2022)  Proc. Natl. Acad. Sci. U.S.A.  119: e2116097119.  doi: 10.1073/pnas.2116097119
 
 	<SCOREFXNS>
 		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts"/>
