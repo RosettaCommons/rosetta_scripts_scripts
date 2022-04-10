@@ -3,20 +3,25 @@ Keywords: protein interface design, single sided design, enzyme design
 Authors: Brahm Yachnin, Elliott Dolan
 Email: brahm.yachnin@rutgers.edu
 
-This script is intended to sample the energy landscape of a designed proenzyme.  The original 
-CPG2 enzyme dimer is in chains A and C, with the designed inhibitory prodomain as chain B.  
-The linker between chain A and the chain B prodomain (located at the C-term of chain A) allowed to 
-undergo random, rama-biased backbone conformational sampling, followed by packing and minimization.  This 
-allows relatively fast sampling of the conformational space available to the prodomain, allowing validation of 
+This script is intended to sample the energy landscape of a designed proenzyme.  The original
+CPG2 enzyme dimer is in chains A and C, with the designed inhibitory prodomain as chain B.
+The linker between chain A and the chain B prodomain (located at the C-term of chain A) allowed to
+undergo random, rama-biased backbone conformational sampling, followed by packing and minimization.  This
+allows relatively fast sampling of the conformational space available to the prodomain, allowing validation of
 the designed position using score vs. rmsd plots similar to forward folding trajectories.
 
-Each torsion run in the MC mover samples a single residue's backbone torsion.  My tests with CPG2 found that 
-~30 torsion runs for an 11 residue linker gave a reasonable conformational landscape with an nstruct of 750.  
-Changing the temperature or setting preapply=1 will also alter what part of the landscape is sampled most 
+Each torsion run in the MC mover samples a single residue's backbone torsion.  My tests with CPG2 found that
+~30 torsion runs for an 11 residue linker gave a reasonable conformational landscape with an nstruct of 750.
+Changing the temperature or setting preapply=1 will also alter what part of the landscape is sampled most
 efficiently.  Ideal parameters should be determined for each project.
 
-The ex task operation can be used in linker_repack if run time is not a major concern.  Disabling linmem_ig also 
+The ex task operation can be used in linker_repack if run time is not a major concern.  Disabling linmem_ig also
 improved run time in our tests.
+
+This script was used in the following publication:
+Yachnin, B. J., Azouz, L. R., White, R. E. III, Minetti, C. A. S. A., Remeta, D. P., Tan, V. M., Drake, J. M.,
+Khare, S. D.  (2022)  Proc. Natl. Acad. Sci. U.S.A.  119: e2116097119.  doi: 2116097119
+
 	<SCOREFXNS>
 		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts" />
 	</SCOREFXNS>
@@ -42,7 +47,7 @@ improved run time in our tests.
 		<OperateOnResidueSubset name="not_flex_prevent" selector="notbothflex" >
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
-		
+
 		<OperateOnResidueSubset name="freeze_zn" selector="zncatalytic" >
             <PreventRepackingRLT/>
         </OperateOnResidueSubset>
@@ -55,8 +60,8 @@ improved run time in our tests.
 	</FILTERS>
 
 	<MOVERS>
-		<SavePoseMover name="save_input" restore_pose="false" reference_name="input_pose" />	
-	
+		<SavePoseMover name="save_input" restore_pose="false" reference_name="input_pose" />
+
 		Repack around flexing
 		<PackRotamersMover name="linker_repack" scorefxn="ref_cst" task_operations="init,keep_curr,not_flex_prevent,restrict,freeze_zn" />
 
@@ -66,7 +71,7 @@ improved run time in our tests.
 		Declare bond between chain A and the inhibitory domain.  Set res1 and res2 to be the last residue of chain A and the first residue of chain B.
 		Currently, rebuild_fold_tree="True" causes problems with many filters, but avoids having to generate custom foldtrees for each input pose.
 		<DeclareBond name="attach_chains" res1="406" res2="407" atom1="C" atom2="N" add_termini="TRUE" rebuild_fold_tree="TRUE"/>
-		
+
 		Add a SetTorsion mover for every residue in the linker.  Add each of these movers to the random_twister mover.
 		<SetTorsion name="tor1" >
 			<Torsion residue="396" torsion_name="rama" angle="rama_biased" />
@@ -115,7 +120,7 @@ improved run time in our tests.
 			<Add mover_name="random_twister" />
 			<Add mover_name="packmin" />
 		</ParsedProtocol>
-		
+
 		The GenericMonteCarlo mover for twist_and_min.
 		<GenericMonteCarlo name="monte_rando" mover_name="twist_and_min" scorefxn_name="ref_cst" trials="%%set_torsion_runs%%" preapply="0" temperature="10.0" recover_low="0"/>
 	</MOVERS>
@@ -127,13 +132,13 @@ improved run time in our tests.
 		<Add mover="attach_chains"/>
 		Calculate the score of the initial pose in a report filter so that this is easily available in the score file.
 		<Add filter="initscore"/>
-		
+
 		Run the monte carlo sampling of linker conformations.
 		<Add mover="monte_rando" />
-		
+
 		Calculate the RMSD to the original structure.
 		<Add filter="helix_linker_rmsd"/>
 	</PROTOCOLS>
-	
+
 	<OUTPUT scorefxn="ref_cst"/>
 </ROSETTASCRIPTS>

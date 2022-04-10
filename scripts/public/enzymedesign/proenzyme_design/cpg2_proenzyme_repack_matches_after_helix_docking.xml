@@ -3,48 +3,53 @@ Keywords: protein interface design, single sided design, enzyme design, protein-
 Author: Brahm Yachnin, Laura Azouz
 Email: brahm.yachnin@rutgers.edu, azouzlau@msu.edu
 
-After using cpg2_dock_and_design_helix.xml to create a starting pro-enzyme and using Rosetta Match 
-to build in a zinc-coordinating residue between the helix and the catalytic zinc ion, this script 
-is used to minimize the region around the zinc catalytic resides, including the new "matched-in" 
-residue.  After this, do design with strong FavorNative constraints in a very tight shell around 
+After using cpg2_dock_and_design_helix.xml to create a starting pro-enzyme and using Rosetta Match
+to build in a zinc-coordinating residue between the helix and the catalytic zinc ion, this script
+is used to minimize the region around the zinc catalytic resides, including the new "matched-in"
+residue.  After this, do design with strong FavorNative constraints in a very tight shell around
 the "matched-in" residue to remove any severely unfavourable (e.g. clashing) residues.
 
-The variables res1-res5 are the "regular" catalytic residues.  matchedres is the resnum of the 
+The variables res1-res5 are the "regular" catalytic residues.  matchedres is the resnum of the
 "matched-in" residue.  helixchain is the chain ID of the pro-domain helix.
+
+This script was used in the following publication:
+Yachnin, B. J., Azouz, L. R., White, R. E. III, Minetti, C. A. S. A., Remeta, D. P., Tan, V. M., Drake, J. M.,
+Khare, S. D.  (2022)  Proc. Natl. Acad. Sci. U.S.A.  119: e2116097119.  doi: 2116097119
+
     <SCOREFXNS>
         <ScoreFunction name="myscore" weights="talaris2014_cst.wts"/>
     </SCOREFXNS>
-	
+
 	<RESIDUE_SELECTORS>
 	    <Neighborhood name="nearznlig" resnums="1X" distance="8.0"/>
 	    <Neighborhood name="nearmatch" resnums="%%matchedres%%" distance="7.0"/>
 	</RESIDUE_SELECTORS>
-	
+
     <TASKOPERATIONS>
         <InitializeFromCommandline name="init"/>
         <IncludeCurrent name="incCurrent"/>
         <RestrictToRepacking name="designoff"/>
-		
+
 	<OperateOnResidueSubset name="repacklig" selector="nearznlig">
 	    <RestrictToRepackingRLT/>
 	</OperateOnResidueSubset>
-		
+
         <SetCatalyticResPackBehavior name="nodesigncat"/>
 	<DesignAround name="repackaroundcat" design_shell="8.0" resnums="%%res1%%,%%res2%%,%%res3%%,%%res4%%,%%res5%%,1X,%%matchedres%%" repack_shell="8.0" allow_design="0" resnums_allow_design="0"/>
-		
+
 	<OperateOnResidueSubset name="designaroundmatch">
 		<Not selector="nearmatch"/>
 		<PreventRepackingRLT/>
 	</OperateOnResidueSubset>
     </TASKOPERATIONS>
-    
+
     <FILTERS>
         <EnzScore name="cstE" scorefxn="myscore" whole_pose="1" score_type="cstE" energy_cutoff="9999.0"/>
 	<NetCharge name="charge" min="-1000" max="1000" chain="%%helixchain%%"/>
 	<Sasa name="interface_sasa" threshold="0" jump="1"/>
 	<ResInInterface name="riif" residues="0" jump_number="1"/>
 	<BuriedUnsatHbonds name="bur_unsat_hb" scorefxn="myscore" cutoff="1000" jump_number="1"/>
-			
+
 	<DesignableResidues name="designmatchres" task_operations="init,incCurrent,designaroundmatch,nodesigncat" designable="1" packable="1"/>
 	<DesignableResidues name="packandminres" task_operations="init,incCurrent,repackaroundcat,nodesigncat,designoff" designable="1" packable="1"/>
     </FILTERS>
@@ -53,12 +58,12 @@ The variables res1-res5 are the "regular" catalytic residues.  matchedres is the
         Constraint movers
 	<AddOrRemoveMatchCsts name="match_cst" cst_instruction="add_new" cstfile="1CG2_zncomp_constraints.cst"/>
 	<FavorNativeResidue name="favournative" bonus="4.0"/>
-	
+
 	<PackRotamersMover name="designmatch" scorefxn="myscore" task_operations="init,incCurrent,designaroundmatch,nodesigncat"/>
-               
+
 	<PackRotamersMover name="packrotamers"  scorefxn="myscore" task_operations="init,incCurrent,repackaroundcat,nodesigncat,designoff"/>
 	<TaskAwareMinMover name="minActiveSite" scorefxn="myscore" task_operations="init,incCurrent,repackaroundcat,nodesigncat,designoff"/>
-        
+
 	<MinMover name="minLig" scorefxn="myscore" chi="1" bb="0" jump="1">
 		<MoveMap name="mincsts">
 			<Jump number="1" setting="0"/>
@@ -76,11 +81,11 @@ The variables res1-res5 are the "regular" catalytic residues.  matchedres is the
 			<Span begin="%%res5%%" end="%%res5%%" chi="1" bb="0"/>
 		</MoveMap>
 	</MinMover>
-		       
+
         <ParsedProtocol name="packandmin">
           <Add mover_name="packrotamers"/>
           <Add mover_name="minActiveSite"/>
-        </ParsedProtocol>	
+        </ParsedProtocol>
 
     </MOVERS>
 
@@ -91,19 +96,19 @@ The variables res1-res5 are the "regular" catalytic residues.  matchedres is the
         Prepare the constraints.
         <Add mover_name="match_cst"/>
 	<Add mover_name="favournative"/>
-		
+
 	<Add filter_name="designmatchres"/>
 	<Add filter_name="packandminres"/>
-		
+
 	Minimize around the ligand, allowing the ligand to move and chis of the catalytic residues.
         <Add mover_name="minLig"/>
-		
+
 	Now do design in a small shell around the newly matched Zn interaction.  Strong favour native constraints will minimize the amount of design.
 	<Add mover_name="designmatch"/>
-	
+
 	Re-pack and minimize within 7 A of any of the catalytic residues.
 	<Add mover_name="packandmin"/>
-        
+
         Scoring.
         <Add filter_name="cstE"/>
 	<Add filter_name="charge"/>
@@ -111,6 +116,6 @@ The variables res1-res5 are the "regular" catalytic residues.  matchedres is the
 	<Add filter_name="riif"/>
 	<Add filter_name="bur_unsat_hb"/>
     </PROTOCOLS>
-	
+
     <OUTPUT scorefxn="myscore"/>
 </ROSETTASCRIPTS>

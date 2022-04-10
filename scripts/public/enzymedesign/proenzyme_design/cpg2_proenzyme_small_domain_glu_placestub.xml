@@ -3,21 +3,26 @@ Keywords: protein interface design, single sided design, enzyme design, hotspot,
 Author: Brahm Yachnin
 Email: brahm.yachnin@rutgers.edu
 
-This script is the main script for generating pro-CPG2 designs, combining a circular permutant 
-of CPG2 with a library of small domains.  We start with the pro-domains placed using Patchdock 
+This script is the main script for generating pro-CPG2 designs, combining a circular permutant
+of CPG2 with a library of small domains.  We start with the pro-domains placed using Patchdock
 as our input.  The protocol then works as follows:
--Introduce the K177A mutation to both CPG2 chains.  This mutation was shown to improve the degree 
+-Introduce the K177A mutation to both CPG2 chains.  This mutation was shown to improve the degree
 of inhibition on our first-generation helical designs.
 -Repack and minimize the pro-domain, including chi and rigid body minimization.
--Apply the PlaceStub mover in place_scaffold mode to place the domain using the zinc-coordinating 
+-Apply the PlaceStub mover in place_scaffold mode to place the domain using the zinc-coordinating
 glutamate to generate the inverse rotamer library "stub."
 -Following successful placement, PlaceStub will call several RepackMinimize and BackrubDD movers.
--After placement, a GSENLYFQGGS linker is built, and GeneralizedKIC is used to connect the C-terminus 
+-After placement, a GSENLYFQGGS linker is built, and GeneralizedKIC is used to connect the C-terminus
 of the circular permutant to the N-terminus of the pro-domain.
 -The linker and pro-domain are relaxed (without design).
 
-Note that the lastres variable is the last residue in the pose, and prefix is the pdb file's prefix (used 
+Note that the lastres variable is the last residue in the pose, and prefix is the pdb file's prefix (used
 to get the name of the foldtree files).
+
+This script was used in the following publication:
+Yachnin, B. J., Azouz, L. R., White, R. E. III, Minetti, C. A. S. A., Remeta, D. P., Tan, V. M., Drake, J. M.,
+Khare, S. D.  (2022)  Proc. Natl. Acad. Sci. U.S.A.  119: e2116097119.  doi: 2116097119
+
 	<SCOREFXNS>
 		<ScoreFunction name="ref" weights="ref2015.wts"/>
 		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts">
@@ -58,67 +63,67 @@ to get the name of the foldtree files).
 			<Reweight scoretype="p_aa_pp" weight="0.32"/>
 		</ScoreFunction>
 	</SCOREFXNS>
-	
-	<RESIDUE_SELECTORS>			
+
+	<RESIDUE_SELECTORS>
 		<Chain name="hostchain" chains="A"/>
 		<Chain name="dockchain" chains="B"/>
-		
+
 		<Or name="notdockchainplus">
 			<Chain chains="A"/>
 			<Index resnums="%%lastres%%"/>
 		</Or>
-		
+
 		<Or name="corecontact">
 			<Chain chains="B"/>
 			<Index resnums="29A,88A,89A,90A,91A,113A,237A,272A,298A"/>
 		</Or>
-		
+
 		<Index name="linkerres" resnums="394A,395A,396A,397A,398A,399A,400A,401A,402A,403A,404A,405A,406A"/>
 
 		<Or name="linkdomain" selectors="linkerres,dockchain"/>
 		<Neighborhood name="aroundaddition" selector="linkdomain" distance="5.0"/>
-	
+
 		<Index name="nterm" resnums="407"/>
 		<Index name="notnterm" resnums="802"/>
 		<Index name="chaina_cat" resnums="25A,54A,89A,113A,298A"/>
 	</RESIDUE_SELECTORS>
-	
+
 	<TASKOPERATIONS>
 		<InitializeFromCommandline name="init"/>
 		<IncludeCurrent name="inccurrent"/>
 		<RestrictToRepacking name="designoff"/>
 		<SetCatalyticResPackBehavior name="catdesignoff"/>
-		
+
 		<OperateOnResidueSubset name="repacknotdockedplus" selector="notdockchainplus">
 			<RestrictToRepackingRLT/>
 		</OperateOnResidueSubset>
-		
+
 		<OperateOnResidueSubset name="fixhostchain" selector="hostchain">
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
-		
+
 		<OperateOnResidueSubset name="fixdockchain" selector="dockchain">
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
-		
+
 		<OperateOnResidueSubset name="fixawayaddition">
 			<Not selector="aroundaddition"/>
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
-		
+
 		<OperateOnResidueSubset name="fixlinker" selector="linkerres">
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
-		
+
 		<OperateOnResidueSubset name="repackcoreonly">
 			<Not selector="corecontact"/>
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
-			
+
 		<OperateOnResidueSubset name="freeze_cata" selector="chaina_cat">
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
-		
+
 		<OperateOnResidueSubset name="designonly_b_interface">
 			<Not>
 				<Neighborhood distance="8.0">
@@ -127,12 +132,12 @@ to get the name of the foldtree files).
 			</Not>
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
-		
+
 		<DisallowIfNonnative name="dontaddGPC" resnum="0" disallow_aas="GCP"/>
 		<RestrictIdentities name="dontremGPC" identities="GLY,CYS,PRO" prevent_repacking="0"/>
 		<DsspDesign name="designbyss"/>
 	</TASKOPERATIONS>
-	
+
 	<FILTERS>
 		<AtomicContactCount name="contactcountdef" partition="chain" distance="4.5" task_operations="repackcoreonly"/>
 		<IfThenFilter name="contactcount" threshold="6" lower_threshold="true">
@@ -141,13 +146,13 @@ to get the name of the foldtree files).
 		<IfThenFilter name="contactcount_early" threshold="3" lower_threshold="true">
 			<IF testfilter="contactcountdef" valuefilter="contactcountdef"/>
 		</IfThenFilter>
-		
+
 		<BuriedUnsatHbonds name="buriedhbonds" scorefxn="ref_cst" task_operations="designonly_b_interface" cutoff="20"/>
 		<Rmsd name="rmsd_chainb" chains="B" threshold="1" superimpose="1"/>
-		
+
 		<ScoreType name="total" scorefxn="ref" threshold="-2000"/>
 		<ScoreType name="farep" scorefxn="ref" score_type="fa_rep" threshold="600"/>
-		
+
 		<CompoundStatement name="place_filter"> for the loop over filter
 			<AND filter_name="contactcount"/>
 		</CompoundStatement>
@@ -157,38 +162,38 @@ to get the name of the foldtree files).
 			<AND filter_name="buriedhbonds"/>
 			<AND filter_name="rmsd_chainb"/>
 		</CompoundStatement>
-			
+
 		<ContingentFilter name="genkic_filter"/>
-			
+
 		Report filters
 		<Report name="contactcount_pstub" filter="contactcount"/>
 		<Report name="buriedhbonds_pstub" filter="buriedhbonds"/>
 		<Report name="total_pstub" filter="total"/>
 		<Report name="farep_pstub" filter="farep"/>
 	</FILTERS>
-	
+
 	<MOVERS>
 		Constraint stuff
 		<AtomCoordinateCstMover name="dockcsts" coord_dev="2.0" bounded="true" bound_width="3.0"/>
 		<AtomCoordinateCstMover name="relaxcsts" task_operations="fixlinker"/>
 		<ClearConstraintsMover name="removecsts"/>
 		<FavorNativeResidue name="favournative" bonus="3.0"/>
-		
+
 		Foldtree stuff
 		<AtomTree name="foldtree_hs" fold_tree_file="%%prefix%%_hsft.txt"/>
 		<AtomTree name="foldtree_dock" fold_tree_file="%%prefix%%_dockft.txt"/>
 		<AtomTree name="foldtree_relax" fold_tree_file="%%prefix%%_relaxft.txt"/>
 		<ModifyVariantType name="addnterminus" add_type="LOWER_TERMINUS_VARIANT" residue_selector="nterm" update_polymer_bond_dependent_atoms="1"/>
 		<ModifyVariantType name="removenterminus" remove_type="LOWER_TERMINUS_VARIANT" residue_selector="notnterm" update_polymer_bond_dependent_atoms="1"/>
-		
+
 		Mutations
 		<MutateResidue name="a_k177a" target="90A" new_res="ALA"/>
 		<MutateResidue name="b_k177a" target="690A" new_res="ALA"/>
-				
+
 		Pre-stub minimization.
 		<PackRotamersMover name="packdockchain" scorefxn="ref_soft_hs" task_operations="init,inccurrent,fixhostchain,designoff,freeze_cata"/>
 		<TaskAwareMinMover name="mindockchain" chi="1" bb="0" jump="1" scorefxn="ref_soft_hs" task_operations="init,inccurrent,fixhostchain,freeze_cata"/>
-		
+
 		PlaceStub associated movers.
 		<SaveAndRetrieveSidechains name="restoreseq"/>
 		<BackrubDD name="backrub" interface_distance_cutoff="10.0" scorefxn="ref_cst" moves="1000" partner1="0" partner2="1"/>
@@ -198,9 +203,9 @@ to get the name of the foldtree files).
 		Regular
 		<RepackMinimize name="design2" minimize_bb="0" minimize_rb="1" scorefxn_repack="ref_cst" scorefxn_minimize="ref_cst" interface_cutoff_distance="7.0"/>
 		<RepackMinimize name="design3" minimize_bb="1" minimize_rb="1" minimize_bb_ch1="0" minimize_bb_ch2="1" scorefxn_repack="ref_cst" scorefxn_minimize="ref_cst" interface_cutoff_distance="8.0"/>
-		
+
 		PlaceStub's task operations will be fed down to all movers that are mentioned as task aware. leave_coord_csts lets downstream movers use the coordinate csts that placestub found to be useful
-		<PlaceStub name="place_glu" place_scaffold="1" after_placement_filter="place_filter" final_filter="final_filter" task_operations="init,inccurrent,repacknotdockedplus,freeze_cata,dontaddGPC,dontremGPC,designbyss" triage_positions="0" stubfile="glustublibrary.pdb" add_constraints="1" minimize_rb="1" hurry="1" score_threshold="10.0" stub_energy_threshold="3.0" max_cb_dist="4.0" leave_coord_csts="1" post_placement_sdev="1.0"> 
+		<PlaceStub name="place_glu" place_scaffold="1" after_placement_filter="place_filter" final_filter="final_filter" task_operations="init,inccurrent,repacknotdockedplus,freeze_cata,dontaddGPC,dontremGPC,designbyss" triage_positions="0" stubfile="glustublibrary.pdb" add_constraints="1" minimize_rb="1" hurry="1" score_threshold="10.0" stub_energy_threshold="3.0" max_cb_dist="4.0" leave_coord_csts="1" post_placement_sdev="1.0">
 			<DesignMovers>
 				<Add mover_name="restoreseq"/>
 				<Add mover_name="design1" coord_cst_std="0.5"/>
@@ -209,7 +214,7 @@ to get the name of the foldtree files).
 				<Add mover_name="design3" coord_cst_std="1.0"/>
 			</DesignMovers>
 		</PlaceStub>
-		
+
 		GenKIC stuff
 		<PeptideStubMover name="linker">
 			<Insert resname="GLY" connecting_atom="N" anchor_rsd="395" anchor_atom="C"/>
@@ -277,33 +282,33 @@ to get the name of the foldtree files).
 			</AddPerturber>
 			<AddFilter type="loop_bump_check"/>
 		</GeneralizedKIC>
-		
+
 		<DeleteRegionMover name="delete_chain2" start="407" end="801" rechain="false"/>
 		<AddChain name="addbackchainb" file_name="1cg2_zn_chb.pdb" new_chain="1" scorefxn="ref_cst"/>
-		
+
 		<FastRelax name="relax" scorefxn="ref_cst" repeats="1" task_operations="init,inccurrent,designoff,fixawayaddition,fixdockchain,freeze_cata"/>
 	</MOVERS>
-	
+
 	<APPLY_TO_POSE>
 		<SetupHotspotConstraints stubfile="glustublibrary.pdb" cb_force="0.75"/>
 	</APPLY_TO_POSE>
-	
+
 	<PROTOCOLS>
 		<Add mover_name="a_k177a"/>
 		<Add mover_name="b_k177a"/>
 		Before anything, check if there is a reasonable number of residues in the interface.
 		<Add filter_name="contactcount_early"/>
-		
+
 		Repack the domain and apply chi and rigid body minimization with coordinate csts.
 		<Add mover_name="dockcsts"/>
 		<Add mover_name="foldtree_dock"/>
 		<Add mover_name="packdockchain"/>
 		<Add mover_name="mindockchain"/>
 		<Add mover_name="removecsts"/>
-		
+
 		Make sure everything still makes sense by checking the number of residues in the interface, as well as the contacts with the core.
 		<Add filter_name="contactcount_early"/>
-		
+
 		Run the placestub sequence.
 		<Add mover_name="foldtree_hs"/>
 		<Add mover_name="favournative"/>
@@ -311,13 +316,13 @@ to get the name of the foldtree files).
 		Repeat filters for scorefile
 		<Add filter_name="buriedhbonds"/>
 		<Add filter_name="contactcount"/>
-		
+
 		Add report filters to store the values in the score file
 		<Add filter_name="contactcount_pstub"/>
 		<Add filter_name="buriedhbonds_pstub"/>
 		<Add filter_name="total_pstub"/>
 		<Add filter_name="farep_pstub"/>
-				
+
 		Build and close the loop.
 		<Add mover_name="linker"/>
 		<Add mover_name="addnterminus"/>
@@ -326,10 +331,10 @@ to get the name of the foldtree files).
 		<Add mover_name="genkic"/>
 
 		To reset the atom tree issues with the peptide bond traversing "chain 2" of the dimer, delete and regenerate chain 2.
-		<Add mover_name="delete_chain2"/>	
+		<Add mover_name="delete_chain2"/>
 		<Add mover_name="connect_domain2"/>
 		<Add mover_name="addbackchainb"/>
-		
+
 		Final relax.
 		<Add mover_name="foldtree_relax"/>
 		<Add mover_name="relaxcsts"/>
@@ -338,6 +343,6 @@ to get the name of the foldtree files).
 
 		<Add filter_name="total"/>
 	</PROTOCOLS>
-	
+
 	<OUTPUT scorefxn="ref_cst_hsoff"/>
 </ROSETTASCRIPTS>

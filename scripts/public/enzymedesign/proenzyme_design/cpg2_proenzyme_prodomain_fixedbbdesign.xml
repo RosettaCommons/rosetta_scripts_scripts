@@ -26,47 +26,52 @@ to match the appropriate residues in the input structure:
 -In corecontact, the residue list should match "core" residues close to the active site.
 -In declarebond, res1 and res2 should match the last residue of chain A and the first residue
  of chain B, respectively.
-Also, the %%prefix%% variable should contain the filename of the appropriate foldtree file.  The 
+Also, the %%prefix%% variable should contain the filename of the appropriate foldtree file.  The
 .ft extension should be omitted from the variable, but included in the filename.
+
+This script was used in the following publication:
+Yachnin, B. J., Azouz, L. R., White, R. E. III, Minetti, C. A. S. A., Remeta, D. P., Tan, V. M., Drake, J. M.,
+Khare, S. D.  (2022)  Proc. Natl. Acad. Sci. U.S.A.  119: e2116097119.  doi: 2116097119
+
 	<SCOREFXNS>
 		<ScoreFunction name="ref_cst" weights="ref2015_cst.wts"/>
 		<ScoreFunction name="ref_cst_output" weights="ref2015_cst.wts">
 			<Reweight scoretype="res_type_constraint" weight="0.0"/>
 		</ScoreFunction>
 	</SCOREFXNS>
-	
-	<RESIDUE_SELECTORS>			
+
+	<RESIDUE_SELECTORS>
 		<And name="dockchain">
 			<Chain chains="B"/>
 			<Not>
 				<ResidueName residue_name3="ZN"/>
 			</Not>
 		</And>
-			
+
 		<Not name="scaffoldzn" selector="dockchain"/>
-			
+
 		<Or name="corecontact">
 			<Chain chains="B"/>
 			<Index resnums="25A,84A,85A,86A,87A,109A,233A,268A,294A"/>
 		</Or>
-		
+
 		<SecondaryStructure name="loops" overlap="1" include_terminal_loops="false" ss="L" use_dssp="true"/>
-		
+
 		Layer design selectors
 		<Layer name="core" select_core="true" use_sidechain_neighbors="true"/>
 		<Layer name="boundary" select_boundary="true" use_sidechain_neighbors="true"/>
 		<Layer name="surface" select_surface="true" use_sidechain_neighbors="true"/>
 	</RESIDUE_SELECTORS>
-	
+
 	<TASKOPERATIONS>
 		<InitializeFromCommandline name="init"/>
 		<IncludeCurrent name="inccurrent"/>
 		<ExtraRotamersGeneric name="ex" ex1="1" ex2="1" ex1aro="1" ex1_sample_level="1" ex2_sample_level="1" ex1aro_sample_level="1" extrachi_cutoff="1"/>
-		
+
 		<RestrictToRepacking name="designoff"/>
 		<SetCatalyticResPackBehavior name="catdesignoff" fix_catalytic_aa="0"/>
 		<SetCatalyticResPackBehavior name="freeze-noncat" fix_catalytic_aa="0" behavior_non_catalytic="NATRO"/>
-	
+
 		<OperateOnResidueSubset name="repackcoreonly">
 			<Not selector="corecontact"/>
 			<PreventRepackingRLT/>
@@ -78,21 +83,21 @@ Also, the %%prefix%% variable should contain the filename of the appropriate fol
 			</Not>
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
-		
+
 		<OperateOnResidueSubset name="nodesignscaffold" selector="scaffoldzn">
 			<RestrictToRepackingRLT/>
 		</OperateOnResidueSubset>
-		
+
 		<OperateOnResidueSubset name="dontrepackscaffold">
 			<Chain chains="A,C"/>
 			<PreventRepackingRLT/>
 		</OperateOnResidueSubset>
-			
+
 		Design restriction task ops
 		<DisallowIfNonnative name="dontaddGPC" resnum="0" disallow_aas="GCP"/>
 		<RestrictIdentities name="dontremGPC" identities="GLY,CYS,PRO" prevent_repacking="0"/>
 		<DsspDesign name="designbyss"/>
-		
+
 		Layer design task operations
 		<OperateOnResidueSubset name="surface_to" selector="surface" >
 			<RestrictAbsentCanonicalAASRLT aas="DEGHKNPQRST"/>
@@ -104,12 +109,12 @@ Also, the %%prefix%% variable should contain the filename of the appropriate fol
 			<RestrictAbsentCanonicalAASRLT aas="AFILPVWY"/>
 		</OperateOnResidueSubset>
 	</TASKOPERATIONS>
-	
+
 	<FILTERS>
 		<EnzScore name="cstE" scorefxn="ref_cst" whole_pose="1" score_type="cstE" energy_cutoff="20.0"/>
 		<AtomicContactCount name="contactcount" partition="chain" distance="4.5" task_operations="repackcoreonly"/>
 		<ScoreType name="total" scorefxn="ref_cst_output" threshold="-2000"/>
-		
+
 		<PackStat name="packstat" threshold="0.55" confidence="0" chain="0" repeats="3"/>
 		<BuriedUnsatHbonds name="buriedunsat" confidence="0" scorefxn="ref_cst" jump_number="0" cutoff="200" task_operations="dontrepackscaffold"/>
 		<CavityVolume name="cavvolume"/>
@@ -119,7 +124,7 @@ Also, the %%prefix%% variable should contain the filename of the appropriate fol
 		<ResidueCount name="nres_b" residue_selector="dockchain" min_residue_count="0" max_residue_count="1000"/>
 		<ExposedHydrophobics name="ex_hydrophobics" confidence="0"/>
 	</FILTERS>
-	
+
 	<MOVERS>
 		Constraint stuff
 		<FavorNativeResidue name="favournative" bonus="2"/>
@@ -129,21 +134,21 @@ Also, the %%prefix%% variable should contain the filename of the appropriate fol
 		<RemoveConstraints name="rem_favournative" constraint_generators="loop_rescst"/>
 		<AddOrRemoveMatchCsts name="addmatchcsts" cst_instruction="add_new" cstfile="1cg2_zn_dimer_pluscomp.cst" accept_blocks_missing_header="0"/>
 		<ClearConstraintsMover name="removecsts"/>
-			
+
 		Repack and min catalytic
 		<PackRotamersMover name="packcatalytic" scorefxn="ref_cst" task_operations="init,inccurrent,ex,freeze-noncat,designoff"/>
 		<TaskAwareMinMover name="mincatalytic"  scorefxn="ref_cst" task_operations="init,inccurrent,ex,freeze-noncat" chi="1" bb="0" jump="0"/>
-		
+
 		Main design mover
 		<PackRotamersMover name="designchainb" scorefxn="ref_cst" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,catdesignoff,dontaddGPC,dontremGPC,designbyss,surface_to,boundary_to,core_to"/>
-		
+
 		Regular minimization
 		<TaskAwareMinMover name="minchainb" scorefxn="ref_cst" chi="1" bb="0" jump="0" task_operations="init,inccurrent,ex,designonly_b_interface,nodesignscaffold,catdesignoff"/>
-						
+
 		Foldtree stuff
 		<DeclareBond name="connectchains" res1="402" res2="403" atom1="C" atom2="N"/>
 		<AtomTree name="foldtree" fold_tree_file="%%prefix%%.ft"/>
-				
+
 		Parsed protocols
 		<ParsedProtocol name="designsequence">
 			Pack and min around the docked chain, with design on the docked chain.
@@ -151,29 +156,29 @@ Also, the %%prefix%% variable should contain the filename of the appropriate fol
 			<Add mover_name="minchainb"/>
 		</ParsedProtocol>
 	</MOVERS>
-		
+
 	<PROTOCOLS>
 		Connect chains A and B, and reset the foldtree.
 		Add mover_name="favournative"/>
 		<Add mover_name="favournative_loops"/>
 		<Add mover_name="connectchains"/>
 		<Add mover_name="foldtree"/>
-		
+
 		Add match constraints, and do an initial pack and min.
 		<Add mover_name="addmatchcsts"/>
 		<Add mover_name="packcatalytic"/>
 		<Add mover_name="mincatalytic"/>
 		<Add filter_name="cstE"/>
 		<Add filter_name="total"/>
-		
+
 		---This is taken over by posthbnet when used.---
 		Design the inhibitor domain (chain B) and repack around.
 		<Add mover_name="designsequence"/>
 		<Add mover_name="designsequence"/>
 		<Add mover_name="designsequence"/>
-		
+
 		<Add mover_name="rem_favournative"/>
-					
+
 		Final filters.
 		<Add filter_name="cstE"/>
 		<Add filter_name="contactcount"/>
@@ -187,6 +192,6 @@ Also, the %%prefix%% variable should contain the filename of the appropriate fol
 		<Add filter_name="nres_b"/>
 		<Add filter_name="ex_hydrophobics"/>
 	</PROTOCOLS>
-	
+
 	<OUTPUT scorefxn="ref_cst_output"/>
 </ROSETTASCRIPTS>

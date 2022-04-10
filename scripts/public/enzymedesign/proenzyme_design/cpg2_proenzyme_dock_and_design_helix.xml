@@ -3,19 +3,24 @@ Keywords: protein interface design, single sided design, enzyme design, protein-
 Author: Brahm Yachnin, Laura Azouz
 Email: brahm.yachnin@rutgers.edu, azouzlau@msu.edu
 
-This script docks a short helix into the substrate binding site of a cirular permutant of CPG2, 
-designs its sequence, and links the C-terminus of the circular permutant to the N-terminus of 
+This script docks a short helix into the substrate binding site of a cirular permutant of CPG2,
+designs its sequence, and links the C-terminus of the circular permutant to the N-terminus of
 helical pro-domain.  The protocol works as follows:
 -Use the DockingProtocol mover to dock and design the helix into the substrate binding region.
 -Use PeptideStubMover to build a GSENLYFQGGS linker.
 -Create a bond between the linker and the N-terminus of the pro-domain.
--Use GeneralizedKIC to close the linker between the C-terminus of the circular permutant and the 
+-Use GeneralizedKIC to close the linker between the C-terminus of the circular permutant and the
 N-terminus of the helix.  This ensures that the linker is long enough to reach.
--If GeneralizedKIC fails to close the loop, extend the loop by an additional GS and repeat the 
+-If GeneralizedKIC fails to close the loop, extend the loop by an additional GS and repeat the
 bond and GeneralizedKIC process.  If that fails, try to extend once more.
 -Relax (without design) the linker and helix, adjusting for the correct linker length.
 
 The "pivot" variable is used to randomly select a pivot variable used during GenKIC.
+
+This script was used in the following publication:
+Yachnin, B. J., Azouz, L. R., White, R. E. III, Minetti, C. A. S. A., Remeta, D. P., Tan, V. M., Drake, J. M.,
+Khare, S. D.  (2022)  Proc. Natl. Acad. Sci. U.S.A.  119: e2116097119.  doi: 2116097119
+
 	<SCOREFXNS>
         <ScoreFunction name="low_score" weights="interchain_cen.wts">
             <Reweight scoretype="chainbreak" weight="1.0"/>
