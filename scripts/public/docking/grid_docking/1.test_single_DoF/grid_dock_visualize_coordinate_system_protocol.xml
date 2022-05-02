@@ -1,0 +1,81 @@
+Keywords: protein-protein docking, surface docking, protein design 
+Author: Odessa Goudy, Alice Peng 
+Email: odessagoudy2013@gmail.com, bkuhlman@email.unc.edu  
+ 
+This script is an example single-stage Multistage Rosetta Script that uses the Six DoF Grid Dock Mover's translation range from -10 to 10 with a step size of 2 Angstroms for Axis 2.
+To “turn off” the other five DoFs, a value option of 0 was provided.
+All 11 possible trajectories are run, and all output poses are kept if they pass the filter.
+
+This script and the Six DoF Grid Dock Mover are further explained in the wiki documentation for the Six DoF Grid Dock Mover.
+This script is only to serve as a template, to illustrate an example of how this mover can be integrated into Multistage Rosetta Scripts, and to test reproducibility between systems.
+This script is not meant to be used as a docking protocol.
+
+<JobDefinitionFile>
+  <Job>
+    <Input>
+      <PDB filename="example.pdb" />
+    </Input>
+  </Job>
+  <Common>
+    <SCOREFXNS>
+      <ScoreFunction name="sfxn_low-res" weights="interchain_cen">
+	<Reweight scoretype="atom_pair_constraint" weight="1"/>
+	<Reweight scoretype="interchain_vdw" weight="50"/>
+      </ScoreFunction>
+      <ScoreFunction name="sfxn_high-res" weights="ref2015_cst"> High res score function used during FastDesign
+        <Reweight scoretype="aa_composition" weight="1.0" />
+      </ScoreFunction>
+    </SCOREFXNS>
+    <RESIDUE_SELECTORS>
+      <Index name="res_1" resnums="66A"/>
+      <Index name="res_2a" resnums="43B"/>
+      <Index name="res_2b" resnums="54B"/>
+      <Chain chains="A" name="receptor"/>
+      <Chain chains="B" name="designableB-chain"/>
+      <Not name="NOT-designable" selector="designableB-chain"/>
+    </RESIDUE_SELECTORS>
+    <TASKOPERATIONS>
+      <OperateOnResidueSubset name="NO_design_to" selector="NOT-designable" > 
+	<RestrictToRepackingRLT/> Turns off design (but still allows both repacking and minimization) to all residues not deemed designable as a RLT (Residue Level TaskOperation) ((1))
+      </OperateOnResidueSubset>
+      <OperateOnResidueSubset name="designable_to" selector="designableB-chain">
+	<RestrictAbsentCanonicalAASRLT aas="ADEFGHIKLMNPQRSTVWY"/> A restricted list of AAs (does not include CYS) allowed in design during fast design for the chain B scaffold ((3))
+      </OperateOnResidueSubset>
+      <InitializeFromCommandline name="ifcl_to" /> Necessary option to enable reading commandline options
+      <ExtraRotamersGeneric name="extra_chi" ex1="1" ex2="1" />
+    </TASKOPERATIONS>
+    <FILTERS>
+      <ScoreType name="f_total_score" scorefxn="sfxn_low-res" score_type="total_score" threshold="250"/>
+    </FILTERS>
+	<MOVERS>
+	  <FastDesign name="fast-design-1" relaxscript="MonomerDesign2019" repeats="1" scorefxn="sfxn_high-res" task_operations="NO_design_to,designable_to,ifcl_to,extra_chi"/>
+	  <SixDoFGridDockMover name = "test_one_DoF"
+			       dof_residue_selector_1 = "res_1"
+			       dof_residue_selector_2a = "res_2a"
+	                       dof_residue_selector_2b = "res_2b"
+			       values_trans_axis_1 = "0"
+			       range_trans_axis_2 = "-10,10,2"
+			       values_trans_axis_3 = "0"
+			       values_rot_axis_1 = "0"
+			       values_rot_axis_2 = "0"
+			       values_rot_axis_3 = "0" />
+
+	  <DockSetupMover name="dock_setup" partners="A_B"/>
+	  <DockingInitialPerturbation dock_pert="1" name="dock-set_local" randomize2="0" rot="5" trans="1"/>
+	  <SaveAndRetrieveSidechains name="sr_side_chains" allsc="1" multi_use="0" two_step="1"/> Retrieve all the sidechains from the input pose. Multi_use is not enabled because we will use the original sid
+	  <MutateResidue name="mut_to_L" residue_selector="designableB-chain" new_res="LEU" /> Mutates entire chain B residues to LEU for docking.
+	  <SwitchResidueTypeSetMover name="full_centro" set="centroid"/> Used to switch to centroid poses 
+	  <SwitchResidueTypeSetMover name="centro_full" set="fa_standard"/> Used to switch to full atom poses
+	  <FilterReportAsPoseExtraScoresMover name="save_f_cen_total_score" report_as="cen_total_score" filter_name="f_total_score"/>
+	</MOVERS>
+	<PROTOCOLS>
+	  <Stage num_runs_per_input_struct="11" total_num_results_to_keep="11">
+	    <Add mover="test_one_DoF"/>
+	    <Add mover="save_f_cen_total_score"/>
+	    <Sort negative_score_is_good="true" filter="f_total_score"/>
+	  </Stage>
+	  	  
+	</PROTOCOLS>
+</Common>
+</JobDefinitionFile>
+
