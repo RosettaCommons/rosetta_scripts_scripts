@@ -1,0 +1,6 @@
+-in:file:job_definition_file grid_dock_coarse_and_local_dock_protocol.xml
+-jd3:n_archive_nodes 2
+-jd3:archive_on_disk archives
+-mpi_tracer_to_file mpi
+-linmem_ig 10
+-use_truncated_termini
