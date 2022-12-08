@@ -5,4 +5,5 @@ PLEASE checkout the tutorial directory, as there are python scripts that both ge
 
 The mutation clusters script requires significant changes to maintain sequence symmetry, so a separate script has been provided as an example; however, I highly recommend using the python scripts to generate the RosettaScripts.
 
-A publication describing these protocols in more detail, and introducing a ROSIE2 app, is in preparation. Please cite it if you find these tools useful (it will also have additional details on how the scripts function). The author list is David F. Thieker, Jack Maguire, Stephan T. Kudlacek, Andrew Leaver-Fay, Sergey Lyskov, Jeffrey J. Gray, & Brian Kuhlman, probably early 2022 publication.
+Please cite the following article if you find these tools useful. There are also additional details, including figures, that describe how these scripts function.
+Thieker, D. F., Maguire, J. B., Kudlacek, S. T., Leaver‐Fay, A., Lyskov, S., & Kuhlman, B. (2022). Stabilizing proteins, simplified: A Rosetta‐based webtool for predicting favorable mutations. Protein Science, 31(10), e4428.
