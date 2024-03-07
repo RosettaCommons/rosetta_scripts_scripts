@@ -14,6 +14,7 @@ scripts_to_be_parsed = [
     "scripts/public/docking/terpeneSynthase_docking.xml",
     "scripts/public/protein_hacking/helix_extend_with_threading.xml",
     "scripts/public/loop_modeling/simple_loop_grower/simple_loop_grower.xml",
+    "/scripts/public/preparation/constrained_relax.xml",
     "scripts/public/protein_hacking/helix_extender.xml",
     "scripts/public/point_mutant_scan/point_mutant_scan.xml",
     "scripts/public/protein_design/deimmunization/mhc_epitope_design.xml",
